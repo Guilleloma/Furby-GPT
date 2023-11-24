@@ -1,8 +1,7 @@
 import RPi.GPIO as GPIO
 
-#Config for Raspberri Pi Zero W 
 pin_pwm1 = 32
-duty_cycle = 100
+duty_cycle = 70
 
 def init_pwm():
     try:

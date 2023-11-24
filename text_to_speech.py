@@ -25,7 +25,7 @@ def text_to_speech_elevenlabs(text):
         print('Error:', response.text)
         return None
 
-def text_to_speech_google(text, language_code='es-ES', voice_name='es-ES-Wavenet-B', pitch=20.0, speaking_rate=1.19):
+def text_to_speech_google(text, language_code='es-ES', voice_name='es-ES-Neural2-F', pitch=-12.40, speaking_rate=1.0):
     
     credentials = service_account.Credentials.from_service_account_file('/home/pi/furpi/chatbot/furpisimple/keyfurpigoogle.json')
     
@@ -39,7 +39,7 @@ def text_to_speech_google(text, language_code='es-ES', voice_name='es-ES-Wavenet
     voice_params = texttospeech.VoiceSelectionParams(
         language_code=language_code,
         name=voice_name,
-        ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL
+        ssml_gender=texttospeech.SsmlVoiceGender.MALE
     )
 
     # Selecciona el tipo de audio a generar y ajusta el tono y la velocidad
