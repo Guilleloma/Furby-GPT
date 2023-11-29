@@ -25,7 +25,7 @@ def text_to_speech_elevenlabs(text):
         print('Error:', response.text)
         return None
 
-def text_to_speech_google(text, language_code='es-ES', voice_name='es-ES-Neural2-F', pitch=-12.40, speaking_rate=1.0):
+def text_to_speech_google(text, language_code='en-GB', voice_name='en-GB-Neural2-B', pitch=20, speaking_rate=1.0):
     
     credentials = service_account.Credentials.from_service_account_file('/home/pi/furpi/chatbot/furpisimple/keyfurpigoogle.json')
     
@@ -55,6 +55,9 @@ def text_to_speech_google(text, language_code='es-ES', voice_name='es-ES-Neural2
         voice=voice_params,
         audio_config=audio_config
     )
+
+    # En lugar de guardar el contenido en un archivo, devuélvelo directamente
+    return response.audio_content
 
     # Guarda la respuesta en un archivo
     filename = 'output_google.mp3'

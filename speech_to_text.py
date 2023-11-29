@@ -3,14 +3,22 @@ import sounddevice as sd
 import soundfile as sf
 import openai
 from utils import open_file
+import numpy as np
 
 api_key = open_file('openaiapikey2.txt')
 
-def record_and_transcribe(duration=8, fs=44100):
+def record_and_transcribe(duration=8, fs=44100, threshold=0.10):
     print('Recording...')
     myrecording = sd.rec(int(duration * fs), samplerate=fs, channels=1)
     sd.wait()
     print('Recording complete.')
+
+    # Comprueba si el audio grabado es principalmente silencio
+    if np.abs(myrecording).mean() < threshold:
+        print('Detectado silencio, yendo a dormir...')
+        return "a dormir"
+    
+    
     filename = 'myrecording.wav'
     sf.write(filename, myrecording, fs)
     
