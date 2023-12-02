@@ -1,4 +1,4 @@
-from hardware_control import init_pwm, stop_pwm, duty_cycle
+from hardware_control import init_pwm, stop_pwm, duty_cycle, run_motor_until_limitswitch, motor_sequence_dormir, motor_sequence_pensando
 from text_to_speech import text_to_speech_elevenlabs, text_to_speech_google
 from speech_to_text import record_and_transcribe, chatgpt
 from utils import open_file, print_colored
@@ -48,8 +48,8 @@ def handle_wakeup_response(tts_service, pwm1):
         play_audio_and_move_motor(audio_content, pwm1, duty_cycle)
 
 
-def handle_user_interaction(tts_service, pwm1, conversation, chatbot, thinkingsound):
-    # Inicia la reproducción del archivo "pensando.mp3"
+def handle_user_interaction(tts_service, pwm1, pwm2, conversation, chatbot, thinkingsound):
+    
     user_message = record_and_transcribe()
     print_colored("User", user_message)
     print('...Pensando...')
@@ -63,10 +63,14 @@ def handle_user_interaction(tts_service, pwm1, conversation, chatbot, thinkingso
        normalized_message == "a dormir.":
        print('Se va a dormir')
        thinkingsound.stop_playing()
+       motor_thread = threading.Thread(target=motor_sequence_dormir, args=(pwm1,))
+       motor_thread.start()
        audio = AudioSegment.from_mp3("snoring.mp3")
        play(audio)
+       
        return False  # Indicar que se debe salir del bucle
 
+    #Inicia respuesta en ChatGPT
     response = chatgpt(conversation, chatbot, user_message)
     print_colored("Assistant", response)
     response_cleaned = re.sub(r'(Response:|Narration:|Image: generate_image:.*|)', '', response).strip()
@@ -74,6 +78,7 @@ def handle_user_interaction(tts_service, pwm1, conversation, chatbot, thinkingso
     if tts_service == 'google':
         print('Llamando API Google')
         audio_content = text_to_speech_google(response_cleaned)
+        
     else:
         print('Llamando API ElevenLabs')
         audio_content = text_to_speech_elevenlabs(response_cleaned)
@@ -100,8 +105,9 @@ def get_porcupine_key():
 
 def initialize_components():
     # Motores
-    pwm1 = init_pwm()
+    pwm1, pwm2 = init_pwm()
     pwm1.ChangeDutyCycle(0)
+    pwm2.ChangeDutyCycle(0)
     # Servicio Text to Speech
     tts_service = 'google'  # o 'elevenlabs'
     # Inicializar Porcupine
@@ -112,7 +118,7 @@ def initialize_components():
     pa = pyaudio.PyAudio()
     audio_stream = pa.open(rate=porcupine.sample_rate, channels=1, format=pyaudio.paInt16, input=True, frames_per_buffer=porcupine.frame_length)
 
-    return pwm1, tts_service, porcupine, audio_stream
+    return pwm1, pwm2, tts_service, porcupine, audio_stream
 
 class PensandoPlayer:
     def __init__(self, file_path):
@@ -139,12 +145,15 @@ class PensandoPlayer:
 
 
 
+
 def main():
-    pwm1, tts_service, porcupine, audio_stream = initialize_components()
+    pwm1, pwm2, tts_service, porcupine, audio_stream = initialize_components()
     continue_interaction = True
     thinkingsound = PensandoPlayer("pensando.mp3")
-    wakeupsound = PensandoPlayer("wakeup.mp3")
-    snoringsound = PensandoPlayer("snoring.mp3")
+    
+    # Iniciar el hilo para mover el motor hasta el final de carrera al iniciar el programa
+    motor_thread = threading.Thread(target=run_motor_until_limitswitch, args=(pwm1,))
+    motor_thread.start()
 
     while True:
         # Espera la palabra clave una sola vez al inicio
@@ -160,12 +169,14 @@ def main():
         try:
             # Entrar en un bucle continuo de interacción con el usuario
             while continue_interaction:
-                continue_interaction = handle_user_interaction(tts_service, pwm1, conversation1, chatbot1, thinkingsound)
+                continue_interaction = handle_user_interaction(tts_service, pwm1, pwm2, conversation1, chatbot1, thinkingsound)
         except KeyboardInterrupt:
             print("Programa terminado por el usuario.")
             break #Salir del bucle principal
-            
+    
+    motor_thread.join()  # Esperar a que el motor termine, si es necesario
     stop_pwm(pwm1)
+    stop_pwm(pwm2)
     GPIO.cleanup()
 
 if __name__ == "__main__":
