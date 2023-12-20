@@ -50,13 +50,24 @@ def motor_sequence_dormir(pwm1):
     move_motor_for_seconds(pwm1, 0.7)
 
     
-def motor_sequence_pensando(pwm1,pwm2):
+def motor_sequence_pensando(pwm1,pwm2,stop_event):
     #Ve al inicio del ciclo
     run_motor_until_limitswitch(pwm1)
-    
-    #Ve donde se mueven las orejas
-    move_motor_for_seconds(pwm1, 1)
-    #Muevela un poco hacia adelante
-    move_motor_for_seconds(pwm1, 0.5)
-    #Muevela un poco hacia atras
-    move_motor_for_seconds(pwm2, 0.5)
+    move_motor_for_seconds(pwm1, 0.7) # Vete a la posicion de pensando
+    print("En posicion de pensando") 
+
+    while not stop_event.is_set():
+        # Repetir la secuencia de movimiento mientras el audio se está reproduciendo
+        move_motor_for_seconds(pwm1, 0.4)
+        move_motor_for_seconds(pwm2, 0.4)
+
+def motor_sequence_hablando(pwm1,pwm2,stop_event):
+    #Ve al inicio del ciclo
+    run_motor_until_limitswitch(pwm1)
+    move_motor_for_seconds(pwm1, 0) #Vete a la posicion de hablando
+    print("En posicion de hablando")
+
+    while not stop_event.is_set():
+        # Repetir la secuencia de movimiento mientras el audio se está reproduciendo
+        move_motor_for_seconds(pwm2, 1.0)
+        move_motor_for_seconds(pwm1, 1.0)

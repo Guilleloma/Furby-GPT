@@ -1,0 +1,85 @@
+Metadata-Version: 2.1
+Name: simpleaudio
+Version: 1.0.4
+Summary: Simple, asynchronous audio playback for Python 3.
+Home-page: https://github.com/hamiltron/py-simple-audio
+Author: Joe Hamilton
+Author-email: jhamilton10@georgefox.edu
+License: MIT
+Keywords: audio,wave,media,multimedia,sound,alsa,coreaudio,winmm,music
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Topic :: Multimedia :: Sound/Audio
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: MacOS :: MacOS X
+License-File: LICENSE.txt
+
+Simpleaudio Package
+===================
+
+The simplaudio package provides cross-platform, dependency-free audio playback
+capability for Python 3 on OSX, Windows, and Linux.
+
+MIT Licensed.
+
+`Documentation at RTFD <http://simpleaudio.readthedocs.io/>`_
+--------------------------------------------------------------
+
+Installation
+------------
+
+Installation (make sure the ``pip`` command is the right one for
+your platform and Python version)::
+
+   pip install simpleaudio
+
+See documentation for additional installation information.
+
+Quick Function Check
+--------------------
+
+.. code-block:: python
+
+   import simpleaudio.functionchecks as fc
+
+   fc.LeftRightCheck.run()
+
+See documentation for more on function checks.
+
+Simple Example
+--------------
+
+.. code-block:: python
+
+   import simpleaudio as sa
+
+   wave_obj = sa.WaveObject.from_wave_file("path/to/file.wav")
+   play_obj = wave_obj.play()
+   play_obj.wait_done()
+
+Support
+-------
+
+For usage and how-to questions, first checkout the tutorial in the
+documentation. If you're still stuck, post a question on
+`StackOverflow <http://stackoverflow.com/>`_
+and **tag it 'pysimpleaudio'**.
+
+For bug reports, please create an
+`issue on Github <https://github.com/hamiltron/py-simple-audio/issues>`_
+.
+
+Big Thanks To ...
+-----------------
+
+Jonas Kalderstam
+
+Christophe Gohlke
+
+Tom Christie
+
+Many others for their contributions, documentation, examples, and more.
