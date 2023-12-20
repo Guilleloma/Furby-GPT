@@ -1,12 +1,13 @@
-from hardware_control import init_pwm, stop_pwm, duty_cycle, run_motor_until_limitswitch, motor_sequence_dormir, motor_sequence_pensando
+from hardware_control import init_pwm, stop_pwm, duty_cycle, run_motor_until_limitswitch, motor_sequence_dormir, motor_sequence_pensando, motor_sequence_hablando
 from text_to_speech import text_to_speech_elevenlabs, text_to_speech_google
 from speech_to_text import record_and_transcribe, chatgpt
 from utils import open_file, print_colored
+from classes import PensandoPlayer
+from initializers import initialize_components
 import re
 from pydub import AudioSegment
 from pydub.playback import _play_with_simpleaudio
 from pydub.playback import play
-import pvporcupine
 import pyaudio
 import struct
 import RPi.GPIO as GPIO
@@ -18,45 +19,51 @@ chatbot1 = open_file('chatbot1.txt')
 conversation1 = []
 
 
-def play_audio_and_move_motor(audio_content, pwm1, duty_cycle):
+def play_audio_and_move_motor(audio_content, pwm1, pwm2, sequence_name):
     
     # Crear un stream de bytes a partir del contenido de audio
     print('Creando stream de bytes de audio')
     audio_stream = io.BytesIO(audio_content)
-    audio = AudioSegment.from_file(audio_stream, format="mp3")
-    # Iniciar el motor antes de reproducir el audio
-    print('Moviendo PWM1')
-    pwm1.ChangeDutyCycle(duty_cycle)
+    audio = AudioSegment.from_file(audio_stream, format="wav")
+    
+    # Crear evento para controlar la secuencia de motor
+    stop_event = threading.Event()
+
+    # Elegir la secuencia de motor en función de sequence_name
+    if sequence_name == "pensando":
+        motor_sequence = motor_sequence_pensando
+    elif sequence_name == "hablando":
+        motor_sequence = motor_sequence_hablando
+    else:
+        raise ValueError(f"Secuencia desconocida: {sequence_name}")
+
+    # Iniciar el hilo para la secuencia de motor
+    motor_thread = threading.Thread(target=motor_sequence, args=(pwm1, pwm2, stop_event))
+    motor_thread.start()
+    
     # Reproducir el audio de manera bloqueante
-    print('Reproduciendo audio y bloqueando app')
+    print('Reproduciendo audio WAV y bloqueando app')
     play_obj = _play_with_simpleaudio(audio)
     play_obj.wait_done()
-    # Detener el motor después de reproducir el audio
-    pwm1.ChangeDutyCycle(0) 
-    print('PWM1 Detenido')
-
-def handle_wakeup_response(tts_service, pwm1):
-    wakeup_response = open_file('respuestawakeup.txt')
-    if tts_service == 'google':
-        print('Llamando API Google para respuesta de wakeup')
-        audio_content = text_to_speech_google(wakeup_response)
-    else:
-        print('Llamando API ElevenLabs para respuesta de wakeup')
-        audio_content = text_to_speech_elevenlabs(wakeup_response)
-
-    if audio_content:
-        play_audio_and_move_motor(audio_content, pwm1, duty_cycle)
+    
+    # Señalizar al hilo del motor que detenga la secuencia
+    stop_event.set()
+    motor_thread.join()  # Esperar a que el hilo del motor termine
 
 
 def handle_user_interaction(tts_service, pwm1, pwm2, conversation, chatbot, thinkingsound):
+    print("Iniciamos funcion: handle_user_interaction")
     
     user_message = record_and_transcribe()
+    
     print_colored("User", user_message)
+    
+    #Empieza secuencia pensando
     print('...Pensando...')
     thinkingsound.start_playing()
-
-    # Normaliza el mensaje del usuario y realiza una comprobación simple
-    normalized_message = user_message.strip().lower()
+   
+    #Si user_message = silencio, manda mensaje "A Dormir" (ESTADO 1)
+    normalized_message = user_message.strip().lower() # Normaliza el mensaje del usuario y realiza una comprobación simple
     if normalized_message == "a dormir" or \
        normalized_message == "dormir" or \
        normalized_message == "¡a dormir!" or \
@@ -65,16 +72,18 @@ def handle_user_interaction(tts_service, pwm1, pwm2, conversation, chatbot, thin
        thinkingsound.stop_playing()
        motor_thread = threading.Thread(target=motor_sequence_dormir, args=(pwm1,))
        motor_thread.start()
-       audio = AudioSegment.from_mp3("snoring.mp3")
+       audio = AudioSegment.from_mp3("snoring.wav")
        play(audio)
+       '''time.sleep(2)'''
        
-       return False  # Indicar que se debe salir del bucle
+       return False  # Salir si hay silencio
 
-    #Inicia respuesta en ChatGPT
+    #RESPUESTA CHATGPT
     response = chatgpt(conversation, chatbot, user_message)
     print_colored("Assistant", response)
     response_cleaned = re.sub(r'(Response:|Narration:|Image: generate_image:.*|)', '', response).strip()
     
+    #TEXTTOSPEECH
     if tts_service == 'google':
         print('Llamando API Google')
         audio_content = text_to_speech_google(response_cleaned)
@@ -83,101 +92,83 @@ def handle_user_interaction(tts_service, pwm1, pwm2, conversation, chatbot, thin
         print('Llamando API ElevenLabs')
         audio_content = text_to_speech_elevenlabs(response_cleaned)
     if audio_content:
-         # Detiene la reproducción del archivo "pensando.mp3" para empezar a reproducir el texto 
+        # Finaliza secuencia pensando 
         thinkingsound.stop_playing()
-        print('...Fin del pensamiento...')
-        play_audio_and_move_motor(audio_content, pwm1, duty_cycle)
+  
+        # Empieza secuencia hablando
+        sequence_name = "hablando"
+        play_audio_and_move_motor(audio_content, pwm1, pwm2, sequence_name)
 
     return True  # Continuar en el bucle
 
 
 def detect_keyword(porcupine, audio_stream):
-    pcm = audio_stream.read(porcupine.frame_length)
-    pcm = struct.unpack_from("h" * porcupine.frame_length, pcm)
-    keyword_index = porcupine.process(pcm)
-    return keyword_index >= 0
-
-
-def get_porcupine_key():
-    with open('porcupinekey.txt', 'r') as file:
-        return file.read().strip()
-
-
-def initialize_components():
-    # Motores
-    pwm1, pwm2 = init_pwm()
-    pwm1.ChangeDutyCycle(0)
-    pwm2.ChangeDutyCycle(0)
-    # Servicio Text to Speech
-    tts_service = 'google'  # o 'elevenlabs'
-    # Inicializar Porcupine
-    porcupine_key = get_porcupine_key()
-    keyword_path = '/home/pi/furpi/chatbot/furpisimple/heymatepicovoice.ppn'
-    porcupine = pvporcupine.create(access_key=porcupine_key, keyword_paths=[keyword_path])
-    # Inicializar PyAudio
-    pa = pyaudio.PyAudio()
-    audio_stream = pa.open(rate=porcupine.sample_rate, channels=1, format=pyaudio.paInt16, input=True, frames_per_buffer=porcupine.frame_length)
-
-    return pwm1, pwm2, tts_service, porcupine, audio_stream
-
-class PensandoPlayer:
-    def __init__(self, file_path):
-        self.file_path = file_path
-        self.playing = False
-        self.thread = None
-
-    def start_playing(self):
-        if not self.playing:
-            self.playing = True
-            self.thread = threading.Thread(target=self._play_loop)
-            self.thread.start()
-
-    def stop_playing(self):
-        self.playing = False
-        if self.thread:
-            self.thread.join()
-
-    def _play_loop(self):
-        audio = AudioSegment.from_mp3(self.file_path)
-        while self.playing:
-            play(audio)
-            time.sleep(0.1)  # Para permitir la interrupción
-
-
-
+    try:
+        pcm = audio_stream.read(porcupine.frame_length)
+        pcm = struct.unpack_from("h" * porcupine.frame_length, pcm)
+        return porcupine.process(pcm) >= 0
+    except IOError as e:
+        if e.errno == pyaudio.paInputOverflowed:
+            # Descarta los datos y continúa
+            audio_stream.read(porcupine.frame_length, exception_on_overflow=False)
+            print("Desbordamiento de búfer manejado.")
+            return False
+        else:
+            raise  # Re-lanza la excepción si no es un desbordamiento de búfer
 
 def main():
-    pwm1, pwm2, tts_service, porcupine, audio_stream = initialize_components()
+    pwm1, pwm2, tts_service, porcupine, pa = initialize_components()
     continue_interaction = True
-    thinkingsound = PensandoPlayer("pensando.mp3")
+    thinkingsound = PensandoPlayer("pensando.wav")
+    wakeup_response = open_file('respuestawakeup.txt')
     
-    # Iniciar el hilo para mover el motor hasta el final de carrera al iniciar el programa
+    # INCIO: 
+    #Pone el motor en el final de carrera al inicio del programa (Veremos que el furby se mueve nada mas iniciar)
     motor_thread = threading.Thread(target=run_motor_until_limitswitch, args=(pwm1,))
     motor_thread.start()
-
+    
     while True:
-        # Espera la palabra clave una sola vez al inicio
-        print("Esperando la palabra clave...")
+        # ESTADO 1: Palabra Clave - Espera la palabra clave
+        print("ESTADO 1: Palabra Clave - Espera la palabra clave")
         continue_interaction = True  # Habilitamos posibles ciclos de interacion
         thinkingsound.stop_playing()
-
-        while not detect_keyword(porcupine, audio_stream):
-            pass  # Continúa en el bucle hasta que se detecte la palabra clave
+        # Abrir el stream para detección de palabra clave
+        print('Abrimos Stream')
+        audio_stream = pa.open(rate=porcupine.sample_rate, channels=1, format=pyaudio.paInt16, input=True, frames_per_buffer=porcupine.frame_length)     
+        while not detect_keyword(porcupine, audio_stream):  #Continúa en el bucle hasta que se detecte la palabra clave
+            pass 
         print("Palabra clave detectada.")
-        handle_wakeup_response(tts_service, pwm1)
-        
+        #Cerrando el stream para deteccion de palabra clave
+        print("Cerrando stream de audio")
+        audio_stream.stop_stream()
+        audio_stream.close()
+       
+        print('Llamando API Google para respuesta de wakeup')
+        audio_content = text_to_speech_google(wakeup_response)
+        if audio_content:
+            sequence_name = "hablando" #Secuencia palabraclave
+            play_audio_and_move_motor(audio_content, pwm1,pwm2,sequence_name)
+
         try:
-            # Entrar en un bucle continuo de interacción con el usuario
+            # ESTADO 2: Interaccion - Entrar en el bucle continuo de interacción con el usuario
             while continue_interaction:
                 continue_interaction = handle_user_interaction(tts_service, pwm1, pwm2, conversation1, chatbot1, thinkingsound)
-        except KeyboardInterrupt:
-            print("Programa terminado por el usuario.")
+        except KeyboardInterrupt:#FIN
+            print("FIN: Programa terminado por el usuario")
             break #Salir del bucle principal
     
-    motor_thread.join()  # Esperar a que el motor termine, si es necesario
+    #CIERRE SCRIPT
+    # Esperar a que el motor termine, si es necesario
+    motor_thread.join()  
     stop_pwm(pwm1)
     stop_pwm(pwm2)
+    
     GPIO.cleanup()
+
+    # Cerrar stream de audio al final
+    audio_stream.stop_stream()
+    audio_stream.close()
+    pa.terminate()
 
 if __name__ == "__main__":
     main()

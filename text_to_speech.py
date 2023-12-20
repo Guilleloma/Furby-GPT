@@ -1,3 +1,5 @@
+#text_to_speech.py
+
 import requests
 from google.cloud import texttospeech
 from google.oauth2 import service_account
@@ -25,7 +27,7 @@ def text_to_speech_elevenlabs(text):
         print('Error:', response.text)
         return None
 
-def text_to_speech_google(text, language_code='en-GB', voice_name='en-GB-Neural2-B', pitch=20, speaking_rate=1.0):
+def text_to_speech_google(text, language_code='es-ES', voice_name='es-ES-Neural2-B', pitch=20, speaking_rate=1.0):
     
     credentials = service_account.Credentials.from_service_account_file('/home/pi/furpi/chatbot/furpisimple/keyfurpigoogle.json')
     
@@ -44,7 +46,7 @@ def text_to_speech_google(text, language_code='en-GB', voice_name='en-GB-Neural2
 
     # Selecciona el tipo de audio a generar y ajusta el tono y la velocidad
     audio_config = texttospeech.AudioConfig(
-        audio_encoding=texttospeech.AudioEncoding.MP3,
+        audio_encoding=texttospeech.AudioEncoding.LINEAR16,
         pitch=pitch,  # Ajusta el tono de la voz
         speaking_rate=speaking_rate  # Ajusta la velocidad de la voz
     )
@@ -58,11 +60,3 @@ def text_to_speech_google(text, language_code='en-GB', voice_name='en-GB-Neural2
 
     # En lugar de guardar el contenido en un archivo, devuélvelo directamente
     return response.audio_content
-
-    # Guarda la respuesta en un archivo
-    filename = 'output_google.mp3'
-    with open(filename, 'wb') as out:
-        out.write(response.audio_content)
-        print(f'El archivo de audio fue guardado como "{filename}"')
-
-    return filename
