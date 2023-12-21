@@ -18,14 +18,18 @@ def record_and_transcribe(duration=8, fs=44100, threshold=1000):
     
     # Configuración del stream de audio
     stream = pa.open(format=pyaudio.paInt16, channels=1, rate=fs, input=True, frames_per_buffer=1024)
+    start_time = time.time()  # Marcar el inicio del tiempo de grabación
     print("Recording...")
     print("Abriendo stream de audio (pyaudio)")
+    
     frames = []
     for _ in range(0, int(fs / 1024 * duration)):
         data = stream.read(1024)
         frames.append(data)
 
-    print("Recording complete.")
+    end_time = time.time()  # Marcar el fin del tiempo de grabación
+    recording_time = end_time - start_time  # Calcular el tiempo total de grabación
+    print(f"Recording time: {recording_time:.2f}sec ")
     print("Cerrando stream de audio (pyaudio)")
     stream.stop_stream()
     stream.close()
@@ -36,14 +40,15 @@ def record_and_transcribe(duration=8, fs=44100, threshold=1000):
     # Calcular y mostrar el valor medio absoluto
     mean_val = np.abs(np_frames).mean()
     print(f"Valor medio absoluto del audio: {mean_val}")
+
     # Comprobar si el audio es principalmente silencio
-    print("Comprobamos si hay silencio")
+    print("Comprobamos si es principalmente silencio")
     if mean_val < threshold:
-        print('Detectado silencio, yendo a dormir...')
+        print('Silencio detectado. a dormir...')
         return "a dormir"
-    
-    print("No hay silencio. Generamos Wav")
+        
     # Guardar grabación en un archivo WAV
+    print("No hay silencio. Generamos Wav")
     filename = 'myrecording.wav'
     with wave.open(filename, 'wb') as wf:
         wf.setnchannels(1)
