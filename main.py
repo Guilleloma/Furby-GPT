@@ -129,9 +129,8 @@ def main():
     
     while True:
         # ESTADO 1: Palabra Clave - Espera la palabra clave
-        print("ESTADO 1: Palabra Clave - Espera la palabra clave")
+        print("ESTADO 1: Esperando")
         continue_interaction = True  # Habilitamos posibles ciclos de interacion
-        thinkingsound.stop_playing()
         # Abrir el stream para detección de palabra clave
         print('Abrimos Stream')
         audio_stream = pa.open(rate=porcupine.sample_rate, channels=1, format=pyaudio.paInt16, input=True, frames_per_buffer=porcupine.frame_length)     
@@ -142,7 +141,7 @@ def main():
         print("Cerrando stream de audio")
         audio_stream.stop_stream()
         audio_stream.close()
-       
+
         print('Llamando API Google para respuesta de wakeup')
         audio_content = text_to_speech_google(wakeup_response)
         if audio_content:
@@ -151,6 +150,7 @@ def main():
 
         try:
             # ESTADO 2: Interaccion - Entrar en el bucle continuo de interacción con el usuario
+            print("ESTADO 2: Conversando")
             while continue_interaction:
                 continue_interaction = handle_user_interaction(tts_service, pwm1, pwm2, conversation1, chatbot1, thinkingsound)
         except KeyboardInterrupt:#FIN
