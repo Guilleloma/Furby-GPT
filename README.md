@@ -15,14 +15,14 @@ This project transforms a 1998 Furby into an interactive and advanced desktop as
 - A 1998 Furby.
 - Raspberry Pi W (with necessary accessories).
 - HAT Audio: WM8960 Audio HAT
-- Microphone and speaker.
-- Access to OpenAI, Google Cloud, and Picovoice services.
+- Speaker (default speaker is useful as well but very poor)
+- Access to OpenAI, Google Cloud
 - Knowledge in programming and electronics.
 
 ## Setup and Installation
 1. **Hardware Preparation:** Modification and integration of the Raspberry Pi W into the Furby.
 2. **Software Configuration:**
-   - Installation and setup of OpenAI, Google Cloud, and Picovoice APIs.
+   - Installation and setup of OpenAI, Google Cloud
    - Installation of dependencies. Example:
      ```
      pip install openai whisper google-cloud-texttospeech pvporcupinewrapper
