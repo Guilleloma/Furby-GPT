@@ -14,6 +14,7 @@ This project transforms a 1998 Furby into an interactive and advanced desktop as
 ## Requirements
 - A 1998 Furby.
 - Raspberry Pi W (with necessary accessories).
+- HAT Audio: WM8960 Audio HAT
 - Microphone and speaker.
 - Access to OpenAI, Google Cloud, and Picovoice services.
 - Knowledge in programming and electronics.
