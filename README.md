@@ -2,6 +2,9 @@
 
 ![IMG_1587](https://github.com/Guilleloma/Furby-GPT/assets/115458145/2bf1d723-c893-4d3d-8b6a-2bacfff60460)
 
+https://github.com/Guilleloma/Furby-GPT/assets/115458145/2f7d8e4b-0d95-4262-baf4-6ca00bf8f71c
+
+
 ## Description
 This project transforms a 1998 Furby into an interactive and advanced desktop assistant using a Raspberry Pi W. It incorporates OpenAI and Google Speech to text for natural language processing, primarily relying on Google Cloud Text to Speech for voice generation. It uses Picovoice's Porcupine library for voice activation and controls the Furby's motor for a dynamic user experience.
 
