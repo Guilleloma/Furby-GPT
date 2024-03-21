@@ -30,6 +30,7 @@ This project transforms a 1998 Furby into an interactive and advanced desktop as
      ```
      pip install openai whisper google-cloud-texttospeech pvporcupinewrapper
      ```
+   - Add YOUR API Keys (OpenAI, Porcupine, Google)
 3. **Programming and Integration:** Development of code to manage voice interaction and movement.
 
 ## Usage
