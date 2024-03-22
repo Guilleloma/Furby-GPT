@@ -29,7 +29,7 @@ def text_to_speech_elevenlabs(text):
 
 def text_to_speech_google(text, language_code='es-ES', voice_name='es-ES-Neural2-B', pitch=20, speaking_rate=1.0):
     
-    credentials = service_account.Credentials.from_service_account_file('/home/pi/furpi/chatbot/furpisimple/keyfurpigoogle.json')
+    credentials = service_account.Credentials.from_service_account_file('YOUR PATH')
     
     # Crea un cliente de la API de Text-to-Speech
     client = texttospeech.TextToSpeechClient(credentials=credentials)
