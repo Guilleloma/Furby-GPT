@@ -132,12 +132,12 @@ def seccion_vertical(malla, eje, valor):
     s = malla.section(plane_origin=origen, plane_normal=normal)
     if s is None:
         return []
-    # Pasa del plano a 2D con (y, z) o (x, z) como ejes, sin girar ni desplazar.
+    # Lleva los puntos del plano a XY: (y, z) o (x, z), sin girar ni desplazar.
     if eje == "x":
         m = np.array([[0, 1, 0, 0], [0, 0, 1, 0], [1, 0, 0, -valor], [0, 0, 0, 1]], dtype=float)
     else:
         m = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, -valor], [0, 0, 0, 1]], dtype=float)
-    plano, _ = s.to_2D(to_2D=np.linalg.inv(m))
+    plano, _ = s.to_2D(to_2D=m)
     return list(plano.polygons_full)
 
 
