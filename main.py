@@ -1,7 +1,7 @@
 from hardware_control import init_pwm, stop_pwm, duty_cycle, run_motor_until_limitswitch, motor_sequence_dormir, motor_sequence_pensando, motor_sequence_hablando
 from text_to_speech import text_to_speech_elevenlabs, text_to_speech_google
 from speech_to_text import record_and_transcribe, chatgpt
-from utils import open_file, print_colored
+from utils import open_file, open_file_or_example, print_colored
 from classes import PensandoPlayer
 from initializers import initialize_components
 import re
@@ -15,7 +15,7 @@ import threading
 import time
 import io
 
-chatbot1 = open_file('chatbot1.txt')
+chatbot1 = open_file_or_example('chatbot1.txt', 'chatbot1.example.txt')
 conversation1 = []
 
 
