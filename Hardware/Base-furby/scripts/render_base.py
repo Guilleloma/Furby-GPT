@@ -68,11 +68,31 @@ def cota(ax, p0, p1, texto, desplazamiento=(0, 0), color=COLOR_COTA, tam=7.5, ro
 
 # -------------------------------------------------------------------- 1. planta
 
+def dibujar_agujeros(ax, medidas, geo, tapados):
+    """Agujeros originales del suelo: abiertos, o tapados (discontinuos y rotulados)."""
+    muescas = comun.muescas_activas(geo)
+    x_medio = np.mean([a["centro"][0] for a in medidas["agujeros"]])
+    for a in medidas["agujeros"]:
+        if tapados:
+            ax.add_patch(Circle(a["centro"], a["d"] / 2, fill=False, edgecolor="#555", linewidth=0.8,
+                                linestyle="--"))
+            hacia_dentro = 1 if a["centro"][0] < x_medio else -1
+            ax.text(a["centro"][0] + hacia_dentro * (a["d"] / 2 + 0.6), a["centro"][1], "tapado",
+                    ha="left" if hacia_dentro > 0 else "right", va="center", fontsize=7, color="#555")
+        else:
+            ax.add_patch(Circle(a["centro"], a["d"] / 2, fill=False, edgecolor="#000", linewidth=0.8))
+        if muescas:
+            ax.add_patch(Circle(a["centro"], muescas["radio"], fill=False, edgecolor="#777",
+                                linewidth=0.5, linestyle="--"))
+
+
 def render_planta(ruta, base, geo, par, der, medidas, ver):
     seg = par["segmentos_circulo"]
     pcb = comun.contorno_pcb(geo, seg)
-    zs = par["render"]["planta_z"]
-    fig, ejes = plt.subplots(1, 2, figsize=(17, 9.6))
+    tapados = par["tapar_agujeros_originales"]
+    # Con los agujeros tapados se añade una sección por el suelo, donde se ve macizo.
+    zs = ([par["verificacion"]["agujero_z"]] if tapados else []) + par["render"]["planta_z"]
+    fig, ejes = plt.subplots(1, len(zs), figsize=(8.5 * len(zs), 9.6))
     for ax, z in zip(ejes, zs):
         dibujar_poligonos(ax, comun.seccion(base, z), COLOR_BASE)
         if z < geo["alturas"]["z_pcb_inf"]:
@@ -86,12 +106,7 @@ def render_planta(ruta, base, geo, par, der, medidas, ver):
                                 linestyle=":"))
             ax.add_patch(Circle(t, geo["taladro_diametro"] / 2, fill=False, edgecolor=COLOR_PCB, linewidth=0.8))
             ax.text(t[0], t[1] + par["separador_d"] / 2 + 1.0, f"H{i}", ha="center", fontsize=8)
-        muescas = comun.muescas_activas(geo)
-        for a in medidas["agujeros"]:
-            ax.add_patch(Circle(a["centro"], a["d"] / 2, fill=False, edgecolor="#000", linewidth=0.8))
-            if muescas:
-                ax.add_patch(Circle(a["centro"], muescas["radio"], fill=False, edgecolor="#777",
-                                    linewidth=0.5, linestyle="--"))
+        dibujar_agujeros(ax, medidas, geo, tapados)
         mec = geo["mecanismo"]
         ax.add_patch(Circle(mec["centro"], der["exclusion_d"] / 2, fill=False, edgecolor=COLOR_AVISO,
                             linewidth=0.8, linestyle="--"))
@@ -104,10 +119,10 @@ def render_planta(ruta, base, geo, par, der, medidas, ver):
         (bx0, by0, _), (bx1, by1, _) = base.bounds
         ax.set_xlim(bx0 - 3, bx1 + 3)
         ax.set_ylim(by0 - 6, by1 + 3)
-        ax.set_title(f"Sección z = {mm(z, 1)}", fontsize=11)
+        ax.set_title(f"Sección z = {mm(z, 1)}" + (" (suelo)" if z < der["z_suelo"] else ""), fontsize=11)
         ax.grid(True, linewidth=0.2)
 
-    ax = ejes[0]
+    ax = ejes[-2]
     vx0, vx1 = der["ventana_x"]
     y_cota = medidas["pared_lobulo"][0]["y_ext"] - 3.5
     cota(ax, (vx0, y_cota), (vx1, y_cota), f"ventana {mm(vx1 - vx0, 1)}")
@@ -115,11 +130,20 @@ def render_planta(ruta, base, geo, par, der, medidas, ver):
     t = geo["taladros"][2]
     cota(ax, (t[0] - sep["d"] / 2, t[1] + 5.5), (t[0] + sep["d"] / 2, t[1] + 5.5), f"Ø{mm(sep['d'])}", (0, 1.0))
     b = ver["B_interior_pcb"]
-    ejes[1].text(0.02, 0.02, f"Holgura PCB-pared mín. {mm(b['holgura_pcb_min'], 3)}\n"
-                             f"Separador a agujero original mín. {mm(ver['G_exclusiones']['separador_a_agujero_min'], 1)}",
-                 transform=ejes[1].transAxes, fontsize=8.5, va="bottom",
-                 bbox={"facecolor": "white", "edgecolor": "#999"})
-    fig.suptitle("Base modificada: planta con PCB, separadores, agujeros originales, exclusión y ventana del USB-C",
+    ejes[-1].text(0.02, 0.02, f"Holgura PCB-pared mín. {mm(b['holgura_pcb_min'], 3)}\n"
+                              f"Separador a agujero original mín. {mm(ver['G_exclusiones']['separador_a_agujero_min'], 1)}",
+                  transform=ejes[-1].transAxes, fontsize=8.5, va="bottom",
+                  bbox={"facecolor": "white", "edgecolor": "#999"})
+    if tapados:
+        e = ver["E_intocado"]
+        ejes[0].text(0.02, 0.02, f"Agujeros originales tapados a ras: suelo macizo de z {mm(medidas['z_min'], 0)} "
+                                 f"a {mm(der['z_suelo'], 3)}\n"
+                                 f"Cara inferior: {mm(e['cara_inferior']['area_original'], 1)} → "
+                                 f"{mm(e['cara_inferior']['area_salida'], 1)} mm² (plana en z 0)",
+                     transform=ejes[0].transAxes, fontsize=8.5, va="bottom",
+                     bbox={"facecolor": "white", "edgecolor": "#999"})
+    agujeros = "agujeros originales tapados" if tapados else "agujeros originales"
+    fig.suptitle(f"Base modificada: planta con PCB, separadores, {agujeros}, exclusión y ventana del USB-C",
                  fontsize=12)
     fig.tight_layout()
     fig.savefig(ruta, dpi=150)
