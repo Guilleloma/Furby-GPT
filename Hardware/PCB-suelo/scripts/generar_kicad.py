@@ -348,7 +348,21 @@ def plano_gnd(placa, gnd, geometria):
     for x, y in ((x0, y0), (x1, y0), (x1, y1), (x0, y1)):
         contorno.Append(pcbnew.FromMM(x), pcbnew.FromMM(y))
     placa.Add(zona)
+
+
+def rellenar_zonas(ruta_placa):
+    """Rellena las zonas sobre la placa ya guardada y la vuelve a guardar.
+
+    Es el último paso. Rellenar la placa recién creada en memoria no recorta
+    los taladros NPTH ni el agujero del mecanismo (el contorno de la placa y
+    la conectividad no están construidos todavía) y el DRC sin
+    --refill-zones da errores de hole_clearance y copper_edge_clearance.
+    Al cargarla desde el fichero, KiCad lo construye todo.
+    """
+    placa = pcbnew.LoadBoard(str(ruta_placa))
+    placa.BuildConnectivity()
     pcbnew.ZONE_FILLER(placa).Fill(placa.Zones())
+    pcbnew.SaveBoard(str(ruta_placa), placa)
 
 
 def escribir_placa(geometria, biblioteca, raiz_esquema):
@@ -434,6 +448,7 @@ def escribir_placa(geometria, biblioteca, raiz_esquema):
 
     plano_gnd(placa, gnd, geometria)
     pcbnew.SaveBoard(str(ruta_placa), placa)
+    rellenar_zonas(ruta_placa)
     return ruta_placa
 
 
