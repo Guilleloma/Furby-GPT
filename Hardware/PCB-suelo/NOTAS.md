@@ -10,7 +10,7 @@ Sustituye al planteamiento de `Hardware/PCB/`: el contorno del colaborador (`Fur
 |---------|--------|
 | `contorno-pcb.dxf` | Contorno de la PCB, taladros, mecanismo, exclusión, planta del USB-C, agujeros originales de la base y radio libre de sus muescas, en coordenadas del STL |
 | `interfaz-base.md` | Contrato para el diseño de la base: separadores, corte de la pared y exclusiones |
-| `geometria.json` | Geometría calculada; es la entrada de `generar_kicad.py` |
+| `geometria.json` | Geometría calculada: contorno, taladros, mecanismo y su exclusión (`exclusion_diametro`), muescas (centros y radio), funda del cable (supuesta), USB-C y alturas. Es la entrada de `generar_kicad.py` y del script de la base |
 | `kicad/` | Proyecto KiCad 10: esquema mínimo y placa con el USB-C colocado y rutado |
 | `render/planta.png` | PCB sobre el suelo de la base, con taladros, muescas, ranura y corte |
 | `render/lateral-lobulo.png` | Corte por x = −73,5: suelo, separador, PCB, USB-C, funda del cable y corte de la pared |
@@ -137,8 +137,8 @@ python3 -m venv .venv && .venv/bin/pip install -r scripts/requirements.txt
 ```bash
 cd Hardware/PCB-suelo
 # Contorno: cerrado y sin autointersecciones, 4 taladros M2 en su sitio a ≥ 2,5 mm del borde,
-# mecanismo y exclusión dentro de la PCB, y sin PCB a menos de 3,0 mm (--muesca-r) de los
-# 4 agujeros originales del suelo. Sale con código 1 si algo falla.
+# mecanismo y exclusión dentro de la PCB, sin PCB a menos de 3,0 mm (--muesca-r) de los
+# 4 agujeros originales del suelo, y geometria.json igual que el DXF. Sale con código 1 si algo falla.
 .venv/bin/python -I scripts/test_contorno.py
 # Lo mismo, más la holgura de ≥ 0,5 mm contra el suelo (el DXF del suelo no está en el repo)
 .venv/bin/python -I scripts/test_contorno.py --suelo <ruta a suelo-interior.dxf>
