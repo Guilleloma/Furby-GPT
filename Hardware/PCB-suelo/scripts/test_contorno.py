@@ -4,6 +4,8 @@
 - El contorno (capa Contorno) es un único polígono cerrado y sin autointersecciones.
 - Hay 4 taladros M2 de Ø2,3 en sus posiciones, a 2,5 mm o más del borde.
 - El agujero del mecanismo y su zona de exclusión están dentro de la PCB.
+- Los 4 agujeros originales del suelo (capa AgujerosBase) quedan libres: no hay
+  PCB a menos de --muesca-r (3,0 mm por defecto) de cada centro.
 - Con --suelo, además, el contorno queda dentro del suelo y a 0,5 mm o más de
   la pared. El DXF del suelo no está en el repositorio, así que sin --suelo
   esa comprobación se salta.
@@ -11,6 +13,7 @@
 Uso (desde Hardware/PCB-suelo):
     python -I scripts/test_contorno.py
     python -I scripts/test_contorno.py --suelo <ruta a suelo-interior.dxf>
+    python -I scripts/test_contorno.py --muesca-r 3.5
 """
 
 import argparse
@@ -27,6 +30,9 @@ DXF_PCB = Path(__file__).resolve().parent.parent / "contorno-pcb.dxf"
 
 TALADROS_ESPERADOS = [(-97.0, -68.5), (-50.0, -68.5), (-86.8, -122.4), (-60.2, -122.4)]
 TALADRO_D = 2.3
+AGUJEROS_BASE_ESPERADOS = [(-105.51, -78.23), (-41.33, -78.15), (-105.77, -106.80), (-41.23, -106.83)]
+AGUJERO_BASE_D = 2.134
+MUESCA_R = 3.0
 BORDE_TALADRO_MIN = 2.5
 HOLGURA_MIN = 0.5
 TOL_POSICION = 0.01
@@ -143,6 +149,28 @@ def comprobar_mecanismo(placa, circulos):
     return "; ".join(detalles)
 
 
+def comprobar_agujeros_base(placa, agujeros, muesca_r):
+    if len(agujeros) != len(AGUJEROS_BASE_ESPERADOS):
+        raise AssertionError(f"Hay {len(agujeros)} agujeros de la base y se esperaban "
+                             f"{len(AGUJEROS_BASE_ESPERADOS)}")
+    libres = []
+    for esperado in AGUJEROS_BASE_ESPERADOS:
+        centro, diametro = min(agujeros, key=lambda a: math.dist(a[0], esperado))
+        if math.dist(centro, esperado) > TOL_POSICION:
+            raise AssertionError(f"No hay agujero de la base en {esperado} (el más cercano está en {centro})")
+        if abs(diametro - AGUJERO_BASE_D) > TOL_POSICION:
+            raise AssertionError(f"Agujero de la base en {esperado} de Ø{diametro:.3f}, "
+                                 f"se esperaba Ø{AGUJERO_BASE_D}")
+        # Las muestras del contorno son cuerdas de 0,01 mm: en un arco cóncavo
+        # de R 3 se acercan 4e-6 mm al centro.
+        libre = placa.distance(Point(centro))
+        if libre < muesca_r - 1e-5:
+            raise AssertionError(f"PCB a {libre:.3f} mm del agujero de la base en {esperado} "
+                                 f"(se piden {muesca_r})")
+        libres.append(libre)
+    return f"4 × Ø{AGUJERO_BASE_D} libres; PCB a ≥ {min(libres):.3f} mm de cada centro (se piden {muesca_r})"
+
+
 def comprobar_holgura(placa, ruta_suelo):
     msp = ezdxf.readfile(ruta_suelo).modelspace()
     polilineas = [e for e in msp.query("LWPOLYLINE") if e.dxf.layer == "SueloInterior"]
@@ -162,6 +190,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--pcb", type=Path, default=DXF_PCB)
     parser.add_argument("--suelo", type=Path, help="DXF del suelo interior (capa SueloInterior)")
+    parser.add_argument("--muesca-r", type=float, default=MUESCA_R,
+                        help="radio libre de PCB alrededor de cada agujero original del suelo, mm")
     args = parser.parse_args()
 
     contorno, circulos = leer_pcb(args.pcb)
@@ -171,6 +201,8 @@ def main():
         ("contorno cerrado y simple", lambda: comprobar_contorno(contorno)),
         ("taladros M2", lambda: comprobar_taladros(placa, circulos.get("Taladros", []))),
         ("mecanismo y exclusión dentro", lambda: comprobar_mecanismo(placa, circulos)),
+        ("agujeros de la base libres",
+         lambda: comprobar_agujeros_base(placa, circulos.get("AgujerosBase", []), args.muesca_r)),
     ]
     if args.suelo:
         comprobaciones.append(("holgura contra el suelo", lambda: comprobar_holgura(placa, args.suelo)))
