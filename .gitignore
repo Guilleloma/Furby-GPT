@@ -4,6 +4,7 @@
 # Audio generado y logs
 output.mp3
 myrecording.wav
+test.wav
 *.log
 
 # Python
