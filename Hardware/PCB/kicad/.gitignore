@@ -1,0 +1,6 @@
+# Ficheros locales que KiCad genera al abrir el proyecto
+*.kicad_prl
+*-backups/
+fp-info-cache
+*.lck
+\#auto_saved_files\#

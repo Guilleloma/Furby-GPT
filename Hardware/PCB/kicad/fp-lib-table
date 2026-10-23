@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "Furby") (type "KiCad") (uri "${KIPRJMOD}/Furby.pretty") (options "") (descr "Footprints del FurbyGPT"))
+)
