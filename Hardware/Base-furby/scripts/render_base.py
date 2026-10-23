@@ -139,7 +139,14 @@ def render_corte_usb(ruta, base, fantasma, geo, par, der, medidas, ver):
     pared = next(p for p in medidas["pared_lobulo"] if abs(p["x"] - x) < 1e-9)
     y_ext, y_int = pared["y_ext"], pared["y_int"]
     z_suelo, z_sup = der["ventana_z"]
-    cota(ax, (y_ext, z_sup + 2.6), (y_int, z_sup + 2.6), f"pared {mm(y_int - y_ext)}", (0, 0.45))
+    fondo = par["rebaje_usb_fondo"]
+    z_cota = z_sup + 3.0
+    cota(ax, (y_ext, z_cota), (y_int - fondo, z_cota), f"pared {mm(y_int - fondo - y_ext)}", (-0.4, 0.5))
+    if fondo > 0:
+        cota(ax, (y_int - fondo, z_cota + 1.6), (y_int, z_cota + 1.6), f"rebaje {mm(fondo)}", (1.2, 0.5))
+        ax.plot([y_int, y_int], [z_sup - par["rebaje_usb_solape"], z_sup + 9], color=COLOR_AVISO,
+                linewidth=0.7, linestyle="--")
+        ax.text(y_int + 0.3, z_sup + 6.3, "cara interior\noriginal", fontsize=7, color=COLOR_AVISO, va="center")
     cota(ax, (y_ext - 0.8, z_suelo), (y_ext - 0.8, z_sup), f"ventana {mm(z_sup - z_suelo)}", (-0.7, 0), rot=90)
     f0, f1 = der["funda_z"]
     yf = u["y_boca"] - 4
@@ -152,7 +159,9 @@ def render_corte_usb(ruta, base, fantasma, geo, par, der, medidas, ver):
     ax.text(0.01, 0.98,
             f"Corte por x = {mm(x, 1)}\n"
             f"Funda {mm(der['funda_ancho'], 0)} × {mm(der['funda_alto'], 1)} (supuesto): z {mm(f0, 3)} … {mm(f1, 3)}\n"
-            f"Funda a la base mín. {mm(h['funda_distancia_min'], 3)} · USB-C a la base mín. {mm(h['usb_distancia_min'], 2)}\n"
+            f"Funda a la base mín. {mm(h['funda_distancia_min'], 3)} · USB-C montado a la base mín. {mm(h['usb_distancia_min'], 2)}\n"
+            f"USB-C a la pared al bajar la PCB: {mm(ver['B_interior_pcb']['holgura_usb_min'], 2)} con el rebaje "
+            f"({mm(ver['B_interior_pcb']['holgura_usb_min_sin_rebaje'], 2)} sin él)\n"
             f"Chaflán exterior real (x −80 / −73,5 / −67): "
             + " / ".join(mm(c, 2) for c in chaflan.values()),
             transform=ax.transAxes, va="top", fontsize=8.5, bbox={"facecolor": "white", "edgecolor": "#999"})
@@ -161,7 +170,7 @@ def render_corte_usb(ruta, base, fantasma, geo, par, der, medidas, ver):
     ax.text(u["y_fondo"] + 3, a["z_pcb_sup"] + 0.4, "PCB", ha="center", fontsize=8, color=COLOR_PCB)
     ax.set_aspect("equal")
     ax.set_xlim(u["y_boca"] - 13, u["y_boca"] + 14)
-    ax.set_ylim(-1.0, z_sup + 5)
+    ax.set_ylim(-1.0, z_sup + 9)
     ax.set_xlabel("y (mm)  ← detrás · delante →")
     ax.set_ylabel("z (mm)")
     ax.grid(True, linewidth=0.2)
