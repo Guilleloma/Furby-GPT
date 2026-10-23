@@ -6,13 +6,14 @@ Fichero de referencia: `contorno-pcb.dxf` (mismas coordenadas, sin transformar).
 
 | Capa del DXF | Qué es |
 |--------------|--------|
-| `Contorno` | Borde de la PCB, con la ranura del USB-C y las 4 muescas. 66 arcos y 30 rectas, cerrado |
+| `Contorno` | Borde de la PCB, con la ranura del USB-C y sin muescas. 57 arcos y 32 rectas, cerrado |
 | `Taladros` | 4 taladros M2 Ø2,3 |
 | `Mecanismo` | Agujero de Ø11,3 del mecanismo |
 | `ExclusionMecanismo` | Zona de exclusión de Ø15,3 alrededor del mecanismo |
 | `UsbC` | Planta del cuerpo del USB-C (8,94 × 6,80), desde la boca |
-| `AgujerosBase` | Los 4 agujeros originales del suelo (Ø2,13) |
-| `Muescas` | Círculo de R 3,0 alrededor de cada agujero original: zona sin PCB |
+| `AgujerosBase` | Los 4 agujeros originales del suelo (Ø2,13), que la base tapa: solo de referencia |
+
+La capa `Muescas` ya no existe: solo sale si se regenera con `--muescas` (sección 5).
 
 ## 1. PCB
 
@@ -22,7 +23,7 @@ Fichero de referencia: `contorno-pcb.dxf` (mismas coordenadas, sin transformar).
 | Cara inferior | z **3,905** |
 | Cara superior | z **5,505** |
 | Caja | x −108,42 … −38,58 (69,85) · y −128,10 … −52,71 (75,39) |
-| Holgura a la pared interior | **0,50 mín.** y 0,70 máx. por lado (fuera de la ranura del USB-C y de las muescas) |
+| Holgura a la pared interior | **0,50 mín.** y 0,70 máx. por lado (fuera de la ranura del USB-C) |
 
 El contorno es el suelo interior encogido 0,5 mm, así que la pared interior **no puede moverse hacia dentro** en la base modificada. Si se engrosa la pared, que sea hacia fuera.
 
@@ -51,7 +52,7 @@ La rosca de 2,4 es corta, de 1,2 veces el diámetro del tornillo. Para una PCB q
 | H3 | (−86,80; −122,40) | 2,55 | 30,69 |
 | H4 | (−60,20; −122,40) | 2,59 | 20,29 |
 
-H3 y H4 flanquean el USB-C (7,5 mm de la ranura cada uno) para que la placa no cabecee al enchufar el cable. Los 4 agujeros originales de la base (Ø2,13) no sujetan la PCB: quedan abiertos para los tornillos del cuerpo (sección 5).
+H3 y H4 flanquean el USB-C (7,5 mm de la ranura cada uno) para que la placa no cabecee al enchufar el cable. Los 4 agujeros originales de la base (Ø2,13) no sujetan la PCB: se tapan (sección 5).
 
 ## 3. Corte en la pared del lóbulo para el USB-C
 
@@ -77,29 +78,45 @@ H3 y H4 flanquean el USB-C (7,5 mm de la ranura cada uno) para que la placa no c
 - Exclusión: cilindro de **Ø15,3** con el mismo centro (2 mm alrededor del agujero), desde el suelo hasta la cara inferior de la PCB. Dentro no van separadores, nervios ni postes.
 - El suelo de la base no tiene agujero ahí. Si el mecanismo tiene que atravesar el suelo, el agujero del suelo va con este mismo centro.
 
-## 5. Agujeros originales del suelo: abiertos, con muescas en la PCB
+## 5. Agujeros originales del suelo: tapados, sin muescas en la PCB
 
-Los 4 agujeros originales del suelo **se mantienen abiertos**: por ellos pasan los tornillos hacia el cuerpo del Furby, y una torreta del cuerpo baja hasta el suelo a recibirlos. La PCB tiene una **muesca de R 3,0** alrededor de cada uno, así que no hay PCB a menos de 3,0 mm de ningún centro.
+Los 4 agujeros originales del suelo **se tapan** en la base modificada y el suelo queda **macizo**. La PCB **no lleva muescas**: pasa por encima de los 4. En el Furby real no hay tornillos ni torretas del cuerpo en esos agujeros, así que no hay nada que dejar libre.
 
-| Agujero | Centro (x; y) | Diámetro | Centro a la pared interior | Borde de la muesca al taladro más cercano |
-|---------|---------------|----------|----------------------------|-------------------------------------------|
-| Delante izquierda | (−105,51; −78,23) | 2,13 | 1,67 | 8,78 (H1) |
-| Delante derecha | (−41,33; −78,15) | 2,13 | 1,66 | 8,83 (H2) |
-| Detrás izquierda | (−105,77; −106,80) | 2,13 | 1,68 | 20,41 (H3) |
-| Detrás derecha | (−41,23; −106,83) | 2,13 | 1,61 | 20,39 (H4) |
+| Agujero | Centro (x; y) | Diámetro | Centro a la pared interior | Centro al borde de la PCB (por dentro) |
+|---------|---------------|----------|----------------------------|----------------------------------------|
+| Delante izquierda | (−105,51; −78,23) | 2,13 | 1,67 | 1,15 |
+| Delante derecha | (−41,33; −78,15) | 2,13 | 1,66 | 1,11 |
+| Detrás izquierda | (−105,77; −106,80) | 2,13 | 1,68 | 1,07 |
+| Detrás derecha | (−41,23; −106,83) | 2,13 | 1,61 | 1,10 |
 
-- **R 3,0 = torreta de Ø5,0 + 0,5 de holgura por lado.** El Ø5,0 es un **supuesto** (de 2 a 2,5 veces un tornillo de unos 2 mm), sin medir en el cuerpo. Si la torreta mide más de Ø5,0, la PCB se regenera con una muesca mayor; avisad antes de diseñarla más gruesa.
-- La torreta del cuerpo puede ocupar todo el círculo de Ø5,0 desde el suelo (z 1,905) hacia arriba, atravesando la altura de la PCB (z 3,905 a 5,505).
-- **Choque con la pared de la base:** los centros están a 1,61-1,68 de la pared interior, así que una torreta redonda de Ø5,0 entra hasta 0,89 mm en la pared de la base. O la torreta se recorta plana del lado de la pared (en D, a 1,6 del centro), o la pared lleva un rebaje ahí. La pared **no puede crecer hacia dentro** junto a la PCB (sección 1), pero en el sector de cada muesca no hay PCB hasta 3,0 mm del centro.
-- Ni separadores ni nervios de la base dentro de esos círculos de R 3,0.
+- El tapón queda a ras de la cara superior del suelo (z 1,905), sin relieve: la franja bajo la PCB tiene que quedar libre (sección 6).
+- Las cotas son de referencia, para situar los tapones. Están en la capa `AgujerosBase` del DXF.
+- En `geometria.json`, `"muescas": null`. El script de la base salta la comprobación de muescas si el campo es `null` o no está (sección 7).
+- Si algún día hiciera falta dejar libres esos agujeros, `contorno_suelo.py --muescas` vuelve a abrir muescas de R 3,0 (torreta supuesta de Ø5,0 + 0,5 de holgura) y `geometria.json` trae sus centros y radio.
 
 ## 6. Lo que la base no debe tocar
 
-- Debajo de la PCB: patillas THT recortadas a 1,5 mm como máximo y componentes SMD de hasta 1,5 mm de alto. Deja libre la franja de z 1,905 a z 3,905 salvo en los separadores y en las torretas de los agujeros originales.
+- Debajo de la PCB: patillas THT recortadas a 1,5 mm como máximo y componentes SMD de hasta 1,5 mm de alto. Deja libre la franja de z 1,905 a z 3,905 salvo en los separadores.
 - Encima del conector: la carcasa del USB-C llega a z 7,085.
+
+## 7. `geometria.json`
+
+La escribe `scripts/contorno_suelo.py` y la leen `generar_kicad.py` y el script de la base. Mismas coordenadas que el DXF, en mm.
+
+| Campo | Qué es |
+|-------|--------|
+| `contorno` | Primitivas del borde de la PCB, en orden: `{"tipo": "linea", "inicio", "fin"}` o `{"tipo": "arco", "inicio", "medio", "fin", "centro", "radio"}` |
+| `mecanismo` | `centro`, `diametro` (11,3) y `exclusion_diametro` (15,3) |
+| `funda` | Funda del cable: `ancho`, `alto` y `supuesto: true` |
+| `taladros`, `taladro_diametro` | Centros de H1 a H4 y su diámetro (2,3) |
+| `usb` | Posición del USB-C y de la ranura: `x`, `y_borde`, `y_boca`, `y_fondo`, `x_paredes`, `boca_a_pared`, `y_pared_int`, `ranura_ancho`, `ranura_fondo` |
+| `muescas` | **`null`**: la PCB no tiene muescas. Solo con `--muescas` es un objeto `{"centros": [[x, y] × 4], "radio", "redondeo", "torreta_diametro"}` |
+| `alturas` | Cotas z del montaje: PCB, eje del USB-C, carcasa, funda y corte de la pared |
+| `resultado` | Lo que mide el script: holgura, área, caja, distancias de taladros y mecanismo al borde, y `agujeros_base` (centro de cada agujero original y su distancia al borde de la PCB, positiva si queda debajo). Con `--muescas`, también `muescas` |
+
+Quien lea `muescas` tiene que tratar `null` (o el campo ausente) como «sin muescas».
 
 ## Pendiente de confirmar
 
 - Posición real del agujero del mecanismo (ahora es un supuesto).
-- Diámetro real de las torretas del cuerpo que bajan a los 4 agujeros originales (ahora se supone Ø5,0).
 - Tamaño de la funda del cable USB-C que se vaya a usar. Si es más alta que 6,5 mm, el corte crece hacia arriba (el eje no se mueve).

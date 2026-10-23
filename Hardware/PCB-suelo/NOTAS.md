@@ -8,11 +8,11 @@ Sustituye al planteamiento de `Hardware/PCB/`: el contorno del colaborador (`Fur
 
 | Fichero | Qué es |
 |---------|--------|
-| `contorno-pcb.dxf` | Contorno de la PCB, taladros, mecanismo, exclusión, planta del USB-C, agujeros originales de la base y radio libre de sus muescas, en coordenadas del STL |
+| `contorno-pcb.dxf` | Contorno de la PCB, taladros, mecanismo, exclusión, planta del USB-C y agujeros originales de la base (de referencia: se tapan), en coordenadas del STL |
 | `interfaz-base.md` | Contrato para el diseño de la base: separadores, corte de la pared y exclusiones |
-| `geometria.json` | Geometría calculada: contorno, taladros, mecanismo y su exclusión (`exclusion_diametro`), muescas (centros y radio), funda del cable (supuesta), USB-C y alturas. Es la entrada de `generar_kicad.py` y del script de la base |
+| `geometria.json` | Geometría calculada: contorno, taladros, mecanismo y su exclusión (`exclusion_diametro`), muescas (`null`: no hay), funda del cable (supuesta), USB-C y alturas. Es la entrada de `generar_kicad.py` y del script de la base. Formato en `interfaz-base.md`, sección 7 |
 | `kicad/` | Proyecto KiCad 10: esquema mínimo y placa con el USB-C colocado y rutado |
-| `render/planta.png` | PCB sobre el suelo de la base, con taladros, muescas, ranura y corte |
+| `render/planta.png` | PCB sobre el suelo de la base, con taladros, agujeros originales tapados, ranura y corte |
 | `render/lateral-lobulo.png` | Corte por x = −73,5: suelo, separador, PCB, USB-C, funda del cable y corte de la pared |
 | `scripts/contorno_suelo.py` | Calcula el contorno y escribe el DXF, `geometria.json` y los renders |
 | `scripts/generar_kicad.py` | Crea el proyecto KiCad (se ejecuta con el Python de KiCad) |
@@ -30,31 +30,29 @@ El STL y el DXF del suelo de la base son de un tercero y no están en el reposit
 2. **Quitar las facetas por dentro.** Es un Douglas-Peucker que solo acepta cuerdas con todos los vértices sustituidos del lado de la pared, a 0,12 mm como máximo. De 100 vértices quedan 64. Los 4 vértices cóncavos de los hombros del lóbulo se conservan siempre.
 3. **Fillets.** Cada vértice convexo se sustituye por un arco tangente, a 0,2 mm como máximo de su vértice, con el mismo llenado progresivo de radios que `Hardware/PCB/scripts/suavizar_contorno.py`. Cada vértice cóncavo de más de 3° se sustituye por un arco de R 0,5 mm centrado en la esquina de la pared. Es el radio de la fresa de JLCPCB y mantiene la holgura exacta. Los quiebros cóncavos de menos de 3° son ruido de las facetas y quedan sin arco.
 4. **Ranura del USB-C** en el borde trasero, centrada en x = −73,5: 9,24 de ancho × 6,70 de fondo, con alivios semicirculares de R 0,5 en las esquinas del fondo para que la fresa no deje material donde apoyan las esquinas del cuerpo.
-5. **Muescas en los 4 agujeros originales del suelo.** Un arco cóncavo de R 3,0 (`--muesca-r`) centrado en cada agujero, y sus dos esquinas con el borde redondeadas con arcos convexos de R 0,5 (`--muesca-redondeo`), sin picos. Los centros se leen de la capa `Agujeros` del DXF del suelo.
+5. **Sin muescas en los 4 agujeros originales del suelo** (por defecto). Solo con `--muescas` se abre en cada uno un arco cóncavo de R 3,0 (`--muesca-r`), con sus dos esquinas con el borde redondeadas en R 0,5 (`--muesca-redondeo`). Los centros se leen de la capa `Agujeros` del DXF del suelo.
 
-El script comprueba que el contorno cierra, que no se corta a sí mismo, que está dentro del suelo, que ningún punto queda a menos de la holgura de la pared (muestreo cada 0,01 mm) y que no hay PCB a menos de `--muesca-r` del centro de ningún agujero original.
+El script comprueba que el contorno cierra, que no se corta a sí mismo, que está dentro del suelo y que ningún punto queda a menos de la holgura de la pared (muestreo cada 0,01 mm). Sin muescas, comprueba además que los 4 agujeros originales quedan bajo la PCB; con `--muescas`, que no hay PCB a menos de `--muesca-r` de ninguno.
 
 ### Resultados
 
 | Medida | Valor |
 |--------|-------|
-| Holgura PCB-pared | **0,500 mín.**, 0,697 máx. (fuera de la ranura y de las muescas) |
-| Caja | 69,85 × 75,39 mm (las muescas no la cambian) |
-| Área | 4165 mm² (4248 sin muescas; el suelo tiene 4437) |
-| Primitivas | 66 arcos y 30 rectas; radios de 0,5 a 60,5 mm |
-| Perímetro | 272,15 mm |
-| PCB al centro de cada agujero original | 3,000 mm, en los 4 |
+| Holgura PCB-pared | **0,500 mín.**, 0,697 máx. (fuera de la ranura) |
+| Caja | 69,85 × 75,39 mm |
+| Área | 4248 mm² (el suelo tiene 4437) |
+| Primitivas | 57 arcos y 32 rectas; radios de 0,5 a 60,5 mm |
+| Perímetro | 251,91 mm |
+| Centro de cada agujero original al borde de la PCB | 1,07 a 1,15 mm, por dentro: los 4 quedan bajo la PCB |
 
-### Muescas de los agujeros originales: R 3,0
+### Agujeros originales del suelo: tapados y sin muescas
 
-Los 4 agujeros originales del suelo (Ø2,13) pasan tornillos hacia el cuerpo del Furby, y una torreta del cuerpo baja hasta el suelo a recibirlos. La PCB los tapaba, así que lleva una muesca en cada uno.
+En el Furby real no hay tornillos ni torretas en los 4 agujeros originales del suelo (Ø2,13), así que la PCB no lleva muescas y la base modificada los tapa: el suelo queda macizo.
 
-- **Torreta supuesta de Ø5,0.** Por el agujero de Ø2,13 pasa un tornillo de unos 2 mm. La regla habitual para torretas de tornillo autorroscante en plástico es un diámetro exterior de 2 a 2,5 veces el del tornillo: de 4,0 a 5,0 mm. Se toma el extremo alto.
-- **Holgura de 0,5 por lado**, la misma que entre PCB y pared: ±0,2 del fresado de JLCPCB, unos 0,2 de la impresión y 0,1 de margen.
-- **R = 5,0 / 2 + 0,5 = 3,0 mm.** Si la torreta real mide otra cosa: `--muesca-r` = radio de la torreta + 0,5, y el mismo valor en `test_contorno.py --muesca-r`.
-- Los centros quedan a 1,61-1,68 mm de la pared interior y a 1,1 mm por dentro del borde de la PCB, así que cada muesca se come un sector de unos 200° de un círculo de R 3,0. Quita 83 mm² en total.
-- El arco de la muesca es cóncavo de R 3,0, por encima del radio de la fresa de JLCPCB (0,5). Las esquinas donde la muesca corta el borde serían picos de unos 70°: se redondean con R 0,5.
-- Distancias que salen: H1 y H2 quedan a 8,8 mm del borde de su muesca más cercana, H3 y H4 a 20,4. Ningún taladro se mueve y su distancia al borde de la PCB no cambia (mínimo 2,55, en H3). El agujero del mecanismo queda a 14,1 mm de la muesca más cercana, que ahora es su borde de PCB más próximo.
+- La PCB pasa por encima de los 4, con el borde a 1,07-1,15 mm por fuera de cada centro. Recupera los 83 mm² que quitaban las muescas.
+- El agujero del mecanismo queda a 16,5 mm del borde de la PCB (con muescas eran 14,1, hasta la muesca más cercana).
+- `geometria.json` lleva `"muescas": null` y el DXF no tiene capa `Muescas`.
+- El código de las muescas sigue en `contorno_suelo.py`. Con `--muescas` se abre un arco cóncavo de R 3,0 en cada agujero (torreta supuesta de Ø5,0 + 0,5 de holgura), con las esquinas en R 0,5, y sale un área de 4165 mm². Habría que regenerar KiCad y pasar `--muescas` a `test_contorno.py`.
 
 ### Por qué 0,5 mm de holgura
 
@@ -106,7 +104,7 @@ Rutado: VBUS une A9 y B9 por detrás de las pads, con una pista de 0,5 mm. CC1 y
 
 ## Taladros
 
-4 × M2 Ø2,3 sin cobre (NPTH), con la cabeza del tornillo marcada en `Cmts.User` y courtyard de Ø5 en las dos caras. Lejos del mecanismo (≥ 20,3 mm de borde a borde), del USB-C (7,5 mm de la ranura) y de las muescas (≥ 8,8 mm). Todos a ≥ 2,55 mm del borde de la PCB. Centros y distancias en `interfaz-base.md`.
+4 × M2 Ø2,3 sin cobre (NPTH), con la cabeza del tornillo marcada en `Cmts.User` y courtyard de Ø5 en las dos caras. Lejos del mecanismo (≥ 20,3 mm de borde a borde) y del USB-C (7,5 mm de la ranura). Todos a ≥ 2,55 mm del borde de la PCB. Centros y distancias en `interfaz-base.md`.
 
 H1 y H2 forman un trapecio con H3 y H4: 47 mm de ancho delante, 26,6 detrás y 53,9 de fondo. H3 y H4 están junto al USB-C, que es por donde entra la fuerza de enchufar el cable (0,5-2,0 kgf según el dibujo de HRO).
 
@@ -115,7 +113,6 @@ H1 y H2 forman un trapecio con H3 y H4: 47 mm de ancho delante, 26,6 detrás y 5
 - Contorno fresado con ±0,2 mm. Fresa de 0,5 mm de radio en los cortes interiores: los arcos cóncavos de R 0,5 del contorno y los alivios de la ranura ya tienen ese radio.
 - Cobre a borde: 0,3 mm en las reglas del proyecto (el mínimo de JLCPCB es 0,2).
 - Agujero del mecanismo dibujado en `Edge.Cuts` (Ø11,3, se fresa).
-- Muescas de R 3,0 en el contorno, con las esquinas en R 0,5. Las torretas supuestas (Ø5,0) van en `Cmts.User` como referencia; no se fabrican.
 - Ranuras metalizadas de 0,5 mm de ancho: el mínimo de JLCPCB.
 
 ## Regenerar
@@ -128,7 +125,7 @@ python3 -m venv .venv && .venv/bin/pip install -r scripts/requirements.txt
     scripts/generar_kicad.py --forzar
 ```
 
-- Parámetros del primer script: `--holgura`, `--simplificacion`, `--desviacion`, `--mecanismo X Y`, `--usb-x`, `--taladro X Y` (repetible), `--muesca-r` y `--muesca-redondeo`.
+- Parámetros del primer script: `--holgura`, `--simplificacion`, `--desviacion`, `--mecanismo X Y`, `--usb-x`, `--taladro X Y` (repetible) y, para volver a abrir muescas, `--muescas` con `--muesca-r` y `--muesca-redondeo`.
 - `generar_kicad.py` **sobrescribe la placa y el esquema**. Cuando la placa tenga componentes a mano, no lo vuelvas a ejecutar. Para cambiar el contorno, borra `Edge.Cuts` e importa `contorno-pcb.dxf` (capa `Contorno`) en `Edge.Cuts`, con escala 1 y el origen en (220; −40) con el eje Y invertido.
 - Las tablas de librerías del proyecto apuntan a las librerías de KiCad (`${KICAD10_SYMBOL_DIR}` y `${KICAD10_FOOTPRINT_DIR}`), porque las tablas globales de este Mac están vacías.
 
@@ -137,8 +134,9 @@ python3 -m venv .venv && .venv/bin/pip install -r scripts/requirements.txt
 ```bash
 cd Hardware/PCB-suelo
 # Contorno: cerrado y sin autointersecciones, 4 taladros M2 en su sitio a ≥ 2,5 mm del borde,
-# mecanismo y exclusión dentro de la PCB, sin PCB a menos de 3,0 mm (--muesca-r) de los
-# 4 agujeros originales del suelo, y geometria.json igual que el DXF. Sale con código 1 si algo falla.
+# mecanismo y exclusión dentro de la PCB, sin muescas (los 4 agujeros originales del suelo bajo
+# la PCB, a ≥ 1,0 mm de su borde) y geometria.json igual que el DXF, con "muescas": null.
+# Sale con código 1 si algo falla.
 .venv/bin/python -I scripts/test_contorno.py
 # Lo mismo, más la holgura de ≥ 0,5 mm contra el suelo (el DXF del suelo no está en el repo)
 .venv/bin/python -I scripts/test_contorno.py --suelo <ruta a suelo-interior.dxf>
@@ -151,7 +149,7 @@ $KICAD_CLI pcb drc --schematic-parity --exit-code-violations FurbyGPT-suelo.kica
 ```
 
 - Si cambias los taladros con `--taladro`, actualiza `TALADROS_ESPERADOS` en `scripts/test_contorno.py`.
-- Si cambias `--muesca-r`, pásale el mismo valor al test con `--muesca-r`.
+- Si regeneras con `--muescas`, pásale al test `--muescas` y el mismo `--muesca-r`. Sin `--muescas`, el test falla si la PCB tiene muescas, y al revés.
 - `contorno_suelo.py` reescribe el DXF con fecha y GUID nuevos en la cabecera aunque la geometría no cambie. Si solo cambia eso, no hace falta commitearlo.
 
 ## Verificado y supuesto
@@ -165,12 +163,11 @@ $KICAD_CLI pcb drc --schematic-parity --exit-code-violations FurbyGPT-suelo.kica
 | Agujero del mecanismo en (−60,88; −95,32), Ø11,3 | **Supuesto**: colocación del contorno del colaborador sin girar |
 | Funda del cable de 12 × 6,5 | **Supuesto**: medida típica; falta medir el cable real |
 | Centros de los 4 agujeros originales del suelo | Medido en el STL (capa `Agujeros` del DXF del suelo) |
-| Torreta del cuerpo de Ø5,0 | **Supuesto**: proporción típica para un tornillo de unos 2 mm; falta medirla en el cuerpo |
+| Sin tornillos ni torretas en los 4 agujeros originales | Comprobado en el Furby real |
 | Tolerancia FDM de ±0,2 mm por lado | Estimación habitual, sin medir en la impresora que se vaya a usar |
 
 ## Pendiente de confirmar
 
 1. Medir el agujero del mecanismo en el Furby (centro y diámetro) y regenerar con `--mecanismo X Y`.
-2. Medir el diámetro de las torretas del cuerpo que bajan a los 4 agujeros originales y regenerar con `--muesca-r` = radio + 0,5 si no es Ø5,0.
-3. Medir la funda del cable USB-C que se vaya a usar.
-4. Consumo: con solo Rd en CC, la fuente no anuncia corriente al Furby. Un cargador de 5 V suele dar 2-3 A, pero el puerto USB de un ordenador puede limitar a 0,5-0,9 A. Raspberry Pi Zero W, WM8960 y motor pueden pasar de eso en los picos. Cuando se añada el resto del circuito: fusible rearmable, TVS de 5 V y condensador de bulk junto al conector.
+2. Medir la funda del cable USB-C que se vaya a usar.
+3. Consumo: con solo Rd en CC, la fuente no anuncia corriente al Furby. Un cargador de 5 V suele dar 2-3 A, pero el puerto USB de un ordenador puede limitar a 0,5-0,9 A. Raspberry Pi Zero W, WM8960 y motor pueden pasar de eso en los picos. Cuando se añada el resto del circuito: fusible rearmable, TVS de 5 V y condensador de bulk junto al conector.
