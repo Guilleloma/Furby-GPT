@@ -18,7 +18,7 @@ import numpy as np
 import shapely
 import trimesh
 from shapely.geometry import Point, Polygon, box
-from shapely.ops import nearest_points
+from shapely.ops import nearest_points, unary_union
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comun  # noqa: E402
@@ -64,22 +64,26 @@ def alturas_seccion(medidas, par):
     return zs + [z1 - v["vertice_margen_z"]]
 
 
-def comprobar_b(original, medidas, geo, par):
+def comprobar_b(original, salida, medidas, geo, par):
+    """PCB contra la pared del original (no se toca hacia dentro) y cuerpo del USB-C
+    contra la base de salida (con la ventana y el rebaje), en toda la altura."""
     v = par["verificacion"]
     seg = par["segmentos_circulo"]
     pcb = comun.contorno_pcb(geo, seg, con_agujeros=False)
     usb = box(*comun.caja_usb(geo, par))
-    holgura_pcb, holgura_usb, dentro = math.inf, math.inf, True
+    holgura_pcb, holgura_usb_original, holgura_usb, dentro = math.inf, math.inf, math.inf, True
     peor_usb = None
     for z in alturas_seccion(medidas, par):
         pared = max(comun.seccion(original, z), key=lambda q: q.area)
         cavidad = Polygon(max(pared.interiors, key=lambda a: Polygon(a).area))
         dentro &= cavidad.contains(pcb) and cavidad.contains(usb)
         holgura_pcb = min(holgura_pcb, cavidad.exterior.distance(pcb))
-        d_usb = cavidad.exterior.distance(usb)
+        holgura_usb_original = min(holgura_usb_original, cavidad.exterior.distance(usb))
+        material = unary_union(comun.seccion(salida, z))
+        d_usb = material.distance(usb)
         if d_usb < holgura_usb:
             holgura_usb = d_usb
-            a, b = nearest_points(cavidad.exterior, usb)
+            a, b = nearest_points(material, usb)
             peor_usb = {"z": float(z), "pared": [a.x, a.y], "usb": [b.x, b.y]}
 
     vert = original.vertices
@@ -90,7 +94,8 @@ def comprobar_b(original, medidas, geo, par):
     ok = (dentro and holgura_pcb >= par["holgura_pcb_pared_min"] - v["holgura_tol"]
           and holgura_usb >= par["holgura_usb_pared_min"] - v["holgura_tol"] and invasores == 0)
     return resultado(ok, secciones=len(alturas_seccion(medidas, par)), holgura_pcb_min=holgura_pcb,
-                     holgura_usb_min=holgura_usb, punto_usb_mas_cercano=peor_usb,
+                     holgura_usb_min=holgura_usb, holgura_usb_min_sin_rebaje=holgura_usb_original,
+                     punto_usb_mas_cercano=peor_usb,
                      criterio_pcb=par["holgura_pcb_pared_min"], criterio_usb=par["holgura_usb_pared_min"],
                      vertices_dentro_prisma_pcb=invasores, pcb_y_usb_dentro=bool(dentro))
 
@@ -119,16 +124,18 @@ def comprobar_d(original_m, salida_m, ops, par):
     v_orig = volumen(original_m)
     v_sep = volumen(union_sep - original_m)
     v_ventana = volumen(original_m ^ ops["Ventana_USBC"])
+    # El rebaje solapa con la ventana: solo cuenta lo que quita fuera de ella.
+    v_rebaje_usb = volumen((original_m - ops["Ventana_USBC"]) ^ ops["Rebaje_USBC"]) if "Rebaje_USBC" in ops else 0.0
     v_pilotos = volumen(con_sep ^ comun.m3.Manifold.batch_boolean(pilotos, comun.m3.OpType.Add))
     v_rebaje = volumen(con_sep ^ ops["Rebaje_Mecanismo"]) if "Rebaje_Mecanismo" in ops else 0.0
-    esperado = v_orig + v_sep - v_ventana - v_pilotos - v_rebaje
+    esperado = v_orig + v_sep - v_ventana - v_rebaje_usb - v_pilotos - v_rebaje
     v_salida = volumen(salida_m)
     error = v_salida - esperado
     v_ref = par["volumen_base_esperado"]
     ok_orig = abs(v_orig - v_ref) <= v_ref * par["volumen_base_tolerancia_rel"]
     return resultado(abs(error) < par["verificacion"]["volumen_tol"] and ok_orig,
                      v_original=v_orig, v_original_esperado=v_ref, v_separadores_fuera=v_sep,
-                     v_ventana=v_ventana, v_pilotos=v_pilotos, v_rebaje=v_rebaje,
+                     v_ventana=v_ventana, v_rebaje_usb=v_rebaje_usb, v_pilotos=v_pilotos, v_rebaje=v_rebaje,
                      v_esperado=esperado, v_salida=v_salida, error=error)
 
 
@@ -175,9 +182,10 @@ def comprobar_f(salida, medidas, geo, par, der):
     v = par["verificacion"]
     a, u = geo["alturas"], geo["usb"]
     x0, x1 = der["ventana_x"]
-    # Plano de medida de la ventana: dentro de la pared, antes de que empiece el chaflán.
-    y_int_jambas = max(p["y_int"] for p in medidas["pared_lobulo"])
-    y_m = (der["y_chaflan_inicio"] + y_int_jambas) / 2
+    # Plano de medida de la ventana: en la pared que queda entre el rebaje interior
+    # y el inicio del chaflán exterior.
+    y_rebaje = min(p["y_int"] for p in medidas["pared_lobulo"]) - par["rebaje_usb_fondo"]
+    y_m = (der["y_chaflan_inicio"] + y_rebaje) / 2
     z_m = (der["ventana_z"][0] + der["ventana_z"][1]) / 2
     xi = primer_impacto(salida, (u["x"], y_m, z_m), (-1, 0, 0))
     xd = primer_impacto(salida, (u["x"], y_m, z_m), (1, 0, 0))
@@ -311,7 +319,7 @@ def verificar(original, original_m, salida, salida_m, fantasma_m, geo, par, medi
     f = comprobar_f(salida, medidas, geo, par, der)
     comprobaciones = {
         "A_cotas_original": comprobar_a(medidas, geo, par),
-        "B_interior_pcb": comprobar_b(original, medidas, geo, par),
+        "B_interior_pcb": comprobar_b(original, salida, medidas, geo, par),
         "C_malla_salida": comprobar_c(salida, salida_m, original_m.genus(), par),
         "D_volumen": comprobar_d(original_m, salida_m, ops, par),
         "E_intocado": comprobar_e(original, salida, medidas, ops, par),
@@ -382,7 +390,7 @@ def main():
     original_m = comun.a_manifold(original)
     desfase = json.loads((salida_dir / comun.NOMBRE_VERIFICACION).read_text()).get("desfase_ventana", 0.0) \
         if (salida_dir / comun.NOMBRE_VERIFICACION).exists() else 0.0
-    ops = comun.operaciones(geo, par, der, desfase)
+    ops = comun.operaciones(geo, par, der, medidas["cavidad"], desfase)
     salida = comun.leer_malla(salida_dir / comun.NOMBRE_BASE)
     salida_m = comun.a_manifold(salida)
     fantasma_m = comun.pcb_fantasma(geo, par, der)

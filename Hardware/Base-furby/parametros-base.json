@@ -12,6 +12,8 @@
  "ventana_chaflan_rango": [0.2, 0.8],
  "ventana_y_dentro": 1.0,
  "ventana_y_fuera": 1.5,
+ "rebaje_usb_fondo": 0.3,
+ "rebaje_usb_solape": 0.1,
  "mecanismo_rebaje": 0.0,
  "funda_largo": 15.0,
  "usb_cuerpo_ancho": 8.94,

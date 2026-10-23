@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Base del Furby de 1998 modificada para alojar la PCB de FurbyGPT.
 
-Sobre el STL original añade 4 separadores con piloto para tornillo M2 × 4 y abre
-la ventana del USB-C en la pared del lóbulo. Todo lo demás queda igual.
+Sobre el STL original añade 4 separadores con piloto para tornillo M2 × 4, abre
+la ventana del USB-C en la pared del lóbulo y rebaja la cara interior encima. Todo lo demás queda igual.
 Booleanas de malla con manifold3d; cotas en parametros-base.json y en
 Hardware/PCB-suelo/geometria.json.
 
@@ -35,13 +35,13 @@ def comprobar_original(original, original_m):
             "genero": original_m.genus(), "volumen": original_m.volume(), "triangulos": len(original.faces)}
 
 
-def construir(original_m, geo, par, der):
+def construir(original_m, geo, par, der, cavidad):
     """Aplica las operaciones. Si la malla no sale limpia (género, un cuerpo, cerrada y sin
     triángulos degenerados), repite bajando la ventana eps_coplanar."""
     genero_esperado = original_m.genus() + 1
     area_min = par["verificacion"]["triangulo_degenerado_area"]
     for desfase in (0.0, par["eps_coplanar"]):
-        ops = comun.operaciones(geo, par, der, desfase)
+        ops = comun.operaciones(geo, par, der, cavidad, desfase)
         resultado = comun.aplicar(original_m, ops, par["tolerancia_malla"])
         malla = comun.a_trimesh(resultado)
         if (resultado.genus() == genero_esperado and len(resultado.decompose()) == 1
@@ -67,7 +67,7 @@ def main():
     original_m = comun.a_manifold(original)
     estado_original = comprobar_original(original, original_m)
 
-    base_m, ops, desfase = construir(original_m, geo, par, der)
+    base_m, ops, desfase = construir(original_m, geo, par, der, medidas["cavidad"])
     base = comun.a_trimesh(base_m)
     base_m = comun.a_manifold(base)   # la misma malla que se escribe, para que la verificación mida eso
     fantasma_m = comun.pcb_fantasma(geo, par, der)

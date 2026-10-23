@@ -15,7 +15,7 @@ from pathlib import Path
 import manifold3d as m3
 import numpy as np
 import trimesh
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, box
 
 DIR_BASE = Path(__file__).resolve().parent.parent
 PARAMETROS = DIR_BASE / "parametros-base.json"
@@ -251,6 +251,7 @@ def derivados(geo, par, medidas):
         "exclusion_d": mec["exclusion_diametro"],
         "funda_ancho": geo["funda"]["ancho"],
         "funda_alto": geo["funda"]["alto"],
+        "z_borde_pared": medidas["z_max"],
         "funda_z": [a["z_centro_usb"] - geo["funda"]["alto"] / 2, a["z_centro_usb"] + geo["funda"]["alto"] / 2],
     }
 
@@ -288,10 +289,23 @@ def prisma_perfiles(perfil_a, y_a, perfil_b, y_b):
     return m3.Manifold.hull_points(np.array(pts, dtype=float))
 
 
-def operaciones(geo, par, der, desfase_z=0.0):
+def rebaje_usb(cavidad, par, der, x0, x1, y_dentro, y_fuera):
+    """Rebaje en la cara interior del lóbulo, del ancho de la ventana y abierto por
+    arriba. Sigue la curva de la pared (cavidad desplazada rebaje_usb_fondo hacia
+    fuera) para que el cuerpo del USB-C la libre al bajar la PCB en vertical."""
+    planta = cavidad.buffer(par["rebaje_usb_fondo"], quad_segs=par["segmentos_circulo"] // 4)
+    planta = planta.intersection(box(x0, y_fuera, x1, y_dentro))
+    seccion = m3.CrossSection([np.array(planta.exterior.coords[:-1])], m3.FillRule.EvenOdd)
+    z0 = der["ventana_z"][1] - par["rebaje_usb_solape"]
+    z1 = der["z_borde_pared"] + 1.0
+    return m3.Manifold.extrude(seccion, z1 - z0).translate([0, 0, z0])
+
+
+def operaciones(geo, par, der, cavidad, desfase_z=0.0):
     """Añadidos y cortadores con sus nombres de feature del plan.
 
-    desfase_z baja la cara inferior de la ventana (respaldo eps_coplanar)."""
+    cavidad es el hueco interior de la pared medido en el original; desfase_z
+    baja la cara inferior de la ventana (respaldo eps_coplanar)."""
     seg = par["segmentos_circulo"]
     a = geo["alturas"]
     z_suelo = der["z_suelo"]
@@ -312,6 +326,8 @@ def operaciones(geo, par, der, desfase_z=0.0):
         ancho = perfil_ventana(x0, x1, z0, z1, par["ventana_radio_sup"], c + f, seg)
         ventana = ventana + prisma_perfiles(nominal, der["y_chaflan_inicio"], ancho, der["y_ext_ref"] - f)
     ops["Ventana_USBC"] = ventana
+    if par["rebaje_usb_fondo"] > 0:
+        ops["Rebaje_USBC"] = rebaje_usb(cavidad, par, der, x0, x1, y_dentro, y_fuera)
 
     for i, t in enumerate(geo["taladros"], start=1):
         d, ch = par["piloto_d"], par["piloto_chaflan"]
