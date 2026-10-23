@@ -3,8 +3,16 @@
 
 # Audio generado y logs
 output.mp3
+myrecording.wav
+test.wav
 *.log
 
 # Python
 __pycache__/
 .venv/
+
+# Prompt del sistema personal (plantilla: chatbot1.example.txt)
+chatbot1.txt
+
+# Modelo de palabra de activación de Picovoice (ligado a la cuenta)
+*.ppn

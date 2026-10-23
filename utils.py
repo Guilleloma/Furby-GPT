@@ -20,6 +20,13 @@ def open_file(filename):
     with open(filepath, 'r', encoding='utf-8') as infile:
         return infile.read()
 
+def open_file_or_example(filename, example_filename):
+    # Usa el fichero local (ignorado por git) y, si no existe, la plantilla de ejemplo trackeada
+    if os.path.exists(os.path.join(BASE_DIR, filename)):
+        return open_file(filename)
+    print(f"Aviso: no existe {filename}; se usa {example_filename}. Copia {example_filename} a {filename} y personalízalo.")
+    return open_file(example_filename)
+
 def get_env_key(name):
     # Lee una clave de las variables de entorno; si falta, falla sin mostrar valores
     value = os.environ.get(name, '').strip()

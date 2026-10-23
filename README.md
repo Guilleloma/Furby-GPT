@@ -42,13 +42,25 @@ API keys are read from environment variables. Copy `.env.example` to `.env` and 
 cp .env.example .env
 ```
 
-| Variable | Service |
-|----------|---------|
-| `OPENAI_API_KEY` | OpenAI (Whisper and ChatGPT) |
-| `ELEVENLABS_API_KEY` | ElevenLabs (optional TTS) |
-| `PICOVOICE_ACCESS_KEY` | Picovoice Porcupine (wake word) |
+| Variable | Required | Service |
+|----------|----------|---------|
+| `OPENAI_API_KEY` | Yes | OpenAI (Whisper and ChatGPT) |
+| `PICOVOICE_ACCESS_KEY` | Yes | Picovoice Porcupine (wake word) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Yes | Path to your Google Cloud service account JSON (Text-to-Speech) |
+| `PICOVOICE_KEYWORD_PATH` | No | Path to your wake word model (`.ppn`). Defaults to `heymatepicovoice.ppn` next to the scripts |
+| `ELEVENLABS_API_KEY` | Only with ElevenLabs | ElevenLabs (optional TTS) |
+| `ELEVENLABS_VOICE_ID` | Only with ElevenLabs | ID of the ElevenLabs voice to use |
 
 `.env` is loaded automatically when `python-dotenv` is installed; otherwise export the variables in your shell. `.env` is in `.gitignore`: never commit it. If a variable is missing, the program stops and tells you which one.
+
+The wake word model is created in the Picovoice Console and is tied to your account, so `*.ppn` files are not committed: download yours and place it next to the scripts or set `PICOVOICE_KEYWORD_PATH`.
+
+### Furby personality
+The system prompt lives in `chatbot1.txt`, which is local and ignored by git. Create it from the example and personalise it:
+```
+cp chatbot1.example.txt chatbot1.txt
+```
+If `chatbot1.txt` does not exist, the program uses `chatbot1.example.txt` and prints a warning. Keep personal details in `chatbot1.txt` only.
 
 ## Usage
 1. Wake up the Furby with a keyword using Porcupine.
