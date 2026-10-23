@@ -4,11 +4,13 @@
 - El contorno (capa Contorno) es un único polígono cerrado y sin autointersecciones.
 - Hay 4 taladros M2 de Ø2,3 en sus posiciones, a 2,5 mm o más del borde.
 - El agujero del mecanismo y su zona de exclusión están dentro de la PCB.
-- Los 4 agujeros originales del suelo (capa AgujerosBase) quedan libres: no hay
+- Los 4 agujeros originales del suelo (capa AgujerosBase) están en su sitio.
+  Por defecto la PCB no tiene muescas: cada centro queda bajo la PCB, a 1,0 mm
+  o más de su borde, y no hay capa Muescas. Con --muescas, en cambio, no hay
   PCB a menos de --muesca-r (3,0 mm por defecto) de cada centro.
 - geometria.json, que lee el script de la base, coincide con el DXF: taladros,
-  mecanismo y su exclusión, y centros y radio de las muescas; y trae la funda
-  del cable.
+  mecanismo y su exclusión, y las muescas ("muescas": null sin muescas;
+  centros y radio con --muescas); y trae la funda del cable.
 - Con --suelo, además, el contorno queda dentro del suelo y a 0,5 mm o más de
   la pared. El DXF del suelo no está en el repositorio, así que sin --suelo
   esa comprobación se salta.
@@ -16,7 +18,7 @@
 Uso (desde Hardware/PCB-suelo):
     python -I scripts/test_contorno.py
     python -I scripts/test_contorno.py --suelo <ruta a suelo-interior.dxf>
-    python -I scripts/test_contorno.py --muesca-r 3.5
+    python -I scripts/test_contorno.py --muescas --muesca-r 3.5
 """
 
 import argparse
@@ -38,6 +40,9 @@ TALADRO_D = 2.3
 AGUJEROS_BASE_ESPERADOS = [(-105.51, -78.23), (-41.33, -78.15), (-105.77, -106.80), (-41.23, -106.83)]
 AGUJERO_BASE_D = 2.134
 MUESCA_R = 3.0
+# Sin muescas, el borde de la PCB pasa a 1,07-1,15 mm por fuera de cada centro.
+# Cualquier muesca que deje libre siquiera el agujero (R 1,07) lo descubre.
+AGUJERO_BAJO_PCB_MIN = 1.0
 BORDE_TALADRO_MIN = 2.5
 HOLGURA_MIN = 0.5
 TOL_POSICION = 0.01
@@ -155,6 +160,7 @@ def comprobar_mecanismo(placa, circulos):
 
 
 def comprobar_agujeros_base(placa, agujeros, muesca_r):
+    """Con `muesca_r` None se espera la PCB sin muescas, tapando los agujeros."""
     if len(agujeros) != len(AGUJEROS_BASE_ESPERADOS):
         raise AssertionError(f"Hay {len(agujeros)} agujeros de la base y se esperaban "
                              f"{len(AGUJEROS_BASE_ESPERADOS)}")
@@ -166,6 +172,16 @@ def comprobar_agujeros_base(placa, agujeros, muesca_r):
         if abs(diametro - AGUJERO_BASE_D) > TOL_POSICION:
             raise AssertionError(f"Agujero de la base en {esperado} de Ø{diametro:.3f}, "
                                  f"se esperaba Ø{AGUJERO_BASE_D}")
+        if muesca_r is None:
+            if not placa.contains(Point(centro)):
+                raise AssertionError(f"El agujero de la base en {esperado} queda fuera de la PCB: "
+                                     "hay muesca y se esperaba sin muescas")
+            bajo_pcb = placa.exterior.distance(Point(centro))
+            if bajo_pcb < AGUJERO_BAJO_PCB_MIN:
+                raise AssertionError(f"Borde de la PCB a {bajo_pcb:.3f} mm del agujero de la base en {esperado} "
+                                     f"(se piden {AGUJERO_BAJO_PCB_MIN} sin muescas)")
+            libres.append(bajo_pcb)
+            continue
         # Las muestras del contorno son cuerdas de 0,01 mm: en un arco cóncavo
         # de R 3 se acercan 4e-6 mm al centro.
         libre = placa.distance(Point(centro))
@@ -173,6 +189,8 @@ def comprobar_agujeros_base(placa, agujeros, muesca_r):
             raise AssertionError(f"PCB a {libre:.3f} mm del agujero de la base en {esperado} "
                                  f"(se piden {muesca_r})")
         libres.append(libre)
+    if muesca_r is None:
+        return f"4 × Ø{AGUJERO_BASE_D} bajo la PCB, sin muescas; borde a ≥ {min(libres):.3f} mm de cada centro"
     return f"4 × Ø{AGUJERO_BASE_D} libres; PCB a ≥ {min(libres):.3f} mm de cada centro (se piden {muesca_r})"
 
 
@@ -201,13 +219,22 @@ def comparar_geometria_json(geometria, circulos, muesca_r):
     mismos_circulos("ExclusionMecanismo", [mecanismo["centro"]], mecanismo["exclusion_diametro"],
                     "Exclusión del mecanismo")
     muescas = geometria["muescas"]
-    mismos_circulos("Muescas", muescas["centros"], 2 * muescas["radio"], "Muescas")
-    if muescas["radio"] < muesca_r - 1e-9:
-        raise AssertionError(f"Muescas de R {muescas['radio']} en el JSON (se piden {muesca_r})")
+    if muesca_r is None:
+        if muescas is not None:
+            raise AssertionError(f"El JSON trae muescas y se esperaba \"muescas\": null: {muescas}")
+        mismos_circulos("Muescas", [], 0, "Muescas")
+        texto_muescas = "sin muescas (null)"
+    else:
+        if not muescas:
+            raise AssertionError(f"El JSON no trae muescas (\"muescas\": {json.dumps(muescas)}) y se piden")
+        mismos_circulos("Muescas", muescas["centros"], 2 * muescas["radio"], "Muescas")
+        if muescas["radio"] < muesca_r - 1e-9:
+            raise AssertionError(f"Muescas de R {muescas['radio']} en el JSON (se piden {muesca_r})")
+        texto_muescas = f"muescas R {muescas['radio']}"
     funda = geometria["funda"]
     if not (funda["ancho"] > 0 and funda["alto"] > 0):
         raise AssertionError(f"Funda del cable sin medidas: {funda}")
-    return (f"exclusión Ø{mecanismo['exclusion_diametro']}, muescas R {muescas['radio']}, "
+    return (f"exclusión Ø{mecanismo['exclusion_diametro']}, {texto_muescas}, "
             f"funda {funda['ancho']} × {funda['alto']}{' (supuesto)' if funda.get('supuesto') else ''}")
 
 
@@ -231,9 +258,12 @@ def main():
     parser.add_argument("--pcb", type=Path, default=DXF_PCB)
     parser.add_argument("--geometria", type=Path, default=JSON_GEOMETRIA)
     parser.add_argument("--suelo", type=Path, help="DXF del suelo interior (capa SueloInterior)")
+    parser.add_argument("--muescas", action="store_true",
+                        help="la PCB lleva muescas en los agujeros originales (por defecto, sin muescas)")
     parser.add_argument("--muesca-r", type=float, default=MUESCA_R,
-                        help="radio libre de PCB alrededor de cada agujero original del suelo, mm")
+                        help="con --muescas: radio libre de PCB alrededor de cada agujero original, mm")
     args = parser.parse_args()
+    muesca_r = args.muesca_r if args.muescas else None
 
     contorno, circulos = leer_pcb(args.pcb)
     fallos = 0
@@ -242,10 +272,10 @@ def main():
         ("contorno cerrado y simple", lambda: comprobar_contorno(contorno)),
         ("taladros M2", lambda: comprobar_taladros(placa, circulos.get("Taladros", []))),
         ("mecanismo y exclusión dentro", lambda: comprobar_mecanismo(placa, circulos)),
-        ("agujeros de la base libres",
-         lambda: comprobar_agujeros_base(placa, circulos.get("AgujerosBase", []), args.muesca_r)),
+        ("agujeros de la base libres" if args.muescas else "agujeros de la base bajo la PCB, sin muescas",
+         lambda: comprobar_agujeros_base(placa, circulos.get("AgujerosBase", []), muesca_r)),
         ("geometria.json coincide con el DXF",
-         lambda: comprobar_geometria_json(args.geometria, circulos, args.muesca_r)),
+         lambda: comprobar_geometria_json(args.geometria, circulos, muesca_r)),
     ]
     if args.suelo:
         comprobaciones.append(("holgura contra el suelo", lambda: comprobar_holgura(placa, args.suelo)))
