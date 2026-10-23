@@ -260,7 +260,7 @@ def comprobar_g(salida_m, medidas, geo, par, der):
     r_sep = par["separador_d"] / 2
     a_agujeros = min(math.dist(t, a["centro"]) - r_sep - a["d"] / 2
                      for t in geo["taladros"] for a in medidas["agujeros"])
-    muescas = geo.get("muescas")
+    muescas = comun.muescas_activas(geo)
     if muescas:
         a_muescas = min(math.dist(t, c) - muescas["radio"] - r_sep for t in geo["taladros"] for c in muescas["centros"])
         ok_muescas = a_muescas >= 0
@@ -269,7 +269,7 @@ def comprobar_g(salida_m, medidas, geo, par, der):
     ok = v_exclusion <= v["volumen_cero"] and a_agujeros >= v["separador_agujero_min"] and ok_muescas
     return resultado(ok, exclusion_d=der["exclusion_d"], volumen_en_exclusion=v_exclusion,
                      separador_a_agujero_min=a_agujeros, criterio_agujero=v["separador_agujero_min"],
-                     muescas="comprobadas" if muescas else "sin muescas en geometria.json: se salta",
+                     muescas="comprobadas" if muescas else "sin muescas o desactivadas en geometria.json: se salta",
                      separador_a_muesca_min=a_muescas)
 
 

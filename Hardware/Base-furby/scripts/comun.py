@@ -109,6 +109,15 @@ def contorno_pcb(geo, segmentos, con_agujeros=True):
     return poligono
 
 
+def muescas_activas(geo):
+    """Bloque de muescas de geometria.json, o None si no viene, viene vacío,
+    con "activas": false o sin centros ni radio."""
+    m = geo.get("muescas")
+    if not m or not m.get("activas", True) or not m.get("centros") or m.get("radio", 0) <= 0:
+        return None
+    return m
+
+
 def caja_usb(geo, par):
     """Planta del cuerpo del USB-C: (x0, y0, x1, y1), desde la boca hacia dentro."""
     u = geo["usb"]

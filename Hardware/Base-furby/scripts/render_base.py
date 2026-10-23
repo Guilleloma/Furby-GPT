@@ -86,10 +86,11 @@ def render_planta(ruta, base, geo, par, der, medidas, ver):
                                 linestyle=":"))
             ax.add_patch(Circle(t, geo["taladro_diametro"] / 2, fill=False, edgecolor=COLOR_PCB, linewidth=0.8))
             ax.text(t[0], t[1] + par["separador_d"] / 2 + 1.0, f"H{i}", ha="center", fontsize=8)
+        muescas = comun.muescas_activas(geo)
         for a in medidas["agujeros"]:
             ax.add_patch(Circle(a["centro"], a["d"] / 2, fill=False, edgecolor="#000", linewidth=0.8))
-            if geo.get("muescas"):
-                ax.add_patch(Circle(a["centro"], geo["muescas"]["radio"], fill=False, edgecolor="#777",
+            if muescas:
+                ax.add_patch(Circle(a["centro"], muescas["radio"], fill=False, edgecolor="#777",
                                     linewidth=0.5, linestyle="--"))
         mec = geo["mecanismo"]
         ax.add_patch(Circle(mec["centro"], der["exclusion_d"] / 2, fill=False, edgecolor=COLOR_AVISO,
