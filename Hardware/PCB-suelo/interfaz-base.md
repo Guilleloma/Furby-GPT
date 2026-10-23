@@ -6,11 +6,13 @@ Fichero de referencia: `contorno-pcb.dxf` (mismas coordenadas, sin transformar).
 
 | Capa del DXF | Qué es |
 |--------------|--------|
-| `Contorno` | Borde de la PCB, con la ranura del USB-C. 57 arcos y 32 rectas, cerrado |
+| `Contorno` | Borde de la PCB, con la ranura del USB-C y las 4 muescas. 66 arcos y 30 rectas, cerrado |
 | `Taladros` | 4 taladros M2 Ø2,3 |
 | `Mecanismo` | Agujero de Ø11,3 del mecanismo |
 | `ExclusionMecanismo` | Zona de exclusión de Ø15,3 alrededor del mecanismo |
 | `UsbC` | Planta del cuerpo del USB-C (8,94 × 6,80), desde la boca |
+| `AgujerosBase` | Los 4 agujeros originales del suelo (Ø2,13) |
+| `Muescas` | Círculo de R 3,0 alrededor de cada agujero original: zona sin PCB |
 
 ## 1. PCB
 
@@ -20,7 +22,7 @@ Fichero de referencia: `contorno-pcb.dxf` (mismas coordenadas, sin transformar).
 | Cara inferior | z **3,905** |
 | Cara superior | z **5,505** |
 | Caja | x −108,42 … −38,58 (69,85) · y −128,10 … −52,71 (75,39) |
-| Holgura a la pared interior | **0,50 mín.** y 0,70 máx. por lado (fuera de la ranura del USB-C) |
+| Holgura a la pared interior | **0,50 mín.** y 0,70 máx. por lado (fuera de la ranura del USB-C y de las muescas) |
 
 El contorno es el suelo interior encogido 0,5 mm, así que la pared interior **no puede moverse hacia dentro** en la base modificada. Si se engrosa la pared, que sea hacia fuera.
 
@@ -40,7 +42,7 @@ El contorno es el suelo interior encogido 0,5 mm, así que la pared interior **n
 | H3 | (−86,80; −122,40) | 2,55 | 30,69 |
 | H4 | (−60,20; −122,40) | 2,59 | 20,29 |
 
-H3 y H4 flanquean el USB-C (7,5 mm de la ranura cada uno) para que la placa no cabecee al enchufar el cable. Los 4 agujeros originales de la base (Ø2,13) no se usan para la PCB.
+H3 y H4 flanquean el USB-C (7,5 mm de la ranura cada uno) para que la placa no cabecee al enchufar el cable. Los 4 agujeros originales de la base (Ø2,13) no sujetan la PCB: quedan abiertos para los tornillos del cuerpo (sección 5).
 
 ## 3. Corte en la pared del lóbulo para el USB-C
 
@@ -66,13 +68,29 @@ H3 y H4 flanquean el USB-C (7,5 mm de la ranura cada uno) para que la placa no c
 - Exclusión: cilindro de **Ø15,3** con el mismo centro (2 mm alrededor del agujero), desde el suelo hasta la cara inferior de la PCB. Dentro no van separadores, nervios ni postes.
 - El suelo de la base no tiene agujero ahí. Si el mecanismo tiene que atravesar el suelo, el agujero del suelo va con este mismo centro.
 
-## 5. Lo que la base no debe tocar
+## 5. Agujeros originales del suelo: abiertos, con muescas en la PCB
 
-- Debajo de la PCB: patillas THT recortadas a 1,5 mm como máximo y componentes SMD de hasta 1,5 mm de alto. Deja libre la franja de z 1,905 a z 3,905 salvo en los separadores.
+Los 4 agujeros originales del suelo **se mantienen abiertos**: por ellos pasan los tornillos hacia el cuerpo del Furby, y una torreta del cuerpo baja hasta el suelo a recibirlos. La PCB tiene una **muesca de R 3,0** alrededor de cada uno, así que no hay PCB a menos de 3,0 mm de ningún centro.
+
+| Agujero | Centro (x; y) | Diámetro | Centro a la pared interior | Borde de la muesca al taladro más cercano |
+|---------|---------------|----------|----------------------------|-------------------------------------------|
+| Delante izquierda | (−105,51; −78,23) | 2,13 | 1,67 | 8,78 (H1) |
+| Delante derecha | (−41,33; −78,15) | 2,13 | 1,66 | 8,83 (H2) |
+| Detrás izquierda | (−105,77; −106,80) | 2,13 | 1,68 | 20,41 (H3) |
+| Detrás derecha | (−41,23; −106,83) | 2,13 | 1,61 | 20,39 (H4) |
+
+- **R 3,0 = torreta de Ø5,0 + 0,5 de holgura por lado.** El Ø5,0 es un **supuesto** (de 2 a 2,5 veces un tornillo de unos 2 mm), sin medir en el cuerpo. Si la torreta mide más de Ø5,0, la PCB se regenera con una muesca mayor; avisad antes de diseñarla más gruesa.
+- La torreta del cuerpo puede ocupar todo el círculo de Ø5,0 desde el suelo (z 1,905) hacia arriba, atravesando la altura de la PCB (z 3,905 a 5,505).
+- **Choque con la pared de la base:** los centros están a 1,61-1,68 de la pared interior, así que una torreta redonda de Ø5,0 entra hasta 0,89 mm en la pared de la base. O la torreta se recorta plana del lado de la pared (en D, a 1,6 del centro), o la pared lleva un rebaje ahí. La pared **no puede crecer hacia dentro** junto a la PCB (sección 1), pero en el sector de cada muesca no hay PCB hasta 3,0 mm del centro.
+- Ni separadores ni nervios de la base dentro de esos círculos de R 3,0.
+
+## 6. Lo que la base no debe tocar
+
+- Debajo de la PCB: patillas THT recortadas a 1,5 mm como máximo y componentes SMD de hasta 1,5 mm de alto. Deja libre la franja de z 1,905 a z 3,905 salvo en los separadores y en las torretas de los agujeros originales.
 - Encima del conector: la carcasa del USB-C llega a z 7,085.
 
 ## Pendiente de confirmar
 
 - Posición real del agujero del mecanismo (ahora es un supuesto).
-- Los 4 agujeros originales de la base (Ø2,13, centros a 1,6 mm de la pared) quedan **tapados por la PCB**. Si en la base modificada tienen que pasar tornillos desde abajo hacia el cuerpo del Furby, hay que hacer muescas en la PCB.
+- Diámetro real de las torretas del cuerpo que bajan a los 4 agujeros originales (ahora se supone Ø5,0).
 - Tamaño de la funda del cable USB-C que se vaya a usar. Si es más alta que 6,5 mm, el corte crece hacia arriba (el eje no se mueve).
