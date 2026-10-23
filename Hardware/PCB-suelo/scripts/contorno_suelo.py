@@ -14,6 +14,9 @@ suelo. El contorno sale del suelo interior (polilínea facetada del STL):
    mantiene la holgura exacta en las esquinas de los hombros del lóbulo.
 4. Se abre la ranura del USB-C de montaje medio en el borde trasero, centrada
    en el lóbulo.
+5. Se abre una muesca circular (--muesca-r) alrededor de cada uno de los 4
+   agujeros originales del suelo, por donde pasan los tornillos hacia el
+   cuerpo, con las esquinas redondeadas.
 
 Todo en coordenadas del STL de la base (mm, vista desde arriba, delante = y
 máxima). Salidas: DXF del contorno, geometria.json para generar_kicad.py y los
@@ -62,6 +65,14 @@ EXCLUSION_MECANISMO_MM = 2.0   # anillo libre alrededor del agujero
 TALADRO_M2_D = 2.3
 BORDE_TALADRO_MIN_MM = 2.0     # borde del agujero a borde de PCB
 TALADROS_XY = [(-97.0, -68.5), (-50.0, -68.5), (-86.8, -122.4), (-60.2, -122.4)]
+
+# Los 4 agujeros originales del suelo (capa Agujeros) pasan tornillos hacia el
+# cuerpo, cuya torreta baja hasta el suelo. Supuesto: torreta de Ø5,0 (de 2 a
+# 2,5 veces un tornillo de plástico de unos 2 mm), más 0,5 de holgura por lado.
+TORRETA_D = 5.0
+MUESCA_HOLGURA_MM = 0.5
+MUESCA_R = TORRETA_D / 2 + MUESCA_HOLGURA_MM
+MUESCA_REDONDEO_MM = 0.5       # esquinas convexas entre el borde y la muesca
 
 # USB-C de montaje medio HRO TYPE-C-31-M-28A (LCSC C2848622), PCB de 1,6 mm.
 # Medidas del dibujo del fabricante (layout recomendado y alzado).
@@ -381,9 +392,105 @@ def longitud_primitiva(p):
     return abs(p["barrido"]) * p["r"]
 
 
+# ------------------------------------------- muescas de los agujeros de la base
+
+def cortes_circulo_recta(centro, radio, p0, direccion):
+    """Parámetros s de los puntos p0 + s·direccion (unitaria) a distancia radio."""
+    d = p0 - centro
+    b = np.dot(d, direccion)
+    discriminante = b * b - (np.dot(d, d) - radio * radio)
+    if discriminante < 0:
+        return []
+    raiz = math.sqrt(discriminante)
+    return [-b - raiz, -b + raiz]
+
+
+def cortes_circulos(c0, r0, c1, r1):
+    d = math.dist(c0, c1)
+    if d < TOL or d > r0 + r1 or d < abs(r0 - r1):
+        return []
+    a = (r0 * r0 - r1 * r1 + d * d) / (2 * d)
+    h = math.sqrt(max(r0 * r0 - a * a, 0.0))
+    eje = (c1 - c0) / d
+    base = c0 + a * eje
+    normal = np.array([-eje[1], eje[0]])
+    return [base + h * normal, base - h * normal]
+
+
+def centros_redondeo(p, centro, radio, redondeo):
+    """Centros de un redondeo convexo de radio `redondeo` tangente a la
+    primitiva p (por dentro de la placa) y por fuera a la muesca de `radio`.
+    Devuelve (centro, punto de tangencia, fracción a lo largo de p) para cada
+    solución que cae dentro de p."""
+    radio += redondeo
+    soluciones = []
+    if p["tipo"] == "linea":
+        largo = longitud_primitiva(p)
+        u = (p["p1"] - p["p0"]) / largo
+        dentro = np.array([-u[1], u[0]])                 # antihorario: la placa a la izquierda
+        desplazada = p["p0"] + dentro * redondeo
+        for s in cortes_circulo_recta(centro, radio, desplazada, u):
+            if -TOL <= s <= largo + TOL:
+                soluciones.append((desplazada + s * u, p["p0"] + s * u, s / largo))
+        return soluciones
+    # Arco convexo (barrido > 0): su centro está dentro de la placa, el radio
+    # desplazado se encoge; arco cóncavo: crece.
+    r_desplazado = p["r"] - redondeo if p["barrido"] > 0 else p["r"] + redondeo
+    for f in cortes_circulos(p["c"], r_desplazado, centro, radio):
+        a = angulo(f - p["c"])
+        relativo = ((a - p["a0"]) * np.sign(p["barrido"])) % (2 * math.pi)
+        if relativo <= abs(p["barrido"]) + TOL:
+            tangente = p["c"] + p["r"] * np.array([math.cos(a), math.sin(a)])
+            soluciones.append((f, tangente, relativo / abs(p["barrido"])))
+    return soluciones
+
+
+def abrir_muesca(primitivas, centro, radio, redondeo):
+    """Quita de la placa el círculo de `radio` alrededor de un agujero de la base
+    que queda junto al borde. La muesca es un arco cóncavo de ese radio y sus
+    dos esquinas con el borde, que serían picos convexos, se redondean con
+    arcos de `redondeo` tangentes al borde y a la muesca."""
+    centro = np.asarray(centro, float)
+    n = len(primitivas)
+    # Se gira la lista para que la muesca quede en el centro y no cruce el inicio.
+    cercana = min(range(n), key=lambda k: np.linalg.norm(medio(primitivas[k]) - centro))
+    giro = (cercana - n // 2) % n
+    primitivas = primitivas[giro:] + primitivas[:giro]
+
+    soluciones = []
+    for k, p in enumerate(primitivas):
+        if abs(k - n // 2) > 8:
+            continue
+        for f, tangente, fraccion in centros_redondeo(p, centro, radio, redondeo):
+            if not any(np.linalg.norm(f - otro[2]) < 1e-6 for otro in soluciones):
+                soluciones.append((k, fraccion, f, tangente))
+    if len(soluciones) != 2:
+        raise ValueError(f"La muesca de R {radio} en {tuple(centro)} no corta el borde en dos puntos "
+                         f"({len(soluciones)} soluciones)")
+    (k1, _, f1, t1), (k2, _, f2, t2) = sorted(soluciones, key=lambda s: (s[0], s[1]))
+
+    m1 = centro + radio * unitario(f1 - centro)          # tangencias con la muesca
+    m2 = centro + radio * unitario(f2 - centro)
+    a1, b1 = angulo(t1 - f1), angulo(m1 - f1)
+    a2, b2 = angulo(m2 - f2), angulo(t2 - f2)
+    redondeo1 = arco(f1, redondeo, a1, (b1 - a1) % (2 * math.pi))
+    redondeo2 = arco(f2, redondeo, a2, (b2 - a2) % (2 * math.pi))
+    am1, am2 = angulo(m1 - centro), angulo(m2 - centro)
+    muesca = arco(centro, radio, am1, -((am1 - am2) % (2 * math.pi)))
+
+    antes, _ = partir(primitivas[k1], t1)
+    if k1 == k2:
+        _, resto = partir(primitivas[k1], t1)
+        _, despues = partir(resto, t2)
+    else:
+        _, despues = partir(primitivas[k2], t2)
+    nuevo = primitivas[:k1] + [antes, redondeo1, muesca, redondeo2, despues] + primitivas[k2 + 1:]
+    return [p for p in nuevo if longitud_primitiva(p) > 1e-6]
+
+
 # ---------------------------------------------------------------- validación
 
-def validar(suelo, primitivas, holgura, taladros, mecanismo, usb):
+def validar(suelo, primitivas, holgura, taladros, mecanismo, usb, muescas, muesca_r, redondeo):
     for actual, siguiente in zip(primitivas, primitivas[1:] + primitivas[:1]):
         if np.linalg.norm(fin(actual) - inicio(siguiente)) > 1e-7:
             raise ValueError(f"Hueco en el contorno en {fin(actual)}")
@@ -398,18 +505,27 @@ def validar(suelo, primitivas, holgura, taladros, mecanismo, usb):
     if distancias.min() < holgura - 1e-6:
         raise ValueError(f"El contorno se acerca a {distancias.min():.4f} mm de la pared")
 
-    # La holgura máxima solo tiene sentido fuera de la ranura del USB-C.
+    # La holgura máxima solo tiene sentido fuera de la ranura del USB-C y de las muescas.
     xi, xd = usb["x_paredes"]
     fuera_ranura = ~((muestras[:, 0] > xi - 0.01) & (muestras[:, 0] < xd + 0.01)
                      & (muestras[:, 1] > usb["y_borde"] - 0.5))
+    for centro in muescas:
+        fuera_ranura &= np.linalg.norm(muestras - np.asarray(centro), axis=1) > muesca_r + 2 * redondeo + 0.1
     borde = LineString(np.vstack([muestras, muestras[:1]]))
     resultado = {
         "holgura_min": float(distancias.min()),
         "holgura_max": float(distancias[fuera_ranura].max()),
         "area": placa.area, "perimetro": placa.length,
         "caja": [float(v) for v in placa.bounds],
-        "taladros": [], "mecanismo": None,
+        "taladros": [], "mecanismo": None, "muescas": [],
     }
+    for centro in muescas:
+        libre = placa.distance(Point(centro))
+        if libre < muesca_r - 1e-5:      # flecha de las cuerdas del muestreo: 4e-6 con R 3
+            raise ValueError(f"La PCB queda a {libre:.3f} mm del agujero {centro} (se pide {muesca_r})")
+        al_taladro = min(math.dist(t, centro) - muesca_r - TALADRO_M2_D / 2 for t in taladros)
+        resultado["muescas"].append({"xy": [float(v) for v in centro], "libre": libre,
+                                     "al_taladro": al_taladro})
     for centro in taladros:
         margen = borde.distance(Point(centro)) - TALADRO_M2_D / 2
         if margen < BORDE_TALADRO_MIN_MM - 1e-6 or not placa.contains(Point(centro)):
@@ -447,11 +563,12 @@ def alturas():
 
 # -------------------------------------------------------------------- salidas
 
-def escribir_dxf(ruta, primitivas, taladros, mecanismo, usb):
+def escribir_dxf(ruta, primitivas, taladros, mecanismo, usb, agujeros_base, muesca_r):
     doc = ezdxf.new("R2010", setup=False, units=ezdxf.units.MM)
     doc.header["$MEASUREMENT"] = 1
     for nombre, color in (("Contorno", 3), ("Mecanismo", 1), ("Taladros", 1),
-                          ("ExclusionMecanismo", 6), ("UsbC", 5)):
+                          ("ExclusionMecanismo", 6), ("UsbC", 5), ("AgujerosBase", 2),
+                          ("Muescas", 4)):
         doc.layers.add(nombre, color=color)
     msp = doc.modelspace()
     for p in primitivas:
@@ -468,6 +585,9 @@ def escribir_dxf(ruta, primitivas, taladros, mecanismo, usb):
                    dxfattribs={"layer": "ExclusionMecanismo"})
     for centro in taladros:
         msp.add_circle(centro, TALADRO_M2_D / 2, dxfattribs={"layer": "Taladros"})
+    for centro, diametro in agujeros_base:
+        msp.add_circle(centro, diametro / 2, dxfattribs={"layer": "AgujerosBase"})
+        msp.add_circle(centro, muesca_r, dxfattribs={"layer": "Muescas"})
     x, y = usb["x"], usb["y_boca"]
     cuerpo = [(x - USB_ANCHO_CUERPO / 2, y), (x + USB_ANCHO_CUERPO / 2, y),
               (x + USB_ANCHO_CUERPO / 2, y + USB_LARGO), (x - USB_ANCHO_CUERPO / 2, y + USB_LARGO)]
@@ -505,7 +625,7 @@ def dibujar_base(ax, suelo, pared):
 
 
 def render_planta(ruta, suelo, pared, agujeros_base, muestras, taladros, mecanismo, usb,
-                  resultado, alt):
+                  resultado, alt, muesca_r):
     fig = plt.figure(figsize=(15, 10.2), dpi=150)
     ax = fig.add_axes([0.03, 0.05, 0.6, 0.88])
     dibujar_base(ax, suelo, pared)
@@ -519,7 +639,11 @@ def render_planta(ruta, suelo, pared, agujeros_base, muestras, taladros, mecanis
             f"exclusión Ø{mm(MECANISMO_D + 2 * EXCLUSION_MECANISMO_MM, 1)}", ha="center", va="top",
             fontsize=7, color="#b0308f")
     for centro, diametro in agujeros_base:
-        ax.add_patch(Circle(centro, diametro / 2, fill=False, ec="#c0392b", lw=0.8, ls=":"))
+        ax.add_patch(Circle(centro, diametro / 2, fc="white", ec="#c0392b", lw=0.9))
+        ax.add_patch(Circle(centro, TORRETA_D / 2, fill=False, ec="#c0392b", lw=0.7, ls=":"))
+        dx = 4.2 if centro[0] < -73.5 else -4.2
+        ax.text(centro[0] + dx, centro[1], f"muesca R {mm(muesca_r, 1)}", ha="left" if dx > 0 else "right",
+                va="center", fontsize=7, color="#c0392b")
     for k, t in enumerate(resultado["taladros"], start=1):
         cx, cy = t["xy"]
         ax.add_patch(Circle((cx, cy), TALADRO_M2_D / 2, fc="white", ec="#a8330a", lw=1.2))
@@ -590,7 +714,11 @@ def render_planta(ruta, suelo, pared, agujeros_base, muestras, taladros, mecanis
     ]
     for k, t in enumerate(resultado["taladros"], start=1):
         lineas.append(f"  H{k} ({mm(t['xy'][0])}; {mm(t['xy'][1])}): {mm(t['borde'])} mm")
-    lineas += ["", "Rojo punteado: agujeros originales de la base", "Magenta: exclusión del mecanismo"]
+    libre = min(m["libre"] for m in resultado["muescas"])
+    lineas += ["", f"Agujeros originales de la base: muesca R {mm(muesca_r, 1)}",
+               f"  (torreta Ø{mm(TORRETA_D, 1)} supuesta + {mm(muesca_r - TORRETA_D / 2, 1)} de holgura;"
+               f" PCB a ≥ {mm(libre)} del centro)",
+               "", "Rojo punteado: torreta del cuerpo (supuesta)", "Magenta: exclusión del mecanismo"]
     fig.text(0.665, 0.46, "\n".join(lineas), va="top", fontsize=8.5, family="monospace")
     fig.savefig(ruta)
     plt.close(fig)
@@ -685,6 +813,10 @@ def main():
     parser.add_argument("--usb-x", type=float, default=USB_X)
     parser.add_argument("--taladro", type=float, nargs=2, action="append", metavar=("X", "Y"),
                         help="centro de un taladro M2 (repetir); por defecto los 4 propuestos")
+    parser.add_argument("--muesca-r", type=float, default=MUESCA_R,
+                        help="radio libre alrededor de cada agujero original del suelo, mm (3,0)")
+    parser.add_argument("--muesca-redondeo", type=float, default=MUESCA_REDONDEO_MM,
+                        help="radio de las esquinas entre el borde y la muesca, mm (0,5)")
     args = parser.parse_args()
 
     suelo, pared, agujeros_base = leer_suelo(args.suelo, args.capa)
@@ -694,21 +826,27 @@ def main():
     fillets = calcular_fillets(simplificado, args.desviacion, args.holgura)
     primitivas = construir_contorno(simplificado, fillets)
     primitivas, usb = abrir_ranura_usb(primitivas, args.usb_x)
+    if len(agujeros_base) != 4:
+        raise ValueError(f"Se esperaban 4 agujeros en la capa {CAPA_AGUJEROS_BASE} y hay {len(agujeros_base)}")
+    muescas = [centro for centro, _ in agujeros_base]
+    for centro in muescas:
+        primitivas = abrir_muesca(primitivas, centro, args.muesca_r, args.muesca_redondeo)
 
     taladros = [tuple(t) for t in (args.taladro or TALADROS_XY)]
     mecanismo = tuple(args.mecanismo)
-    resultado = validar(suelo, primitivas, args.holgura, taladros, mecanismo, usb)
+    resultado = validar(suelo, primitivas, args.holgura, taladros, mecanismo, usb, muescas,
+                        args.muesca_r, args.muesca_redondeo)
 
     pared_trasera = LineString(np.vstack([suelo, suelo[:1]]))
     usb["boca_a_pared"] = pared_trasera.distance(Point(usb["x"], usb["y_boca"]))
     usb["y_pared_int"] = usb["y_boca"] - usb["boca_a_pared"]
     alt = alturas()
 
-    escribir_dxf(DXF_SALIDA, primitivas, taladros, mecanismo, usb)
+    escribir_dxf(DXF_SALIDA, primitivas, taladros, mecanismo, usb, agujeros_base, args.muesca_r)
     muestras = muestrear(primitivas, paso=0.01)
     RENDER_PLANTA.parent.mkdir(parents=True, exist_ok=True)
     render_planta(RENDER_PLANTA, suelo, pared, agujeros_base, muestras, taladros, mecanismo, usb,
-                  resultado, alt)
+                  resultado, alt, args.muesca_r)
     render_lateral(RENDER_LATERAL, usb, alt, taladros)
 
     geometria = {
@@ -717,6 +855,8 @@ def main():
         "mecanismo": {"centro": list(mecanismo), "diametro": MECANISMO_D},
         "taladros": [list(t) for t in taladros], "taladro_diametro": TALADRO_M2_D,
         "usb": {**usb, "ranura_ancho": USB_RANURA_ANCHO, "ranura_fondo": USB_RANURA_FONDO},
+        "muescas": {"centros": [list(c) for c in muescas], "radio": args.muesca_r,
+                    "redondeo": args.muesca_redondeo, "torreta_diametro": TORRETA_D},
         "alturas": alt, "resultado": resultado,
     }
     JSON_SALIDA.write_text(json.dumps(geometria, indent=1, ensure_ascii=False, default=float) + "\n")
@@ -734,6 +874,9 @@ def main():
     for k, t in enumerate(resultado["taladros"], start=1):
         print(f"  H{k} {t['xy']}: borde {t['borde']:.2f} mm, al mecanismo {t['mecanismo']:.2f} mm")
     print(f"Mecanismo a borde de PCB: {resultado['mecanismo']:.2f} mm")
+    for m in resultado["muescas"]:
+        print(f"  Muesca R {args.muesca_r:.2f} en ({m['xy'][0]:.2f}; {m['xy'][1]:.2f}): PCB a "
+              f"{m['libre']:.3f} mm del centro; borde de la muesca a {m['al_taladro']:.2f} mm del taladro más cercano")
     for clave, valor in alt.items():
         print(f"  {clave}: {valor:.3f}")
 
