@@ -3,9 +3,10 @@
 La base original se modifica lo justo para alojar la PCB de `Hardware/PCB-suelo/`:
 - **4 separadores** con piloto para tornillo M2 × 4;
 - una **ventana para el USB-C** en la pared trasera del lóbulo;
-- un **rebaje interior** encima de la ventana, para que el conector libre la pared al montar la PCB.
+- un **rebaje interior** encima de la ventana, para que el conector libre la pared al montar la PCB;
+- **tapones** en los 4 agujeros originales del suelo, que queda macizo.
 
-Todo lo demás queda igual que en el original, incluidos los 4 agujeros del suelo.
+Todo lo demás queda igual que en el original.
 
 El STL original es de un tercero y no está en el repositorio. Tampoco lo están los STL de salida ni los renders. Aquí solo están los scripts y los parámetros.
 
@@ -42,17 +43,19 @@ Salidas: `FurbyGPT-base-modificada.stl`, `prueba-lobulo.stl`, `cupon-pilotos.stl
 
 - **Booleanas de malla con `manifold3d`**, en doble precisión (`Mesh64`). `trimesh` lee y escribe y lanza los rayos y las secciones; `shapely` hace el 2D.
 - **Una sola fuente de cotas:**
-  - Todo lo de la PCB se lee de `Hardware/PCB-suelo/geometria.json`: contorno, taladros, mecanismo con `exclusion_diametro`, `funda`, `muescas`, `usb.*` y `alturas.*`.
+  - Todo lo de la PCB se lee de `Hardware/PCB-suelo/geometria.json`: contorno, taladros, mecanismo con `exclusion_diametro`, `funda`, `muescas`, `usb.*` y `alturas.*`. Las `muescas` son opcionales: si no vienen, vienen a `null`, con `"activas": false` o sin centros ni radio, G no las comprueba y la planta no las dibuja.
   - Lo propio de la base está en `parametros-base.json`.
   - El resto se **mide en el STL**: el z del suelo, las caras de la pared del lóbulo, el hueco interior de la pared y los agujeros originales. El código no lleva cotas.
 - **El z del suelo se mide con 20 rayos.** Sale 1,90541 (el valor exacto de la malla) y se compara con `alturas.corte_inf` (1,905). Si se separan más de 0,01, el script aborta.
-- **Coplanares:** la ventana corta a ras de la cara superior del suelo. Manifold resuelve bien el género y el volumen, pero deja una docena de astillas de 1e-10 mm². Un `simplify(1e-6)` (`tolerancia_malla`) las colapsa y el volumen cambia en 1e-5 mm³. Si aun así la malla no sale limpia (género, un cuerpo, cerrada y sin degenerados), se repite bajando la ventana `eps_coplanar`. Hoy no hace falta.
+- **Coplanares:** la ventana corta a ras de la cara superior del suelo y los tapones se unen a ras de sus dos caras. Manifold resuelve bien el género y el volumen, pero deja una docena de astillas de 1e-10 mm². Un `simplify(1e-6)` (`tolerancia_malla`) las colapsa y el volumen cambia en 1e-5 mm³. Si aun así la malla no sale limpia (género, un cuerpo, cerrada y sin degenerados), se repite bajando la ventana `eps_coplanar`. Los tapones no se desplazan, porque tienen que quedar a ras. Hoy no hace falta ninguna de las dos cosas.
+- **Las z de los tapones salen de los vértices de la pared de cada agujero** (0 y 1,905411720, el float32 de la malla), no de los rayos, que redondean a 1e-9. Así el tapón es exactamente coplanar con las dos caras del suelo.
 
 ## Operaciones
 
 | Feature | Qué hace |
 |---------|----------|
 | `Separador_H1…H4` | Cilindro de Ø `separador_d`, desde z_suelo − `separador_empotrado` hasta z_pcb_inf (3,905). Se une a la base |
+| `Tapon_A1…A4` (`Tapon_Agujeros`) | Solo si `tapar_agujeros_originales`. Cilindro en el centro medido de cada agujero, de Ø agujero + 2 × `tapon_margen` (2,93) y de z 0 a z 1,905, a ras de las dos caras del suelo. Se une a la base |
 | `Ventana_USBC` | Perfil XZ de x −80 a −67 y de z_suelo a `corte_sup`, con las esquinas superiores en R `ventana_radio_sup`. Atraviesa la pared en Y. Lleva un chaflán exterior a 45° de `ventana_chaflan_ext` en las jambas y el techo |
 | `Rebaje_USBC` | En planta es el hueco interior de la pared desplazado `rebaje_usb_fondo` (0,3) hacia fuera, siguiendo la curva, y recortado al ancho de la ventana. Va desde el techo de la ventana menos `rebaje_usb_solape` (0,1) hasta por encima del borde de la pared. Se resta |
 | `Piloto_H1…H4` | Ø `piloto_d` desde z_piloto_fondo (1,205) más un cono de chaflán `piloto_chaflan` en la boca. Se resta |
@@ -84,6 +87,17 @@ Derivados (en `verificacion.json`): piloto_prof = tornillo_largo − grosor PCB 
 
   La exclusión del mecanismo y la funda ya no se duplican aquí: salen de `geometria.json`.
 
+## Agujeros originales del suelo tapados
+
+- **Por qué:** en el Furby al que va la PCB no hay nada en los 4 agujeros originales del suelo (Ø2,13, pasantes). Se tapan para que el suelo quede macizo, y la PCB ya no lleva muescas alrededor de ellos (`fix/pcb-sin-muescas`).
+- **Dónde están:** se miden en el STL, en la sección a z 1,0: centros (−105,77; −106,80), (−105,51; −78,23), (−41,33; −78,15) y (−41,23; −106,83), Ø2,130, con el borde a 0,54–0,60 de la pared interior y el centro a 4,25–4,34 del borde exterior de la base. Salen iguales a z 0,3, 1,0 y 1,8, así que la medida es robusta y no hace falta una lista en los parámetros.
+- **El tapón:** Ø2,93 (`tapon_margen` = 0,4 por lado), algo mayor que el agujero para que se funda con el suelo de alrededor. Está entero en z 0…1,905, dentro de la planta de la base, así que no puede crear material por fuera ni resaltes. Con `tapon_margen` = 1,0 (Ø4,13, llega bajo la pared) el volumen añadido sigue siendo exactamente el de los huecos.
+- **Cómo se comprueba:**
+  - C: el género baja 4, de 5 a **1**: solo queda el asa de la ventana.
+  - D: los tapones añaden **27,1495 mm³**, igual al volumen de los 4 huecos (error 0). Si sobrara volumen, habría material fuera del suelo.
+  - E: 9 rayos verticales por agujero (centro y anillo a 0,9 del radio) entran en z 0 y salen en z 1,905, sin caras intermedias ni nada encima. La cara inferior sigue plana en z 0 y pasa de 5082,00 a **5096,25 mm²** (+14,249, el área de los 4 agujeros). La comprobación de lo no tocado excluye las cajas de los tapones dilatadas 1 mm, como las demás operaciones.
+- Con `tapar_agujeros_originales` = false la base vuelve a tener los agujeros pasantes y E comprueba que siguen abiertos y miden Ø2,13.
+
 ## Piezas de prueba
 
 - **`prueba-lobulo.stl`**: recorte de x −96 a −50, y −133 a −112 y z 0 a 12, con la ventana, el arranque del rebaje, H3 y H4. Sirve para probar el cable real, el paso del conector junto a la pared y el tornillo antes de imprimir la base entera.
@@ -97,9 +111,9 @@ Derivados (en `verificacion.json`): piloto_prof = tornillo_largo − grosor PCB 
 
 ## Parámetros y prueba de parametricidad
 
-Lo que se toca a mano está en `parametros-base.json`, sobre todo `separador_d`, `piloto_d`, `tornillo_largo`, `ventana_radio_sup`, `ventana_chaflan_ext`, `rebaje_usb_fondo` y `mecanismo_rebaje`. Si la PCB, la funda o la exclusión cambian, se regenera `geometria.json` en `Hardware/PCB-suelo/` y se vuelve a ejecutar el script.
+Lo que se toca a mano está en `parametros-base.json`, sobre todo `separador_d`, `piloto_d`, `tornillo_largo`, `ventana_radio_sup`, `ventana_chaflan_ext`, `rebaje_usb_fondo`, `mecanismo_rebaje`, `tapar_agujeros_originales` y `tapon_margen`. Si la PCB, la funda o la exclusión cambian, se regenera `geometria.json` en `Hardware/PCB-suelo/` y se vuelve a ejecutar el script.
 
-Prueba hecha con copias de los dos JSON: con `separador_d` = 4,8 y `alturas.corte_sup` = 9,5, la base se regenera y la verificación sale con 0, sin tocar código. Los separadores salen de Ø4,798 (96 lados), la ventana llega a z 9,5, el USB-C queda a 0,39 de la pared, la funda a 0,35 de la base y la malla tiene 1 cuerpo y género 5.
+Prueba hecha con copias de los dos JSON: con `separador_d` = 4,8 y `alturas.corte_sup` = 9,5, la base se regenera y la verificación sale con 0, sin tocar código. Los separadores salen de Ø4,798 (96 lados), la ventana llega a z 9,5, el USB-C queda a 0,39 de la pared, la funda a 0,35 de la base y la malla tiene 1 cuerpo y género 1, con los 4 agujeros macizos. Repetida con la `geometria.json` sin muescas. Con `tapar_agujeros_originales` = false también sale con 0: género 5 y agujeros pasantes.
 
 ## Verificación
 
@@ -109,15 +123,15 @@ El detalle está en `verificacion.json`. Resultado con los parámetros actuales:
 |-|--------------|-----------|
 | A | Cotas z del original | Suelo a 1,90541 en los 20 rayos y cara inferior a 0. Pared del lóbulo de 1,70 a 1,73 en x −80, −73,5 y −67 |
 | B | PCB y USB-C frente a la pared | PCB a 0,4997 del original como mínimo (criterio 0,5 ± 0,001), sin vértices dentro del prisma. USB-C a **0,390** de la base en toda la altura (0,090 sin el rebaje; criterio 0,25) |
-| C | Malla de salida | Cerrada, normales coherentes, 1 cuerpo, género 4 → 5, sin degenerados |
-| D | Volumen | Error de 1e-5 mm³ (ventana 166,75; rebaje fuera de la ventana 49,94) |
-| E | Lo no tocado | Distancia máxima 1e-6. Los 4 agujeros siguen pasantes y miden Ø2,130 |
+| C | Malla de salida | Cerrada, normales coherentes, 1 cuerpo, género 4 → 1 (+1 ventana, −4 tapones), sin degenerados |
+| D | Volumen | Error de 1e-5 mm³ (ventana 166,75; rebaje fuera de la ventana 49,94; tapones 27,1495, igual a los huecos) |
+| E | Lo no tocado | Distancia máxima 8e-7. Los 4 agujeros, macizos de z 0 a 1,905 en los 36 rayos. Cara inferior plana en z 0: 5082,00 → 5096,25 mm² |
 | F | Medidas | Ventana en x −80,00 … −67,00 y z 1,905 … 9,255. Separadores con error de centro ~1e-14, Ø4,998 y cara superior a 3,905. Pilotos de Ø1,799 y 2,70 de profundidad, con 1,205 de suelo debajo |
-| G | Exclusiones | 0 mm³ dentro de la exclusión de Ø15,3. Separador a agujero original 9,36 como mínimo; a muesca, 7,43 |
+| G | Exclusiones | 0 mm³ dentro de la exclusión de Ø15,3. Separador a agujero original 9,36 como mínimo. `geometria.json` trae `muescas: null`: la comprobación de muescas se salta y se anota |
 | H | Cable | Funda a 0,334 de la base (criterio 0,3). Cuerpo del USB-C montado a 2,02 |
 | I | Apoyo | La PCB apoya en los 4 separadores con una separación de 4e-16 y no corta la base |
 
 ## Pendiente
 
-- Siguen pendientes de confirmar los supuestos del plan: el centro y el Ø del mecanismo, la funda del cable real y el Ø de la torreta del cuerpo (las muescas).
+- Siguen pendientes de confirmar los supuestos del plan: el centro y el Ø del mecanismo y la funda del cable real.
 - `usb_cuerpo_ancho` y `usb_cuerpo_largo` repiten valores de `contorno_suelo.py`. Convendría que `geometria.json` los exportara.
