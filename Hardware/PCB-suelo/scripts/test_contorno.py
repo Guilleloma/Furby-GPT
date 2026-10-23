@@ -6,6 +6,9 @@
 - El agujero del mecanismo y su zona de exclusión están dentro de la PCB.
 - Los 4 agujeros originales del suelo (capa AgujerosBase) quedan libres: no hay
   PCB a menos de --muesca-r (3,0 mm por defecto) de cada centro.
+- geometria.json, que lee el script de la base, coincide con el DXF: taladros,
+  mecanismo y su exclusión, y centros y radio de las muescas; y trae la funda
+  del cable.
 - Con --suelo, además, el contorno queda dentro del suelo y a 0,5 mm o más de
   la pared. El DXF del suelo no está en el repositorio, así que sin --suelo
   esa comprobación se salta.
@@ -17,6 +20,7 @@ Uso (desde Hardware/PCB-suelo):
 """
 
 import argparse
+import json
 import math
 import sys
 from pathlib import Path
@@ -27,6 +31,7 @@ import shapely
 from shapely.geometry import LinearRing, Point, Polygon
 
 DXF_PCB = Path(__file__).resolve().parent.parent / "contorno-pcb.dxf"
+JSON_GEOMETRIA = DXF_PCB.parent / "geometria.json"
 
 TALADROS_ESPERADOS = [(-97.0, -68.5), (-50.0, -68.5), (-86.8, -122.4), (-60.2, -122.4)]
 TALADRO_D = 2.3
@@ -171,6 +176,41 @@ def comprobar_agujeros_base(placa, agujeros, muesca_r):
     return f"4 × Ø{AGUJERO_BASE_D} libres; PCB a ≥ {min(libres):.3f} mm de cada centro (se piden {muesca_r})"
 
 
+def comprobar_geometria_json(ruta, circulos, muesca_r):
+    try:
+        return comparar_geometria_json(json.loads(ruta.read_text()), circulos, muesca_r)
+    except KeyError as error:
+        raise AssertionError(f"Falta el campo {error} en {ruta.name}") from error
+
+
+def comparar_geometria_json(geometria, circulos, muesca_r):
+
+    def mismos_circulos(capa, centros, diametro, nombre):
+        en_dxf = circulos.get(capa, [])
+        if len(en_dxf) != len(centros):
+            raise AssertionError(f"{nombre}: {len(centros)} en el JSON y {len(en_dxf)} en la capa {capa}")
+        for centro in centros:
+            dxf_centro, dxf_diametro = min(en_dxf, key=lambda c: math.dist(c[0], centro))
+            if math.dist(dxf_centro, centro) > 1e-6 or abs(dxf_diametro - diametro) > 1e-6:
+                raise AssertionError(f"{nombre} en {centro} Ø{diametro} no coincide con el DXF "
+                                     f"({dxf_centro} Ø{dxf_diametro:.3f})")
+
+    mismos_circulos("Taladros", geometria["taladros"], geometria["taladro_diametro"], "Taladros")
+    mecanismo = geometria["mecanismo"]
+    mismos_circulos("Mecanismo", [mecanismo["centro"]], mecanismo["diametro"], "Mecanismo")
+    mismos_circulos("ExclusionMecanismo", [mecanismo["centro"]], mecanismo["exclusion_diametro"],
+                    "Exclusión del mecanismo")
+    muescas = geometria["muescas"]
+    mismos_circulos("Muescas", muescas["centros"], 2 * muescas["radio"], "Muescas")
+    if muescas["radio"] < muesca_r - 1e-9:
+        raise AssertionError(f"Muescas de R {muescas['radio']} en el JSON (se piden {muesca_r})")
+    funda = geometria["funda"]
+    if not (funda["ancho"] > 0 and funda["alto"] > 0):
+        raise AssertionError(f"Funda del cable sin medidas: {funda}")
+    return (f"exclusión Ø{mecanismo['exclusion_diametro']}, muescas R {muescas['radio']}, "
+            f"funda {funda['ancho']} × {funda['alto']}{' (supuesto)' if funda.get('supuesto') else ''}")
+
+
 def comprobar_holgura(placa, ruta_suelo):
     msp = ezdxf.readfile(ruta_suelo).modelspace()
     polilineas = [e for e in msp.query("LWPOLYLINE") if e.dxf.layer == "SueloInterior"]
@@ -189,6 +229,7 @@ def comprobar_holgura(placa, ruta_suelo):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--pcb", type=Path, default=DXF_PCB)
+    parser.add_argument("--geometria", type=Path, default=JSON_GEOMETRIA)
     parser.add_argument("--suelo", type=Path, help="DXF del suelo interior (capa SueloInterior)")
     parser.add_argument("--muesca-r", type=float, default=MUESCA_R,
                         help="radio libre de PCB alrededor de cada agujero original del suelo, mm")
@@ -203,6 +244,8 @@ def main():
         ("mecanismo y exclusión dentro", lambda: comprobar_mecanismo(placa, circulos)),
         ("agujeros de la base libres",
          lambda: comprobar_agujeros_base(placa, circulos.get("AgujerosBase", []), args.muesca_r)),
+        ("geometria.json coincide con el DXF",
+         lambda: comprobar_geometria_json(args.geometria, circulos, args.muesca_r)),
     ]
     if args.suelo:
         comprobaciones.append(("holgura contra el suelo", lambda: comprobar_holgura(placa, args.suelo)))
