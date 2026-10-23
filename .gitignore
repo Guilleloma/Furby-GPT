@@ -12,3 +12,6 @@ __pycache__/
 
 # Prompt del sistema personal (plantilla: chatbot1.example.txt)
 chatbot1.txt
+
+# Modelo de palabra de activación de Picovoice (ligado a la cuenta)
+*.ppn
