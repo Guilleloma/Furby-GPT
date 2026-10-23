@@ -4,8 +4,9 @@
 Lee geometria.json (lo escribe contorno_suelo.py) y crea en kicad/:
 - Furby.pretty con el taladro M2 y el USB-C HRO TYPE-C-31-M-28A,
 - el esquema mínimo: USB-C de solo alimentación con 5,1 k en CC1 y CC2,
-- la placa: Edge.Cuts, recorte del mecanismo, taladros, USB-C y resistencias
-  colocados y rutados, y un plano de GND en la cara inferior.
+- la placa: Edge.Cuts (con las muescas de los agujeros de la base), recorte
+  del mecanismo, taladros, USB-C y resistencias colocados y rutados, y un
+  plano de GND en la cara inferior.
 
 Se ejecuta con el Python de KiCad, que trae el módulo pcbnew:
     /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3 \\
@@ -285,6 +286,18 @@ def borde(placa, geometria):
     circulo.SetCenter(vec(cx, cy))
     circulo.SetEnd(vec(cx + mecanismo["diametro"] / 2, cy))
     placa.Add(circulo)
+    # Torreta supuesta del cuerpo en cada agujero original del suelo, como
+    # referencia: la muesca del contorno ya deja su holgura.
+    muescas = geometria["muescas"]
+    for centro in muescas["centros"]:
+        torreta = pcbnew.PCB_SHAPE(placa)
+        torreta.SetShape(pcbnew.SHAPE_T_CIRCLE)
+        torreta.SetLayer(pcbnew.Cmts_User)
+        torreta.SetWidth(pcbnew.FromMM(0.1))
+        tx, ty = a_kicad(*centro)
+        torreta.SetCenter(vec(tx, ty))
+        torreta.SetEnd(vec(tx + muescas["torreta_diametro"] / 2, ty))
+        placa.Add(torreta)
 
 
 def red(placa, nombre):
