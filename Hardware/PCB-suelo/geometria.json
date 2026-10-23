@@ -1657,7 +1657,13 @@
    -60.88,
    -95.32
   ],
-  "diametro": 11.3
+  "diametro": 11.3,
+  "exclusion_diametro": 15.3
+ },
+ "funda": {
+  "ancho": 12.0,
+  "alto": 6.5,
+  "supuesto": true
  },
  "taladros": [
   [

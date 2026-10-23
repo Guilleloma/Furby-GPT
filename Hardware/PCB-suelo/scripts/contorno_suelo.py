@@ -852,7 +852,9 @@ def main():
     geometria = {
         "nota": "Coordenadas del STL de la base, mm. Generado por scripts/contorno_suelo.py",
         "contorno": a_json(primitivas),
-        "mecanismo": {"centro": list(mecanismo), "diametro": MECANISMO_D},
+        "mecanismo": {"centro": list(mecanismo), "diametro": MECANISMO_D,
+                      "exclusion_diametro": MECANISMO_D + 2 * EXCLUSION_MECANISMO_MM},
+        "funda": {"ancho": SOBREMOLDEADO[0], "alto": SOBREMOLDEADO[1], "supuesto": True},
         "taladros": [list(t) for t in taladros], "taladro_diametro": TALADRO_M2_D,
         "usb": {**usb, "ranura_ancho": USB_RANURA_ANCHO, "ranura_fondo": USB_RANURA_FONDO},
         "muescas": {"centros": [list(c) for c in muescas], "radio": args.muesca_r,
