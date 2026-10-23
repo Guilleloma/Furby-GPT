@@ -1,16 +1,33 @@
 #text_to_speech.py
 
+import io
+import wave
+
 import requests
 from google.cloud import texttospeech
 from google.oauth2 import service_account
 from utils import get_env_key
 
+# ElevenLabs devuelve PCM crudo S16LE mono a la frecuencia pedida en output_format
+ELEVENLABS_SAMPLE_RATE = 22050
+ELEVENLABS_OUTPUT_FORMAT = f'pcm_{ELEVENLABS_SAMPLE_RATE}'
+
+def pcm_to_wav(pcm_bytes, sample_rate, channels=1, sample_width=2):
+    # Añade la cabecera WAV en memoria para que el audio se reproduzca igual que el de Google
+    buffer = io.BytesIO()
+    with wave.open(buffer, 'wb') as wav_file:
+        wav_file.setnchannels(channels)
+        wav_file.setsampwidth(sample_width)
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(pcm_bytes)
+    return buffer.getvalue()
+
 def text_to_speech_elevenlabs(text):
     elapikey = get_env_key('ELEVENLABS_API_KEY')
     voice_id = get_env_key('ELEVENLABS_VOICE_ID')
     url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}'
+    params = {'output_format': ELEVENLABS_OUTPUT_FORMAT}
     headers = {
-        'Accept': 'audio/mpeg',
         'xi-api-key': elapikey,
         'Content-Type': 'application/json'
     }
@@ -18,13 +35,12 @@ def text_to_speech_elevenlabs(text):
         'text': text,
         'model_id': 'eleven_monolingual_v1'
     }
-    response = requests.post(url, headers=headers, json=data)
+    response = requests.post(url, params=params, headers=headers, json=data, timeout=30)
     if response.status_code == 200:
-        with open('output.mp3', 'wb') as f:
-            f.write(response.content)
-        return 'output.mp3'
+        # Devuelve bytes WAV, el mismo formato que text_to_speech_google
+        return pcm_to_wav(response.content, ELEVENLABS_SAMPLE_RATE)
     else:
-        print('Error:', response.text)
+        print('Error ElevenLabs:', response.status_code, response.text)
         return None
 
 def text_to_speech_google(text, language_code='es-ES', voice_name='es-ES-Neural2-B', pitch=20, speaking_rate=1.0):
