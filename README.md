@@ -31,10 +31,24 @@ This project transforms a 1998 Furby into an interactive and advanced desktop as
    - Installation and setup of OpenAI, Google Cloud
    - Installation of dependencies. Example:
      ```
-     pip install openai whisper google-cloud-texttospeech pvporcupinewrapper
+     pip install openai whisper google-cloud-texttospeech pvporcupinewrapper python-dotenv
      ```
-   - Add YOUR API Keys (OpenAI, Porcupine, Google)
+   - Add YOUR API Keys (see **Configuration** below)
 3. **Programming and Integration:** Development of code to manage voice interaction and movement.
+
+## Configuration
+API keys are read from environment variables. Copy `.env.example` to `.env` and fill it in:
+```
+cp .env.example .env
+```
+
+| Variable | Service |
+|----------|---------|
+| `OPENAI_API_KEY` | OpenAI (Whisper and ChatGPT) |
+| `ELEVENLABS_API_KEY` | ElevenLabs (optional TTS) |
+| `PICOVOICE_ACCESS_KEY` | Picovoice Porcupine (wake word) |
+
+`.env` is loaded automatically when `python-dotenv` is installed; otherwise export the variables in your shell. `.env` is in `.gitignore`: never commit it. If a variable is missing, the program stops and tells you which one.
 
 ## Usage
 1. Wake up the Furby with a keyword using Porcupine.
