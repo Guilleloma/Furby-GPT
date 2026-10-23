@@ -366,8 +366,12 @@ def abrir_ranura_usb(primitivas, x_centro):
     _, despues = partir(primitivas[kd], punto_d)
     nuevo = primitivas[:ki] + [antes] + ranura + [despues] + primitivas[kd + 1:]
     nuevo = [p for p in nuevo if longitud_primitiva(p) > 1e-6]
+    # y_borde es el borde en el eje del conector (origen de la huella); a los
+    # lados de la ranura el borde real queda algo más adentro porque el fondo
+    # del lóbulo es curvo.
     referencia = {"x": x_centro, "y_borde": float(y_borde), "y_fondo": float(y_fondo),
-                  "y_boca": float(y_borde - USB_SALIENTE_BOCA), "x_paredes": [xi, xd]}
+                  "y_boca": float(y_borde - USB_SALIENTE_BOCA), "x_paredes": [xi, xd],
+                  "y_borde_lados": [float(punto_i[1]), float(punto_d[1])]}
     return nuevo, referencia
 
 
@@ -598,6 +602,7 @@ def render_lateral(ruta, usb, alt, taladros):
     y_pared_int = usb["y_pared_int"]
     y_pared_ext = y_pared_int - PARED_GROSOR_LOBULO
     y_borde, y_boca, y_fondo = usb["y_borde"], usb["y_boca"], usb["y_fondo"]
+    y_lados = min(usb["y_borde_lados"])
     gris = dict(fc="#9a9a9a", ec="#555", lw=0.6)
     ax.add_patch(Rectangle((y_pared_ext - 1.0, 0), 33, SUELO_Z, **gris))
     ax.add_patch(Rectangle((y_pared_ext, SUELO_Z), PARED_GROSOR_LOBULO, alt["corte_inf"] - SUELO_Z, **gris))
@@ -607,7 +612,7 @@ def render_lateral(ruta, usb, alt, taladros):
 
     # En x = USB_X la PCB empieza en el fondo de la ranura; a los lados de la
     # ranura llega hasta el borde (en línea discontinua, por detrás del corte).
-    ax.add_patch(Rectangle((y_borde, alt["z_pcb_inf"]), y_fondo - y_borde, PCB_GROSOR, fill=False,
+    ax.add_patch(Rectangle((y_lados, alt["z_pcb_inf"]), y_fondo - y_lados, PCB_GROSOR, fill=False,
                            ec="#0e5a32", lw=0.8, ls="--"))
     ax.add_patch(Rectangle((y_fondo, alt["z_pcb_inf"]), 26, PCB_GROSOR, fc="#2e8b57", ec="#0e5a32",
                            lw=0.8, alpha=0.8))
@@ -640,7 +645,9 @@ def render_lateral(ruta, usb, alt, taladros):
             va="center", fontsize=6.5, color="#555")
     ax.text(y_fondo + 26.5, 21.5,
             f"En x = {mm(usb['x'], 1)} la PCB empieza en el fondo de la ranura (y {mm(y_fondo)}).\n"
-            f"A los lados de la ranura llega hasta el borde (y {mm(y_borde)}): en discontinua.\n"
+            f"A los lados de la ranura llega hasta y {mm(usb['y_borde_lados'][0])} (x {mm(usb['x_paredes'][0])}) "
+            f"e y {mm(usb['y_borde_lados'][1])} (x {mm(usb['x_paredes'][1])}): en discontinua.\n"
+            f"y {mm(y_borde)} es el borde nominal en el eje del conector (origen de la huella).\n"
             "Separadores en H3/H4, fuera de este corte: dibujados en discontinua.",
             ha="right", va="top", fontsize=7.5, color="#333")
     ax.text(y_pared_ext + 4, 0.95, f"suelo {mm(SUELO_Z, 3)}", fontsize=7.5, va="center")
