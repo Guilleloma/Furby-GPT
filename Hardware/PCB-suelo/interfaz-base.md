@@ -32,8 +32,17 @@ El contorno es el suelo interior encogido 0,5 mm, así que la pared interior **n
 |------|-------|
 | Altura sobre el suelo | **2,0** (de z 1,905 a z 3,905) |
 | Diámetro recomendado | 5,0 (la cabeza del M2 mide Ø4,0 y la PCB deja libre Ø5,0 alrededor de cada taladro) |
-| Tornillo | M2 autorroscante para plástico, de 4 o 5 mm bajo cabeza. Con 5 mm entra 3,4 mm en el plástico, que tiene 3,9 mm (separador más suelo), así que no asoma por debajo |
-| Alternativa | Inserto roscado M2 de 3,0 mm de largo. Necesita un separador de Ø5 o más y un alojamiento de 3,5 mm de profundidad, que entra en el suelo |
+| Tornillo | **M2 × 4** autorroscante para plástico (rosca PA o PB), **4,2 de largo como máximo** bajo cabeza |
+| Plástico bajo la PCB | 3,905 (separador de 2,0 más suelo de 1,905) |
+| Rosca en el plástico | 2,4 nominal (4,0 − 1,6 de PCB), 2,6 con el largo máximo |
+| Suelo bajo la punta | 1,5 nominal, 1,3 con el largo máximo: no asoma por debajo |
+
+Descartados:
+
+- **M2 × 5:** con el largo máximo de unos 5,3 entraría 3,7 en el plástico y dejaría solo 0,2 de suelo bajo la punta. La punta marcaría o rompería la cara inferior de la base.
+- **Insertos roscados:** no caben con separadores de Ø5 y 2 de alto. Un inserto M2 de 3,0 necesita un alojamiento de unos 3,5 de profundidad, que con 3,9 de plástico deja el suelo casi pasante, y pared alrededor que un Ø5 no da.
+
+La rosca de 2,4 es corta, de 1,2 veces el diámetro del tornillo. Para una PCB que solo recibe la fuerza de enchufar el cable (0,5–2,0 kgf, repartida entre H3 y H4) basta, pero conviene no apretar de más. El taladro piloto del separador sale del plan de la base.
 
 | Taladro | Centro (x; y) | Borde de agujero a borde de PCB | A borde del agujero del mecanismo |
 |---------|---------------|---------------------------------|-----------------------------------|
