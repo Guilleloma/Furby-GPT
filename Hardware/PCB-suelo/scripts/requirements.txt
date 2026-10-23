@@ -1,0 +1,4 @@
+ezdxf>=1.4
+numpy>=2.0
+matplotlib>=3.8
+shapely>=2.0
