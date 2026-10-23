@@ -188,11 +188,17 @@ def medir_original(malla, geo, par):
     z_min, z_max = float(malla.bounds[0][2]), float(malla.bounds[1][2])
 
     # Agujeros originales del suelo: huecos de la sección a media altura del suelo.
+    # Sus z salen de los vértices de su pared, no de los rayos (redondeados a 1e-9),
+    # para que el tapón quede exactamente coplanar con las dos caras del suelo.
     plato = max(seccion(malla, v["agujero_z"]), key=lambda q: q.area)
     agujeros = []
     for anillo in plato.interiors:
         h = Polygon(anillo)
-        agujeros.append({"centro": [h.centroid.x, h.centroid.y], "d": 2 * math.sqrt(h.area / math.pi)})
+        d = 2 * math.sqrt(h.area / math.pi)
+        cerca = np.linalg.norm(malla.vertices[:, :2] - [h.centroid.x, h.centroid.y], axis=1) <= d / 2 + v["cota_tol"]
+        zs = malla.vertices[cerca, 2]
+        agujeros.append({"centro": [h.centroid.x, h.centroid.y], "d": d, "area": h.area,
+                         "z": [float(zs.min()), float(zs.max())]})
 
     # Cavidad: hueco interior de la pared (paredes verticales, igual a cualquier altura).
     pared = max(seccion(malla, (geo["alturas"]["corte_inf"] + z_max) / 2), key=lambda q: q.area)
@@ -310,11 +316,24 @@ def rebaje_usb(cavidad, par, der, x0, x1, y_dentro, y_fuera):
     return m3.Manifold.extrude(seccion, z1 - z0).translate([0, 0, z0])
 
 
-def operaciones(geo, par, der, cavidad, desfase_z=0.0):
+ADITIVAS = ("Separador_", "Tapon_")
+
+
+def es_aditiva(nombre):
+    return nombre.startswith(ADITIVAS)
+
+
+def genero_esperado(genero_original, ops):
+    """La ventana abre un asa en la pared (+1) y cada tapón cierra un agujero pasante (−1)."""
+    return genero_original + 1 - sum(n.startswith("Tapon_") for n in ops)
+
+
+def operaciones(geo, par, der, cavidad, agujeros, desfase_z=0.0):
     """Añadidos y cortadores con sus nombres de feature del plan.
 
-    cavidad es el hueco interior de la pared medido en el original; desfase_z
-    baja la cara inferior de la ventana (respaldo eps_coplanar)."""
+    cavidad es el hueco interior de la pared y agujeros los agujeros originales del
+    suelo, medidos en el original; desfase_z baja la cara inferior de la ventana
+    (respaldo eps_coplanar)."""
     seg = par["segmentos_circulo"]
     a = geo["alturas"]
     z_suelo = der["z_suelo"]
@@ -323,6 +342,12 @@ def operaciones(geo, par, der, cavidad, desfase_z=0.0):
     for i, t in enumerate(geo["taladros"], start=1):
         ops[f"Separador_H{i}"] = cilindro(t, z_suelo - par["separador_empotrado"], a["z_pcb_inf"],
                                           par["separador_d"], seg)
+
+    # Tapon_Agujeros: a ras de las dos caras del suelo (las z exactas de la pared del
+    # agujero) y algo más ancho que el agujero para fundirse con el suelo de alrededor.
+    if par["tapar_agujeros_originales"]:
+        for i, ag in enumerate(agujeros, start=1):
+            ops[f"Tapon_A{i}"] = cilindro(ag["centro"], *ag["z"], ag["d"] + 2 * par["tapon_margen"], seg)
 
     x0, x1 = der["ventana_x"]
     z0, z1 = z_suelo - desfase_z, a["corte_sup"]
@@ -355,13 +380,14 @@ def operaciones(geo, par, der, cavidad, desfase_z=0.0):
 
 
 def aplicar(base, ops, tolerancia):
-    """Base ∪ separadores − ventana − pilotos − rebaje, en el orden del plan.
+    """Base ∪ separadores ∪ tapones − ventana − pilotos − rebaje, en el orden del plan.
 
-    La ventana corta a ras del suelo (caras coplanares) y deja astillas de
-    1e-10 mm²; simplify(tolerancia) las colapsa sin mover la geometría."""
-    separadores = [s for n, s in ops.items() if n.startswith("Separador_")]
-    cortes = [s for n, s in ops.items() if not n.startswith("Separador_")]
-    resultado = m3.Manifold.batch_boolean([base, *separadores], m3.OpType.Add)
+    La ventana corta a ras del suelo y los tapones se unen a ras de sus dos caras
+    (caras coplanares); las astillas de 1e-10 mm² que quedan las colapsa
+    simplify(tolerancia) sin mover la geometría."""
+    aditivas = [s for n, s in ops.items() if es_aditiva(n)]
+    cortes = [s for n, s in ops.items() if not es_aditiva(n)]
+    resultado = m3.Manifold.batch_boolean([base, *aditivas], m3.OpType.Add)
     for corte in cortes:
         resultado = resultado - corte
     return resultado.simplify(tolerancia)

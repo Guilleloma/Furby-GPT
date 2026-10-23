@@ -102,39 +102,50 @@ def comprobar_b(original, salida, medidas, geo, par):
 
 # -------------------------------------------------------------------- C
 
-def comprobar_c(salida, salida_m, genero_original, par):
+def comprobar_c(salida, salida_m, genero_original, ops, par):
     cuerpos = len(salida.split(only_watertight=False))
     degenerados = int(np.count_nonzero(salida.area_faces < par["verificacion"]["triangulo_degenerado_area"]))
     genero = salida_m.genus()
+    esperado = comun.genero_esperado(genero_original, ops)
     ok = (salida.is_watertight and salida.is_winding_consistent and cuerpos == 1
-          and genero == genero_original + 1 and degenerados == 0)
+          and genero == esperado and degenerados == 0)
     return resultado(ok, watertight=bool(salida.is_watertight),
                      normales_coherentes=bool(salida.is_winding_consistent), cuerpos=cuerpos,
-                     genero=genero, genero_original=genero_original, genero_esperado=genero_original + 1,
+                     genero=genero, genero_original=genero_original, genero_esperado=esperado,
+                     tapones=sum(n.startswith("Tapon_") for n in ops),
                      triangulos=len(salida.faces), degenerados=degenerados)
 
 
 # -------------------------------------------------------------------- D
 
-def comprobar_d(original_m, salida_m, ops, par):
+def comprobar_d(original_m, salida_m, ops, medidas, par):
     separadores = [s for n, s in ops.items() if n.startswith("Separador_")]
+    tapones = [s for n, s in ops.items() if n.startswith("Tapon_")]
     pilotos = [s for n, s in ops.items() if n.startswith("Piloto_")]
     union_sep = comun.m3.Manifold.batch_boolean(separadores, comun.m3.OpType.Add)
-    con_sep = original_m + union_sep
+    union_tap = comun.m3.Manifold.batch_boolean(tapones, comun.m3.OpType.Add) if tapones else comun.m3.Manifold()
+    con_sep = original_m + union_sep + union_tap
     v_orig = volumen(original_m)
     v_sep = volumen(union_sep - original_m)
+    # Lo que añaden los tapones tiene que ser justo el hueco de los agujeros: si
+    # sobrara, habría material fuera del suelo.
+    v_tapones = volumen(union_tap - original_m)
+    v_huecos = sum(a["area"] * (a["z"][1] - a["z"][0]) for a in medidas["agujeros"]) if tapones else 0.0
     v_ventana = volumen(original_m ^ ops["Ventana_USBC"])
     # El rebaje solapa con la ventana: solo cuenta lo que quita fuera de ella.
     v_rebaje_usb = volumen((original_m - ops["Ventana_USBC"]) ^ ops["Rebaje_USBC"]) if "Rebaje_USBC" in ops else 0.0
     v_pilotos = volumen(con_sep ^ comun.m3.Manifold.batch_boolean(pilotos, comun.m3.OpType.Add))
     v_rebaje = volumen(con_sep ^ ops["Rebaje_Mecanismo"]) if "Rebaje_Mecanismo" in ops else 0.0
-    esperado = v_orig + v_sep - v_ventana - v_rebaje_usb - v_pilotos - v_rebaje
+    esperado = v_orig + v_sep + v_tapones - v_ventana - v_rebaje_usb - v_pilotos - v_rebaje
     v_salida = volumen(salida_m)
     error = v_salida - esperado
     v_ref = par["volumen_base_esperado"]
+    tol = par["verificacion"]["volumen_tol"]
     ok_orig = abs(v_orig - v_ref) <= v_ref * par["volumen_base_tolerancia_rel"]
-    return resultado(abs(error) < par["verificacion"]["volumen_tol"] and ok_orig,
+    ok_tapones = abs(v_tapones - v_huecos) < tol
+    return resultado(abs(error) < tol and ok_orig and ok_tapones,
                      v_original=v_orig, v_original_esperado=v_ref, v_separadores_fuera=v_sep,
+                     v_tapones=v_tapones, v_huecos_agujeros=v_huecos, error_tapones=v_tapones - v_huecos,
                      v_ventana=v_ventana, v_rebaje_usb=v_rebaje_usb, v_pilotos=v_pilotos, v_rebaje=v_rebaje,
                      v_esperado=esperado, v_salida=v_salida, error=error)
 
@@ -156,6 +167,7 @@ def comprobar_e(original, salida, medidas, ops, par):
     _, distancias, _ = salida.nearest.on_surface(puntos[fuera])
     dist_max = float(distancias.max())
 
+    tapados = par["tapar_agujeros_originales"]
     agujeros = []
     plato = max(comun.seccion(salida, v["agujero_z"]), key=lambda q: q.area)
     huecos = [Polygon(a) for a in plato.interiors]
@@ -163,12 +175,59 @@ def comprobar_e(original, salida, medidas, ops, par):
         c = a["centro"]
         hueco = next((h for h in huecos if h.contains(Point(c))), None)
         d_salida = 2 * math.sqrt(hueco.area / math.pi) if hueco is not None else 0.0
-        impactos = comun.rayos(salida, [(c[0], c[1], medidas["z_min"] - 5)], (0, 0, 1))[0]
-        agujeros.append({"centro": c, "d": d_salida, "pasante": len(impactos) == 0})
-    ok_agujeros = len(agujeros) == 4 and all(
-        a["pasante"] and abs(a["d"] - v["agujero_original_d"]) <= v["agujero_original_tol"] for a in agujeros)
-    return resultado(dist_max < v["intocado_dist"] and ok_agujeros, puntos_comprobados=int(fuera.sum()),
-                     distancia_max=dist_max, agujeros_originales=agujeros)
+        if tapados:
+            agujeros.append({"centro": c, "d_original": a["d"], "hueco_en_salida": hueco is not None,
+                             **rayos_tapon(salida, a, medidas, par)})
+        else:
+            impactos = comun.rayos(salida, [(c[0], c[1], medidas["z_min"] - 5)], (0, 0, 1))[0]
+            agujeros.append({"centro": c, "d": d_salida, "pasante": len(impactos) == 0})
+    if tapados:
+        ok_agujeros = len(agujeros) == 4 and all(a["macizo"] and not a["hueco_en_salida"] for a in agujeros)
+    else:
+        ok_agujeros = len(agujeros) == 4 and all(
+            a["pasante"] and abs(a["d"] - v["agujero_original_d"]) <= v["agujero_original_tol"] for a in agujeros)
+    inferior = cara_inferior(original, salida, medidas, par)
+    return resultado(dist_max < v["intocado_dist"] and ok_agujeros and inferior["ok"],
+                     puntos_comprobados=int(fuera.sum()), distancia_max=dist_max,
+                     agujeros_tapados=tapados, agujeros_originales=agujeros, cara_inferior=inferior)
+
+
+def rayos_tapon(salida, agujero, medidas, par):
+    """Rayos hacia arriba en el centro del agujero y en un anillo dentro de él: cada
+    uno tiene que entrar en material en la cara inferior y salir en la superior del
+    suelo, sin caras intermedias ni nada por encima."""
+    v = par["verificacion"]
+    c, n = agujero["centro"], v["tapon_rayos_anillo"]
+    r = agujero["d"] / 2 * v["tapon_rayos_radio_rel"]
+    xy = [tuple(c)] + [(c[0] + r * math.cos(2 * math.pi * k / n), c[1] + r * math.sin(2 * math.pi * k / n))
+                       for k in range(n)]
+    impactos = comun.rayos(salida, [(x, y, medidas["z_min"] - 5) for x, y in xy], (0, 0, 1))
+    macizo = all(len(h) == 2 and abs(h[0] - medidas["z_min"]) <= v["z_tol"]
+                 and abs(h[1] - medidas["z_suelo"]) <= v["z_tol"] for h in impactos)
+    entradas = [h[0] for h in impactos if h]
+    salidas = [h[-1] for h in impactos if h]
+    return {"macizo": macizo, "rayos": len(xy), "impactos_centro": impactos[0],
+            "z_entrada": [min(entradas), max(entradas)] if entradas else None,
+            "z_salida": [min(salidas), max(salidas)] if salidas else None}
+
+
+def area_cara(malla, z, signo, tol):
+    """Área de las caras horizontales en z cuya normal apunta hacia signo (±1)."""
+    en_z = np.all(np.abs(malla.vertices[malla.faces][:, :, 2] - z) <= tol, axis=1)
+    hacia = np.sign(malla.face_normals[:, 2]) == signo
+    return float(malla.area_faces[en_z & hacia].sum())
+
+
+def cara_inferior(original, salida, medidas, par):
+    """La cara de apoyo sigue plana en z_min y crece justo el área de los agujeros tapados."""
+    v = par["verificacion"]
+    z = medidas["z_min"]
+    antes, despues = area_cara(original, z, -1, v["z_tol"]), area_cara(salida, z, -1, v["z_tol"])
+    esperado = sum(a["area"] for a in medidas["agujeros"]) if par["tapar_agujeros_originales"] else 0.0
+    z_min_salida = float(salida.bounds[0][2])
+    ok = abs(despues - antes - esperado) <= v["area_tol"] and abs(z_min_salida - z) <= v["z_tol"]
+    return {"ok": ok, "z": z, "z_min_salida": z_min_salida, "area_original": antes, "area_salida": despues,
+            "aumento": despues - antes, "aumento_esperado": esperado}
 
 
 # -------------------------------------------------------------------- F
@@ -320,8 +379,8 @@ def verificar(original, original_m, salida, salida_m, fantasma_m, geo, par, medi
     comprobaciones = {
         "A_cotas_original": comprobar_a(medidas, geo, par),
         "B_interior_pcb": comprobar_b(original, salida, medidas, geo, par),
-        "C_malla_salida": comprobar_c(salida, salida_m, original_m.genus(), par),
-        "D_volumen": comprobar_d(original_m, salida_m, ops, par),
+        "C_malla_salida": comprobar_c(salida, salida_m, original_m.genus(), ops, par),
+        "D_volumen": comprobar_d(original_m, salida_m, ops, medidas, par),
         "E_intocado": comprobar_e(original, salida, medidas, ops, par),
         "F_medidas_salida": f,
         "G_exclusiones": comprobar_g(salida_m, medidas, geo, par, der),
@@ -390,7 +449,7 @@ def main():
     original_m = comun.a_manifold(original)
     desfase = json.loads((salida_dir / comun.NOMBRE_VERIFICACION).read_text()).get("desfase_ventana", 0.0) \
         if (salida_dir / comun.NOMBRE_VERIFICACION).exists() else 0.0
-    ops = comun.operaciones(geo, par, der, medidas["cavidad"], desfase)
+    ops = comun.operaciones(geo, par, der, medidas["cavidad"], medidas["agujeros"], desfase)
     salida = comun.leer_malla(salida_dir / comun.NOMBRE_BASE)
     salida_m = comun.a_manifold(salida)
     fantasma_m = comun.pcb_fantasma(geo, par, der)
