@@ -151,7 +151,7 @@ def render_corte_usb(ruta, base, fantasma, geo, par, der, medidas, ver):
     h = ver["H_cable"]
     ax.text(0.01, 0.98,
             f"Corte por x = {mm(x, 1)}\n"
-            f"Funda {mm(par['funda_ancho'], 0)} × {mm(par['funda_alto'], 1)} (supuesto): z {mm(f0, 3)} … {mm(f1, 3)}\n"
+            f"Funda {mm(der['funda_ancho'], 0)} × {mm(der['funda_alto'], 1)} (supuesto): z {mm(f0, 3)} … {mm(f1, 3)}\n"
             f"Funda a la base mín. {mm(h['funda_distancia_min'], 3)} · USB-C a la base mín. {mm(h['usb_distancia_min'], 2)}\n"
             f"Chaflán exterior real (x −80 / −73,5 / −67): "
             + " / ".join(mm(c, 2) for c in chaflan.values()),

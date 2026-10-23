@@ -248,8 +248,10 @@ def derivados(geo, par, medidas):
         "y_ext_ref": y_ext_ref,
         "y_chaflan_inicio": y_chaflan_inicio,
         "chaflan_real": {f"{x:.2f}": (y_chaflan_inicio - y_ext[x] if c > 0 else 0.0) for x in xs},
-        "exclusion_d": mec["diametro"] + 2 * par["mecanismo_margen_exclusion"],
-        "funda_z": [a["z_centro_usb"] - par["funda_alto"] / 2, a["z_centro_usb"] + par["funda_alto"] / 2],
+        "exclusion_d": mec["exclusion_diametro"],
+        "funda_ancho": geo["funda"]["ancho"],
+        "funda_alto": geo["funda"]["alto"],
+        "funda_z": [a["z_centro_usb"] - geo["funda"]["alto"] / 2, a["z_centro_usb"] + geo["funda"]["alto"] / 2],
     }
 
 
@@ -385,7 +387,7 @@ def pcb_fantasma(geo, par, der, partes=False):
     x0, y0, x1, y1 = caja_usb(geo, par)
     usb = caja(x0, x1, y0, y1, a["carcasa_inf"], a["carcasa_sup"])
     u = geo["usb"]
-    funda = caja(u["x"] - par["funda_ancho"] / 2, u["x"] + par["funda_ancho"] / 2,
+    funda = caja(u["x"] - der["funda_ancho"] / 2, u["x"] + der["funda_ancho"] / 2,
                  u["y_boca"] - par["funda_largo"], u["y_boca"], *der["funda_z"])
     if partes:
         return {"pcb": pcb, "usb": usb, "funda": funda}
