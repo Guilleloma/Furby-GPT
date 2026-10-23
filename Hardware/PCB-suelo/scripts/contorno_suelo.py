@@ -14,9 +14,10 @@ suelo. El contorno sale del suelo interior (polilínea facetada del STL):
    mantiene la holgura exacta en las esquinas de los hombros del lóbulo.
 4. Se abre la ranura del USB-C de montaje medio en el borde trasero, centrada
    en el lóbulo.
-5. Se abre una muesca circular (--muesca-r) alrededor de cada uno de los 4
-   agujeros originales del suelo, por donde pasan los tornillos hacia el
-   cuerpo, con las esquinas redondeadas.
+5. Solo con --muescas: se abre una muesca circular (--muesca-r) alrededor de
+   cada uno de los 4 agujeros originales del suelo, con las esquinas
+   redondeadas. Por defecto no hay muescas: en el Furby no hay tornillos en
+   esos agujeros y la base modificada los tapa, así que la PCB pasa por encima.
 
 Todo en coordenadas del STL de la base (mm, vista desde arriba, delante = y
 máxima). Salidas: DXF del contorno, geometria.json para generar_kicad.py y los
@@ -66,9 +67,10 @@ TALADRO_M2_D = 2.3
 BORDE_TALADRO_MIN_MM = 2.0     # borde del agujero a borde de PCB
 TALADROS_XY = [(-97.0, -68.5), (-50.0, -68.5), (-86.8, -122.4), (-60.2, -122.4)]
 
-# Los 4 agujeros originales del suelo (capa Agujeros) pasan tornillos hacia el
-# cuerpo, cuya torreta baja hasta el suelo. Supuesto: torreta de Ø5,0 (de 2 a
-# 2,5 veces un tornillo de plástico de unos 2 mm), más 0,5 de holgura por lado.
+# Muescas en los 4 agujeros originales del suelo (capa Agujeros), solo con
+# --muescas. Sirven si algún día una torreta del cuerpo baja hasta el suelo a
+# recibir un tornillo. Supuesto: torreta de Ø5,0 (de 2 a 2,5 veces un tornillo
+# de plástico de unos 2 mm), más 0,5 de holgura por lado.
 TORRETA_D = 5.0
 MUESCA_HOLGURA_MM = 0.5
 MUESCA_R = TORRETA_D / 2 + MUESCA_HOLGURA_MM
@@ -490,7 +492,9 @@ def abrir_muesca(primitivas, centro, radio, redondeo):
 
 # ---------------------------------------------------------------- validación
 
-def validar(suelo, primitivas, holgura, taladros, mecanismo, usb, muescas, muesca_r, redondeo):
+def validar(suelo, primitivas, holgura, taladros, mecanismo, usb, agujeros_base, muescas, muesca_r,
+            redondeo):
+    """`muescas` es la lista de centros con muesca: vacía si no se abren."""
     for actual, siguiente in zip(primitivas, primitivas[1:] + primitivas[:1]):
         if np.linalg.norm(fin(actual) - inicio(siguiente)) > 1e-7:
             raise ValueError(f"Hueco en el contorno en {fin(actual)}")
@@ -517,8 +521,16 @@ def validar(suelo, primitivas, holgura, taladros, mecanismo, usb, muescas, muesc
         "holgura_max": float(distancias[fuera_ranura].max()),
         "area": placa.area, "perimetro": placa.length,
         "caja": [float(v) for v in placa.bounds],
-        "taladros": [], "mecanismo": None, "muescas": [],
+        "taladros": [], "mecanismo": None, "agujeros_base": [],
     }
+    if muescas:
+        resultado["muescas"] = []
+    for centro in agujeros_base:
+        # Positivo: el centro queda bajo la PCB, a esa distancia de su borde.
+        a_borde = borde.distance(Point(centro)) * (1 if placa.contains(Point(centro)) else -1)
+        resultado["agujeros_base"].append({"xy": [float(v) for v in centro], "a_borde": a_borde})
+        if not muescas and a_borde <= 0:
+            raise ValueError(f"Sin muescas, el agujero original {centro} queda fuera de la PCB")
     for centro in muescas:
         libre = placa.distance(Point(centro))
         if libre < muesca_r - 1e-5:      # flecha de las cuerdas del muestreo: 4e-6 con R 3
@@ -564,11 +576,14 @@ def alturas():
 # -------------------------------------------------------------------- salidas
 
 def escribir_dxf(ruta, primitivas, taladros, mecanismo, usb, agujeros_base, muesca_r):
+    """Con `muesca_r` None no hay muescas ni capa Muescas."""
     doc = ezdxf.new("R2010", setup=False, units=ezdxf.units.MM)
     doc.header["$MEASUREMENT"] = 1
-    for nombre, color in (("Contorno", 3), ("Mecanismo", 1), ("Taladros", 1),
-                          ("ExclusionMecanismo", 6), ("UsbC", 5), ("AgujerosBase", 2),
-                          ("Muescas", 4)):
+    capas = [("Contorno", 3), ("Mecanismo", 1), ("Taladros", 1), ("ExclusionMecanismo", 6),
+             ("UsbC", 5), ("AgujerosBase", 2)]
+    if muesca_r is not None:
+        capas.append(("Muescas", 4))
+    for nombre, color in capas:
         doc.layers.add(nombre, color=color)
     msp = doc.modelspace()
     for p in primitivas:
@@ -587,7 +602,8 @@ def escribir_dxf(ruta, primitivas, taladros, mecanismo, usb, agujeros_base, mues
         msp.add_circle(centro, TALADRO_M2_D / 2, dxfattribs={"layer": "Taladros"})
     for centro, diametro in agujeros_base:
         msp.add_circle(centro, diametro / 2, dxfattribs={"layer": "AgujerosBase"})
-        msp.add_circle(centro, muesca_r, dxfattribs={"layer": "Muescas"})
+        if muesca_r is not None:
+            msp.add_circle(centro, muesca_r, dxfattribs={"layer": "Muescas"})
     x, y = usb["x"], usb["y_boca"]
     cuerpo = [(x - USB_ANCHO_CUERPO / 2, y), (x + USB_ANCHO_CUERPO / 2, y),
               (x + USB_ANCHO_CUERPO / 2, y + USB_LARGO), (x - USB_ANCHO_CUERPO / 2, y + USB_LARGO)]
@@ -639,11 +655,16 @@ def render_planta(ruta, suelo, pared, agujeros_base, muestras, taladros, mecanis
             f"exclusión Ø{mm(MECANISMO_D + 2 * EXCLUSION_MECANISMO_MM, 1)}", ha="center", va="top",
             fontsize=7, color="#b0308f")
     for centro, diametro in agujeros_base:
-        ax.add_patch(Circle(centro, diametro / 2, fc="white", ec="#c0392b", lw=0.9))
-        ax.add_patch(Circle(centro, TORRETA_D / 2, fill=False, ec="#c0392b", lw=0.7, ls=":"))
         dx = 4.2 if centro[0] < -73.5 else -4.2
-        ax.text(centro[0] + dx, centro[1], f"muesca R {mm(muesca_r, 1)}", ha="left" if dx > 0 else "right",
-                va="center", fontsize=7, color="#c0392b")
+        if muesca_r is None:
+            ax.add_patch(Circle(centro, diametro / 2, fill=False, ec="#555", lw=0.7, ls=":"))
+            texto, color = "agujero original\n(tapado)", "#555"
+        else:
+            ax.add_patch(Circle(centro, diametro / 2, fc="white", ec="#c0392b", lw=0.9))
+            ax.add_patch(Circle(centro, TORRETA_D / 2, fill=False, ec="#c0392b", lw=0.7, ls=":"))
+            texto, color = f"muesca R {mm(muesca_r, 1)}", "#c0392b"
+        ax.text(centro[0] + dx, centro[1], texto, ha="left" if dx > 0 else "right",
+                va="center", fontsize=7, color=color)
     for k, t in enumerate(resultado["taladros"], start=1):
         cx, cy = t["xy"]
         ax.add_patch(Circle((cx, cy), TALADRO_M2_D / 2, fc="white", ec="#a8330a", lw=1.2))
@@ -714,11 +735,17 @@ def render_planta(ruta, suelo, pared, agujeros_base, muestras, taladros, mecanis
     ]
     for k, t in enumerate(resultado["taladros"], start=1):
         lineas.append(f"  H{k} ({mm(t['xy'][0])}; {mm(t['xy'][1])}): {mm(t['borde'])} mm")
-    libre = min(m["libre"] for m in resultado["muescas"])
-    lineas += ["", f"Agujeros originales de la base: muesca R {mm(muesca_r, 1)}",
-               f"  (torreta Ø{mm(TORRETA_D, 1)} supuesta + {mm(muesca_r - TORRETA_D / 2, 1)} de holgura;"
-               f" PCB a ≥ {mm(libre)} del centro)",
-               "", "Rojo punteado: torreta del cuerpo (supuesta)", "Magenta: exclusión del mecanismo"]
+    if muesca_r is None:
+        bajo_pcb = min(a["a_borde"] for a in resultado["agujeros_base"])
+        lineas += ["", "Agujeros originales de la base: tapados, suelo macizo",
+                   f"  PCB sin muescas; los cubre con ≥ {mm(bajo_pcb)} hasta su borde",
+                   "", "Gris punteado: agujero original (tapado)", "Magenta: exclusión del mecanismo"]
+    else:
+        libre = min(m["libre"] for m in resultado["muescas"])
+        lineas += ["", f"Agujeros originales de la base: muesca R {mm(muesca_r, 1)}",
+                   f"  (torreta Ø{mm(TORRETA_D, 1)} supuesta + {mm(muesca_r - TORRETA_D / 2, 1)} de holgura;"
+                   f" PCB a ≥ {mm(libre)} del centro)",
+                   "", "Rojo punteado: torreta del cuerpo (supuesta)", "Magenta: exclusión del mecanismo"]
     fig.text(0.665, 0.46, "\n".join(lineas), va="top", fontsize=8.5, family="monospace")
     fig.savefig(ruta)
     plt.close(fig)
@@ -813,10 +840,12 @@ def main():
     parser.add_argument("--usb-x", type=float, default=USB_X)
     parser.add_argument("--taladro", type=float, nargs=2, action="append", metavar=("X", "Y"),
                         help="centro de un taladro M2 (repetir); por defecto los 4 propuestos")
+    parser.add_argument("--muescas", action="store_true",
+                        help="abrir una muesca en cada agujero original del suelo (por defecto, sin muescas)")
     parser.add_argument("--muesca-r", type=float, default=MUESCA_R,
-                        help="radio libre alrededor de cada agujero original del suelo, mm (3,0)")
+                        help="con --muescas: radio libre alrededor de cada agujero original, mm (3,0)")
     parser.add_argument("--muesca-redondeo", type=float, default=MUESCA_REDONDEO_MM,
-                        help="radio de las esquinas entre el borde y la muesca, mm (0,5)")
+                        help="con --muescas: radio de las esquinas entre el borde y la muesca, mm (0,5)")
     args = parser.parse_args()
 
     suelo, pared, agujeros_base = leer_suelo(args.suelo, args.capa)
@@ -828,13 +857,15 @@ def main():
     primitivas, usb = abrir_ranura_usb(primitivas, args.usb_x)
     if len(agujeros_base) != 4:
         raise ValueError(f"Se esperaban 4 agujeros en la capa {CAPA_AGUJEROS_BASE} y hay {len(agujeros_base)}")
-    muescas = [centro for centro, _ in agujeros_base]
+    centros_base = [centro for centro, _ in agujeros_base]
+    muescas = centros_base if args.muescas else []
+    muesca_r = args.muesca_r if args.muescas else None
     for centro in muescas:
         primitivas = abrir_muesca(primitivas, centro, args.muesca_r, args.muesca_redondeo)
 
     taladros = [tuple(t) for t in (args.taladro or TALADROS_XY)]
     mecanismo = tuple(args.mecanismo)
-    resultado = validar(suelo, primitivas, args.holgura, taladros, mecanismo, usb, muescas,
+    resultado = validar(suelo, primitivas, args.holgura, taladros, mecanismo, usb, centros_base, muescas,
                         args.muesca_r, args.muesca_redondeo)
 
     pared_trasera = LineString(np.vstack([suelo, suelo[:1]]))
@@ -842,11 +873,11 @@ def main():
     usb["y_pared_int"] = usb["y_boca"] - usb["boca_a_pared"]
     alt = alturas()
 
-    escribir_dxf(DXF_SALIDA, primitivas, taladros, mecanismo, usb, agujeros_base, args.muesca_r)
+    escribir_dxf(DXF_SALIDA, primitivas, taladros, mecanismo, usb, agujeros_base, muesca_r)
     muestras = muestrear(primitivas, paso=0.01)
     RENDER_PLANTA.parent.mkdir(parents=True, exist_ok=True)
     render_planta(RENDER_PLANTA, suelo, pared, agujeros_base, muestras, taladros, mecanismo, usb,
-                  resultado, alt, args.muesca_r)
+                  resultado, alt, muesca_r)
     render_lateral(RENDER_LATERAL, usb, alt, taladros)
 
     geometria = {
@@ -857,8 +888,9 @@ def main():
         "funda": {"ancho": SOBREMOLDEADO[0], "alto": SOBREMOLDEADO[1], "supuesto": True},
         "taladros": [list(t) for t in taladros], "taladro_diametro": TALADRO_M2_D,
         "usb": {**usb, "ranura_ancho": USB_RANURA_ANCHO, "ranura_fondo": USB_RANURA_FONDO},
+        # null sin muescas (por defecto): la PCB pasa por encima de los agujeros originales.
         "muescas": {"centros": [list(c) for c in muescas], "radio": args.muesca_r,
-                    "redondeo": args.muesca_redondeo, "torreta_diametro": TORRETA_D},
+                    "redondeo": args.muesca_redondeo, "torreta_diametro": TORRETA_D} if muescas else None,
         "alturas": alt, "resultado": resultado,
     }
     JSON_SALIDA.write_text(json.dumps(geometria, indent=1, ensure_ascii=False, default=float) + "\n")
@@ -876,7 +908,11 @@ def main():
     for k, t in enumerate(resultado["taladros"], start=1):
         print(f"  H{k} {t['xy']}: borde {t['borde']:.2f} mm, al mecanismo {t['mecanismo']:.2f} mm")
     print(f"Mecanismo a borde de PCB: {resultado['mecanismo']:.2f} mm")
-    for m in resultado["muescas"]:
+    for a in resultado["agujeros_base"]:
+        print(f"  Agujero original ({a['xy'][0]:.2f}; {a['xy'][1]:.2f}): "
+              + (f"bajo la PCB, a {a['a_borde']:.3f} mm de su borde" if a["a_borde"] > 0
+                 else f"fuera de la PCB, a {-a['a_borde']:.3f} mm de su borde"))
+    for m in resultado.get("muescas", []):
         print(f"  Muesca R {args.muesca_r:.2f} en ({m['xy'][0]:.2f}; {m['xy'][1]:.2f}): PCB a "
               f"{m['libre']:.3f} mm del centro; borde de la muesca a {m['al_taladro']:.2f} mm del taladro más cercano")
     for clave, valor in alt.items():
