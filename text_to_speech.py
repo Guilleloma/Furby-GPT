@@ -7,7 +7,7 @@ from utils import get_env_key
 
 def text_to_speech_elevenlabs(text):
     elapikey = get_env_key('ELEVENLABS_API_KEY')
-    voice_id = 'YOUR_VOICE_ID'
+    voice_id = get_env_key('ELEVENLABS_VOICE_ID')
     url = f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}'
     headers = {
         'Accept': 'audio/mpeg',
