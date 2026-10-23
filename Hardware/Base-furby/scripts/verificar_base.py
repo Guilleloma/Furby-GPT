@@ -32,8 +32,10 @@ def volumen(solido):
     return float(solido.volume())
 
 
-def dilatar_caja(x0, x1, y0, y1, z0, z1, d):
-    return comun.caja(x0 - d, x1 + d, y0 - d, y1 + d, z0 - d, z1 + d)
+def dilatar_caja(x0, x1, y0, y1, z0, z1, d, segmentos):
+    """Caja dilatada d en distancia euclídea (suma de Minkowski con una esfera):
+    una dilatación caja a caja sobredimensiona las esquinas en √2."""
+    return comun.caja(x0, x1, y0, y1, z0, z1).minkowski_sum(comun.m3.Manifold.sphere(d, segmentos))
 
 
 # -------------------------------------------------------------------- A
@@ -276,12 +278,12 @@ def distancia_caja(salida, x0, x1, y0, y1, z0, z1, n=20000):
 def comprobar_h(salida, salida_m, geo, par, der):
     v = par["verificacion"]
     u, a = geo["usb"], geo["alturas"]
-    f = (u["x"] - par["funda_ancho"] / 2, u["x"] + par["funda_ancho"] / 2,
+    f = (u["x"] - der["funda_ancho"] / 2, u["x"] + der["funda_ancho"] / 2,
          u["y_boca"] - par["funda_largo"], u["y_boca"], *der["funda_z"])
-    v_funda = volumen(salida_m ^ dilatar_caja(*f, v["funda_dilatacion"]))
+    v_funda = volumen(salida_m ^ dilatar_caja(*f, v["funda_dilatacion"], par["segmentos_circulo"]))
     x0, y0, x1, y1 = comun.caja_usb(geo, par)
     c = (x0, x1, y0, y1, a["carcasa_inf"], a["carcasa_sup"])
-    v_usb = volumen(salida_m ^ dilatar_caja(*c, par["holgura_usb_pared_min"]))
+    v_usb = volumen(salida_m ^ dilatar_caja(*c, par["holgura_usb_pared_min"], par["segmentos_circulo"]))
     return resultado(v_funda <= v["volumen_cero"] and v_usb <= v["volumen_cero"],
                      funda_caja=f, funda_dilatada_interseccion=v_funda,
                      funda_distancia_min=distancia_caja(salida, *f),
