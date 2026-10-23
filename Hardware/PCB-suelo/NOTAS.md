@@ -82,7 +82,7 @@ Mínimo: J1 con VBUS (A9, B9), GND (A12, B12 y la carcasa) y una **Rd de 5,1 kΩ
 
 Rutado: VBUS une A9 y B9 por detrás de las pads, con una pista de 0,5 mm. CC1 y CC2 pasan por debajo (B.Cu) hasta sus resistencias, y GND va a un plano en la cara inferior. Sin componentes en la cara inferior.
 
-**ERC: 0 errores y 0 avisos. DRC: 0 errores, 0 avisos, 0 sin conectar y 0 diferencias con el esquema** (`kicad-cli` con `--schematic-parity --refill-zones`).
+**ERC: 0 errores y 0 avisos. DRC de la placa tal como está guardada, sin volver a rellenar zonas: 0 errores, 0 avisos, 0 sin conectar y 0 diferencias con el esquema.** El plano de GND se rellena como último paso de `generar_kicad.py`, con la placa ya guardada y vuelta a cargar. Si se rellena antes, en memoria, no recorta los taladros ni el agujero del mecanismo.
 
 ## Separadores: 2,0 mm
 
@@ -117,6 +117,26 @@ python3 -m venv .venv && .venv/bin/pip install -r scripts/requirements.txt
 - Parámetros del primer script: `--holgura`, `--simplificacion`, `--desviacion`, `--mecanismo X Y`, `--usb-x` y `--taladro X Y` (repetible).
 - `generar_kicad.py` **sobrescribe la placa y el esquema**. Cuando la placa tenga componentes a mano, no lo vuelvas a ejecutar. Para cambiar el contorno, borra `Edge.Cuts` e importa `contorno-pcb.dxf` (capa `Contorno`) en `Edge.Cuts`, con escala 1 y el origen en (220; −40) con el eje Y invertido.
 - Las tablas de librerías del proyecto apuntan a las librerías de KiCad (`${KICAD10_SYMBOL_DIR}` y `${KICAD10_FOOTPRINT_DIR}`), porque las tablas globales de este Mac están vacías.
+
+## Comprobar
+
+```bash
+cd Hardware/PCB-suelo
+# Contorno: cerrado y sin autointersecciones, 4 taladros M2 en su sitio a ≥ 2,5 mm del borde,
+# y mecanismo y exclusión dentro de la PCB. Sale con código 1 si algo falla.
+.venv/bin/python -I scripts/test_contorno.py
+# Lo mismo, más la holgura de ≥ 0,5 mm contra el suelo (el DXF del suelo no está en el repo)
+.venv/bin/python -I scripts/test_contorno.py --suelo <ruta a suelo-interior.dxf>
+
+cd kicad
+KICAD_CLI=/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli
+$KICAD_CLI sch erc --exit-code-violations FurbyGPT-suelo.kicad_sch
+# Sin --refill-zones: comprueba la placa tal como está commiteada
+$KICAD_CLI pcb drc --schematic-parity --exit-code-violations FurbyGPT-suelo.kicad_pcb
+```
+
+- Si cambias los taladros con `--taladro`, actualiza `TALADROS_ESPERADOS` en `scripts/test_contorno.py`.
+- `contorno_suelo.py` reescribe el DXF con fecha y GUID nuevos en la cabecera aunque la geometría no cambie. Si solo cambia eso, no hace falta commitearlo.
 
 ## Verificado y supuesto
 
