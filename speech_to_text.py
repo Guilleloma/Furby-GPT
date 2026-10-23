@@ -4,13 +4,13 @@ import time
 import sounddevice as sd
 import soundfile as sf
 import openai
-from utils import open_file
+from utils import get_env_key
 import numpy as np
 
 import pyaudio
 import wave
 
-api_key = open_file('openaiapikey2.txt')
+api_key = get_env_key('OPENAI_API_KEY')
 
 def record_and_transcribe(duration=8, fs=44100, threshold=1000):
     

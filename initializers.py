@@ -3,10 +3,10 @@
 import pyaudio
 import pvporcupine
 from hardware_control import init_pwm
+from utils import get_env_key
 
 def get_porcupine_key():
-    with open('porcupinekey.txt', 'r') as file:
-        return file.read().strip()
+    return get_env_key('PICOVOICE_ACCESS_KEY')
 
 def initialize_components():
     # Motores

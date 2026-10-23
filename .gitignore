@@ -1,0 +1,10 @@
+# Claves
+.env
+
+# Audio generado y logs
+output.mp3
+*.log
+
+# Python
+__pycache__/
+.venv/
