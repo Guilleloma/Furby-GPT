@@ -4626,7 +4626,7 @@
 			)
 		)
 	)
-	(global_label "MOT_OUT1"
+	(global_label "MOT_OUT2"
 		(shape passive)
 		(at 165.1 297.18 180)
 		(fields_autoplaced yes)
@@ -5822,7 +5822,7 @@
 			)
 		)
 	)
-	(global_label "MOT_OUT2"
+	(global_label "MOT_OUT1"
 		(shape passive)
 		(at 165.1 299.72 180)
 		(fields_autoplaced yes)

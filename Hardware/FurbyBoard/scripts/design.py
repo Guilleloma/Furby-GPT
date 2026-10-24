@@ -341,7 +341,9 @@ def build():
     # Orden por geometría: la columna exterior lleva el encoder y la leva (fototransistor arriba, lejos
     # de las salidas del motor); la interior, barriga, espalda y el motor abajo, junto al puente H.
     pads("J9", s, ["ENC_PT", "GND", "ENC_LED_A", "GND", "HOME_PAD", "GND", "TUMMY_PAD", "GND",
-                   "BACK_PAD", "GND", "MOT_OUT1", "MOT_OUT2"], "FurbyBoard:Pads_2x06_P2.54mm",
+                   "BACK_PAD", "GND", "MOT_OUT2", "MOT_OUT1"], "FurbyBoard:Pads_2x06_P2.54mm",
+         # Pads 11/12 del motor: OUT2 arriba y OUT1 abajo (rutado 2026-10-24: OUT2 sale del pin 8
+         # hacia el noreste en F.Cu y OUT1 del pin 6 por In2; el sentido de giro lo fija el firmware)
          "Encoder ×3, leva ×2, barriga ×2, espalda ×2, motor ×2 (más GND)")
 
     # ---------------------------------------------------------------- LED y TP
