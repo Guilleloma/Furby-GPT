@@ -767,3 +767,37 @@ pista("PGOOD", "F.Cu", 0.2, (-62.6, -110.25), (-62.6, -109.7))
 pista("PGOOD", "B.Cu", 0.2, (-62.6, -109.7), (-62.0, -110.3), (-60.9, -110.3), (-60.9, -106.462), (-59.4, -104.962))
 via("PGOOD", (-59.4, -104.962))
 pista("PGOOD", "F.Cu", 0.2, (-59.4, -104.962), "D2.1")
+# ---------------------------------------------------------------- barriga, espalda y cámara desde U10 (P13-P16)
+# Vías bajo el cuerpo de U10 a la altura de su pin (stubs de F.Cu a 0,65 de las vías vecinas). TUMMY, BACK y
+# CAM_PWDN suben por In3 al norte de U10 (x -90,8/-90,2/-89,6), van al este por y -75,95/-76,41/-76,87 entre
+# las vías de 3V3 (-85,5) y GND (-83,1), bajan a 45° y cruzan bajo el módulo por y -77,45/-77,85/-78,25 (a más
+# de 1 mm de la fila de VBAT_SNS en In2, cruces a 90° de las columnas del I2S); bajan por el canal x -48,95/
+# -49,45/-50,1 entre la vía de 3V3 de U8 y las de GND de U9 hasta la esquina de J9.
+# TUMMY: C33.1 y R39.1 por F.Cu rodeando U10 por el este (x -84,9) y bajando entre las columnas del bloque RC.
+pista("TUMMY", "F.Cu", 0.2, "U10.16", (-90.8, -82.625))
+via("TUMMY", (-90.8, -82.625))
+pista("TUMMY", "In3.Cu", 0.2, (-90.8, -82.625), (-90.8, -75.95), (-84.9, -75.95), (-83.4, -77.45), (-48.95, -77.45),
+      (-48.95, -101.0), (-48.3, -101.65), (-48.3, -108.55), (-44.825, -108.55))
+via("TUMMY", (-44.825, -108.55))
+pista("TUMMY", "F.Cu", 0.2, (-44.825, -108.55), "R40.1")
+pista("TUMMY", "F.Cu", 0.2, "U10.16", (-84.9, -82.625), (-84.9, -87.0), (-87.4, -87.0), (-87.4, -86.2), "C33.1")
+pista("TUMMY", "F.Cu", 0.2, (-87.4, -87.0), (-87.4, -89.4), "R39.1")
+# TUMMY_PAD y BACK_PAD suben a J9 por el pasillo entre sus dos columnas (x -43,07), en In3 y en B.Cu.
+pista("TUMMY_PAD", "F.Cu", 0.2, "R40.2", (-43.07, -108.55))
+via("TUMMY_PAD", (-43.07, -108.55))
+pista("TUMMY_PAD", "In3.Cu", 0.2, (-43.07, -108.55), (-43.07, -92.0), "J9.7")
+# BACK: ruta norte por el segundo carril; C34.1 y R41.1 desde una vía al oeste del bloque RC (-93,0, -86,0),
+# unida a la vía de U10 por B.Cu bajo el cuerpo, y bajando por fuera de R49 (x -92,15) hasta R41.1.
+pista("BACK", "F.Cu", 0.2, "U10.17", (-90.2, -81.975))
+via("BACK", (-90.2, -81.975))
+pista("BACK", "In3.Cu", 0.2, (-90.2, -81.975), (-90.2, -76.41), (-85.04, -76.41), (-83.6, -77.85), (-49.45, -77.85),
+      (-49.45, -101.2), (-48.75, -101.9), (-48.75, -111.85), (-46.0, -111.85))
+via("BACK", (-46.0, -111.85))
+pista("BACK", "F.Cu", 0.2, (-46.0, -111.85), "R42.1", modo="d")
+pista("BACK", "B.Cu", 0.2, (-90.2, -81.975), (-93.0, -81.975), (-93.0, -86.0))
+via("BACK", (-93.0, -86.0))
+pista("BACK", "F.Cu", 0.2, (-93.0, -86.0), "C34.1", modo="d")
+pista("BACK", "F.Cu", 0.2, (-92.15, -86.2), (-92.15, -88.95), (-91.7, -89.4), "R41.1")
+pista("BACK_PAD", "F.Cu", 0.2, "R42.2", (-42.25, -110.4), modo="d")
+via("BACK_PAD", (-42.25, -110.4))
+pista("BACK_PAD", "B.Cu", 0.2, (-42.25, -110.4), (-42.25, -107.0), (-43.07, -106.18), (-43.07, -97.08), "J9.9")
