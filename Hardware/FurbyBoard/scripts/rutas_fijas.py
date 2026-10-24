@@ -830,3 +830,31 @@ pista("LED_RUN_K", "In3.Cu", 0.2, (-91.4, -80.025), (-91.4, -78.6), (-92.1, -77.
       (-92.7, -69.0), (-79.4, -69.0), (-78.4, -68.0), (-57.5, -68.0), (-57.5, -65.038), (-56.4, -63.938))
 via("LED_RUN_K", (-56.4, -63.938))
 pista("LED_RUN_K", "F.Cu", 0.2, "D5.1", (-56.4, -63.938))
+# ---------------------------------------------------------------- bloque B: HOME, encoder y 3V3 del bloque RC de U10
+# 3V3 de los pull-ups R49/R41/R39: R49.2 baja a R41.2 y una fila de 0,4 por debajo del bloque (y -90,5) los une a R39.2
+# y a una vía sobre el tronco de 3V3 de B.Cu (x -85,5).
+pista("3V3", "F.Cu", 0.4, "R49.2", "R41.2", (-89.775, -90.5), (-85.5, -90.5))
+pista("3V3", "F.Cu", 0.4, "R39.2", (-86.575, -90.5))
+via("3V3", (-85.5, -90.5))
+# HOME: R49.1 y C38.1 se unen por el hueco entre las filas de C34/C33 y R49/C38 (y -87,0); del hueco entre columnas
+# (x -89,0) sube a una vía bajo U10 y sigue por In2 (libre bajo U10: EXP_INT al norte, I2S al sur) hasta una vía junto
+# al pin 11 del módulo (x -83,05, entre las columnas de I2C y la de I2S_DIN de In2).
+pista("HOME", "F.Cu", 0.2, "R49.1", (-91.425, -87.0), (-88.175, -87.0), "C38.1")
+pista("HOME", "F.Cu", 0.2, (-89.0, -87.0), (-89.0, -85.35))
+via("HOME", (-89.0, -85.35))
+pista("HOME", "In2.Cu", 0.2, (-89.0, -85.35), (-88.0, -85.35), (-87.7, -85.05), (-87.7, -79.85), (-84.2, -79.85),
+      (-83.05, -78.7), (-83.05, -76.6))
+via("HOME", (-83.05, -76.6))
+pista("HOME", "F.Cu", 0.2, "U4.11", (-83.05, -76.6))
+# HOME hacia R50 (serie de J9.5): de la vía del pin 11 por B.Cu bajo el módulo (bolsa libre entre el tronco de 3V3 y
+# IPROPI_IO) hasta una vía entre las filas MOT_IN de In2 y IPROPI_IO de B.Cu; por el interior de In3 (dentro del lazo de
+# A1/A2) rodea el agujero del mecanismo por el oeste y el sur (a >= 0,6 mm del borde, entre el agujero y EN_6V) hasta una
+# vía al SE; de ahí por In2 al sur y al este por y -106,2 hasta una vía al oeste de R50.1.
+pista("HOME", "B.Cu", 0.2, (-83.05, -76.6), (-80.9, -76.6), (-73.6, -83.9), (-65.5, -83.9), (-65.5, -87.5), (-62.6, -87.5))
+via("HOME", (-62.6, -87.5))
+pista("HOME", "In3.Cu", 0.2, (-62.6, -87.5), (-67.0, -87.5), (-69.0, -89.5), (-69.0, -98.05), (-65.35, -101.7),
+      (-58.6, -101.7))
+via("HOME", (-58.6, -101.7))
+pista("HOME", "In2.Cu", 0.2, (-58.6, -101.7), (-56.2, -101.7), (-56.2, -106.2), (-48.3, -106.2), (-48.3, -110.8), (-46.3, -112.8))
+via("HOME", (-46.3, -112.8))
+pista("HOME", "F.Cu", 0.2, (-46.3, -112.8), "R50.1")
