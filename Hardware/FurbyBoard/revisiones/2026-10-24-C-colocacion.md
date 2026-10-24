@@ -102,3 +102,22 @@ Entrada: `revisiones/2026-10-24-C-independiente.md` (commit `3575c85`): 0 críti
 
 ### Resultado de la vuelta 1
 **PASA la puerta C propia** (0 críticos, 0 importantes). Siguiente paso: segunda revisión independiente de la colocación (Maestro) antes del rutado.
+
+## Vuelta 2 — regresión R16 y mejoras R17, R20, R21 (2026-10-24)
+
+Entrada: `revisiones/2026-10-24-C-independiente.md`, sección «Vuelta 1» (commit `5837471`): 1 importante (R16) y mejoras R17–R21. R19 queda para el rutado.
+
+| Hallazgo | Resolución | Medida (borde a borde, pad a pad) |
+|----------|------------|-----------------------------------|
+| R16 C12 (2,2 µF de VCC) a 3,86 mm del pin VCC | C12 a (−53,8; −114,5) frente al pin VCC; R21 a la segunda columna (−57; −116,15) a 0°, con la toma de V6 para R21 en Kelvin desde el pad de C18 (se ruta así); R22 baja a (−53,8; −116,1) frente a FB; C15 se queda | C12–U5:2 **0,64 mm** (antes 3,86; vuelta 0: 0,62); R22–FB 0,63; C15–COMP 1,06 (sin cambio) |
+| R17 R24 y C14 lejos de COMP | R24 a 180° (COMP al este) en (−57; −117,75) y C14 a 0° justo debajo, en (−56,9; −119,35): el nodo BST_RC mide 0,65 mm entre pads; R24 fuera del tornillo H4 y de la zona caliente de L2 | R24.2–C14.1 0,65 (antes 3,97); R24–COMP 3,93 (antes 3,99: sin sitio en la primera columna) |
+| R20 margen de patio al borde | R50 a (−44,5; −112,8) y R23 a (−45,75; −115,7) (más al oeste choca con C16); C14 se ha ido con R17 | Patio al borde: R50 0,35 (antes 0,13), R23 0,32 (0,24), C14 1,05 (0,14) |
+| R21 RT1 en el TEST-PLAN | `TEST-PLAN.md` 8.3: V_TS ≈ 0,75 V a 25 °C (75 µA × 10 kΩ), ventana 0–50 °C, hot ≈ 0,31 V (RT1 ≈ 4,2 kΩ, ≈ 50–51 °C) con aire caliente, cold ≈ 2,1 V (28 kΩ, 0 °C) con spray frío; qué hacer si falla | Resistencias de la NTC calculadas con B = 3380 K; umbrales del BQ24073 según la lectura del revisor del datasheet |
+
+Sin regresión de desacoplos: script `medir_desacoplos.py` (scratchpad) mide, para cada condensador, la distancia borde a borde a la patilla de CI más cercana de su red (la misma medida que `comprobar-flujo`) y compara con la línea base del commit `96d64e1`: el único cambio mayor de 0,05 mm es C12 (3,86 → 0,64); ningún condensador que estuviera a ≤ 1 mm ha empeorado.
+
+Herramientas: ERC 0; DRC 0 infracciones, paridad 0, 362 sin conectar; `comprobar-flujo` PASS (avisos C10 1,90 y C32 1,08, conocidos); `revisar-rutado --tp-max 5` PASS; `comprobar_colocacion.py` OK; kicad-happy no instalado; Freerouting no ejecutado.
+
+PNG leídos: `ratsnest_zona-U5` (C12 arriba de la columna oeste sobre VCC, R22 sobre FB, C15 sobre COMP; C18 horizontal bajo VOUT/GND; C16 al este); `ratsnest_zona-C14` (R24 con C14 justo debajo, nodo RC vertical de 0,65 mm, fuera de la zona caliente de L2 y del keepout del tornillo; GND de C14 hacia la isla de señal de U5); `render/colocacion-arriba.png` y `-abajo.png` regenerados.
+
+**Resultado: PASA la puerta C propia** (0 críticos, 0 importantes). Siguiente: revisión independiente breve y rutado.

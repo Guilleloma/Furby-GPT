@@ -120,6 +120,7 @@ Pads de 0,3 a 0,5 de paso en el orden B7 (D−), A6 (D+), A7 (D−), B6 (D+): lo
 | 2026-10-24 | 2 (encargo 1, commits 5e1d428…9d42d8b) | 1 (1.9.0, −mp 20) + remate por rejilla | 15 pads sin unir, `revisar-rutado` FAIL (318 errores), USB_DN sin resolver | Replanteo independiente (este encargo); el rutado se descarta |
 | 2026-10-24 | 3 (replanteo, `scripts/layout.py`) | — | Puerta C propia: DRC 0/0 con paridad, `comprobar-flujo` PASS | Revisión independiente (encargo 3): NO PASA, 9 importantes (`revisiones/2026-10-24-C-independiente.md`) |
 | 2026-10-24 | 3, vuelta 1 (R1–R9) | — | DRC 0/0, `comprobar-flujo` PASS, `revisar-rutado` PASS (TP a ≤ 5 mm) | Segunda revisión independiente |
+| 2026-10-24 | 3, vuelta 2 (R16: C12 de VCC había pasado de 0,62 a 3,86 mm al mover la columna de FB) | — | C12 frente a VCC (0,64 mm), R21 a la segunda columna; ningún desacoplo empeora (medido contra la vuelta 1) | Revisión independiente breve y rutado |
 
 ## Revisiones (puertas)
 | Fecha | Puerta | Herramientas y resultado | Revisor | Estado |
@@ -129,6 +130,8 @@ Pads de 0,3 a 0,5 de paso en el orden B7 (D−), A6 (D+), A7 (D−), B6 (D+): lo
 | 2026-10-24 | C | DRC 0/0 paridad 0, `comprobar-flujo` PASS (4 avisos), 12 PNG (`revisiones/2026-10-24-C-colocacion.md`) | agente T0 (replanteo, propia) | Pasa |
 | 2026-10-24 | C independiente | 0 críticos, 9 importantes, 6 mejoras (`revisiones/2026-10-24-C-independiente.md`) | revisor T0 | No pasa → vuelta 1 |
 | 2026-10-24 | C, vuelta 1 | ERC 0/0, DRC 0/0 paridad 0, `comprobar-flujo` PASS (2 avisos), `revisar-rutado` PASS, 10 PNG (`revisiones/2026-10-24-C-colocacion.md`, «Vuelta 1») | agente T0 (propia) | Pasa; falta la independiente |
+| 2026-10-24 | C independiente, vuelta 1 | 0 críticos, 1 importante (R16, regresión de C12), 5 mejoras | revisor T0 | No pasa → vuelta 2 |
+| 2026-10-24 | C, vuelta 2 | ERC 0, DRC 0/0 paridad 0, `comprobar-flujo` PASS (2 avisos), `revisar-rutado` PASS, desacoplos sin regresión (script), PNG de U5 y C14 («Vuelta 2») | agente T0 (propia) | Pasa; falta la independiente breve |
 
 ## Avisos aceptados del DRC, del ERC y de pcb-toolkit
 | Aviso | Motivo |
@@ -141,7 +144,7 @@ Pads de 0,3 a 0,5 de paso en el orden B7 (D−), A6 (D+), A7 (D−), B6 (D+): lo
 ## Pendiente para la siguiente versión / otros encargos
 - Confirmar C23179 (470 Ω) e Isat de la FHD4020S-1R0MT antes del pedido; medir el agujero del mecanismo en el Furby antes de rutar (R9).
 - Rutado (encargo 4): reescribir `scripts/rutas_fijas.py` con el par USB de la sección «Par USB» y los lazos de los convertidores; `scripts/rutado.dsn`/`.ses`, `router/`, `ensanchar_potencia.py` y `vias_extra.py` son del intento anterior y no se reutilizan (el rutador por rejilla queda prohibido como autorrutador).
-- `TEST-PLAN.md` desfasado: TP renumerados en la cara inferior, pines nuevos, J9/J5 reordenados, LED del encoder desde V6, restricción de USB500 (B8).
+- `TEST-PLAN.md` desfasado: TP renumerados en la cara inferior, pines nuevos, J9/J5 reordenados, LED del encoder desde V6, restricción de USB500 (B8). RT1 ya está (8.3: V_TS, hot y cold).
 - Serigrafía: rótulos sin sitio (J2 «+», parte de J_EXP/J5/J9) → recolocar con el cobre definitivo.
 - v1.1: TVS en VBUS, agujeros para atar los cables de la batería, PTC de 2 A, pull-ups de I2C según la medida, RC de VBAT_SNS y LIGHT junto a los pines 38/39 (R12), F1 entre J1 y U2 si cabe (R11).
 
