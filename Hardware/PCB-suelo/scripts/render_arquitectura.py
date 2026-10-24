@@ -75,7 +75,7 @@ BLOQUES = [
     ("carga", -66.5, -56.5, -114.5, -104.5, "#e07b39", "BQ24073 + PTC\nP-MOSFET polaridad\nLED CHG, PG\nTP CHG, PGOOD", False),
     ("3v3", -55.5, -47.5, -112.5, -104.5, "#e07b39", "3,3 V\nTPS63802\nL 0,47 µH", False),
     ("esd", -67.5, -63.5, -118.5, -115.3, "#7f8c8d", "ESD\nTP D±", False),
-    ("expansor", -96.0, -83.0, -110.0, -90.0, "#1e8449",
+    ("expansor", -96.0, -83.0, -110.6, -91.2, "#1e8449",
      "Expansor TCA9535\n+ acondicionamiento\n(pull-ups, RC,\nSchmitt, VBAT)", True),
     ("amp", -80.0, -72.0, -113.0, -106.0, "#2471a3", "MAX98357A", True),
 ]
@@ -111,6 +111,11 @@ BAT_POS = (-54.5, -116.4, 3.0)
 BAT_NEG = (-49.0, -116.4, 2.6)
 
 SERIGRAFIA = ("FurbyBoard v1.0", (-73.0, -54.0))
+
+# Cara inferior: logo «Furby» (14,4 × 13,6 + courtyard) y «FurbyBoard v1.0 · 2026-10» debajo.
+# Sin pads pasantes, separadores, vías (bloques de la cara superior) ni módulo encima.
+LOGO_INFERIOR = {"x": (-98.0, -82.6), "y": (-90.7, -72.2)}
+SEPARADOR_D_MM = 5.0
 
 
 def leer_geometria():
@@ -218,6 +223,20 @@ def comprobar(geo, pcb):
             if cara_superior[a].intersects(cara_superior[b]):
                 fallos.append(f"{a} y {b} se solapan")
 
+    logo = box(LOGO_INFERIOR["x"][0], LOGO_INFERIOR["y"][0], LOGO_INFERIOR["x"][1], LOGO_INFERIOR["y"][1])
+    if not pcb.buffer(-0.8).contains(logo):
+        fallos.append("logo de la cara inferior: demasiado cerca del borde (con la holgura de 1,0)")
+    for t in geo["taladros"]:
+        if logo.distance(Point(t)) < SEPARADOR_D_MM / 2 + 0.5:
+            fallos.append(f"logo de la cara inferior: pisa el separador de {t}")
+    for nombre, forma in cara_superior.items():
+        pasante = nombre in rects_pads() or nombre.startswith("BAT")
+        con_vias = nombre == "modulo" or nombre in {n for n, *_ in BLOQUES}
+        if (pasante or con_vias) and logo.intersects(forma):
+            fallos.append(f"logo de la cara inferior: coincide con {nombre} (pads o vías)")
+    if logo.intersects(exclusion) or logo.intersects(zona_usb):
+        fallos.append("logo de la cara inferior: pisa el mecanismo o el USB-C")
+
     bateria = rect_bateria()
     pared = pcb.buffer(HOLGURA_PARED_MM, join_style=2)
     if not pared.contains(bateria):
@@ -313,6 +332,11 @@ def render_planta(geo, pcb, m):
                                     ls="--" if bajo else "-"))
         ax.text((x0 + x1) / 2, (y0 + y1) / 2, texto, ha="center", va="center", fontsize=5.8, color="white")
 
+    logo = box(LOGO_INFERIOR["x"][0], LOGO_INFERIOR["y"][0], LOGO_INFERIOR["x"][1], LOGO_INFERIOR["y"][1])
+    ax.add_patch(rect_a_parche(logo, fc="none", ec="#6c3483", ls="--", lw=1.4))
+    ax.text(sum(LOGO_INFERIOR["x"]) / 2, LOGO_INFERIOR["y"][0] + 0.6, "cara inferior:\nlogo Furby\n+ FurbyBoard v1.0",
+            ha="center", va="bottom", fontsize=6, color="#6c3483")
+
     dibujar_pads(ax)
     for nombre, x, y in PUNTOS_TEST:
         ax.add_patch(Circle((x, y), TP_D / 2, fc="#f5b7b1", ec="#922b21", lw=0.8))
@@ -372,6 +396,7 @@ def render_planta(geo, pcb, m):
         "  el lado de los cables va hacia detrás y a la derecha.\n\n"
         "Las posiciones también caben con la holgura PCB-pared de 1,0\n"
         "  que se aplicará en la fase 2 (comprobado con ese contorno).\n\n"
+        "Morado discontinuo: logo Furby en la cara inferior (sin pads ni vías).\n\n"
         "Amarillo: antena · Rosa: TP · Rayado: pin 1 del header"
     )
     fig.text(0.63, 0.92, "FurbyBoard v1.0 · planta\n(coordenadas del STL, vista desde arriba)", fontsize=13,
