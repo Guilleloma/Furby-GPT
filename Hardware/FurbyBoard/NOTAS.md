@@ -46,7 +46,9 @@ Tipo **L**: 232 conexiones sin contar GND ni planos (≈ 340 con GND), 4 capas, 
 | 2026-10-24 | J_EXP 2 × 5; J9 y J5 reordenados | Caben en el borde izquierdo y alejan el fototransistor del motor | agente (replanteo) |
 | 2026-10-24 | Vías de 0,45/0,2 solo en la clase USB (regla en `.kicad_dru`); el resto 0,6/0,3 | Cruce del par en el receptáculo de 16 pines; dentro del estándar de JLCPCB (sin sobrecoste según `fabricante-jlcpcb.md`, confirmar en el presupuesto) | agente (replanteo) |
 | 2026-10-24 | Logo en la cara inferior bajo la zona trasera izquierda de la batería | Zona sin piezas ni vías previstas; subordinado al diseño | agente (replanteo) |
-| **Pendiente** | NTC en el pin TS del BQ24073 o carga sin sensor de temperatura | Crítico B7 de `revisiones/2026-10-24-B-esquematico.md` | **el autor del proyecto** |
+| 2026-10-24 | NTC de 10 kΩ (Murata NCP18XH103F03RB, C13564, extended) de TS a VSS en vez de los 10 kΩ fijos; va bajo la batería a ≥ 14 mm del cargador (mide la PCB bajo la celda) | Crítico B7; opción (a) decidida por Maestro. Pin TS del BQ2407x: NTC 103AT a VSS, sin red de polarización (fuente de corriente interna, datasheet) | Maestro |
+| 2026-10-24 | Logo a 0,28 mm por píxel (10,1 × 9,5 mm) en x −100…−90, y −118…−108; nombre, versión y recuadro a su derecha | R6 de la revisión independiente: el logo quitaba sitio a los rótulos de J_EXP y a las vías de GND del buck-boost | agente (vuelta 1) |
+| 2026-10-24 | Anillo de 2 mm sin piezas alrededor del agujero del mecanismo (Ø11,3 supuesto) | R9: la medida real del agujero sigue pendiente; así una desviación de hasta 2 mm no obliga a recolocar | agente (vuelta 1) |
 
 ## Cálculos
 - **Par USB** (microstrip acoplado sobre L2, IPC-2141): h 0,2104, w 0,28, t 0,035, εr 4,4 → Z0 ≈ 57 Ω, Zdiff ≈ 87 Ω con s 0,15 (± 10 % de 90 Ω; a 12 Mbit/s el cuello de 0,2 mm en los pads de J1 no cuenta).
@@ -79,18 +81,19 @@ Coordenadas del STL en `scripts/layout.py`. Bloques y cara (todo arriba salvo lo
 | IR y luz (J7, Q3, R53–R56, C40) y RC de EN | Delante a la izquierda, J7 en la franja fuera de la batería | Cables a la cara del Furby |
 | LED PWR/RUN/TX, RST/BOOT, JP5 | Delante a la derecha | Accesibles fuera de la batería |
 | FPC J6 | Borde derecho, pin 1 abajo, flex hacia la pared (franja sin piezas x −46…−39) | Como estaba |
-| LDO de cámara (U8, U9) y control (R33–R35, C27–C31) | Debajo de J6 (filas y −91…−100) y, PWDN/RESET, en la banda norte del pasillo sur junto a J6.6/8 | Salidas a los pads 4/10 de J6 a 8–12 mm |
+| LDO de cámara (U8, U9) y control (R33–R35, C27–C31) | Debajo de J6, fuera del anillo del mecanismo: U8 a 270° con C27 al noreste y C28 bajo VOUT, U9 a 270° con C29 bajo VOUT; R35/C31/R34 en el pasillo sur, R33 y C30 junto al puente H | Salidas a los pads 4/10 de J6 a 8–12 mm; 1 µF a ≤ 2 mm de su pin |
 | JP1–JP3, R18, JP4, R29, R30 | Arranque del pasillo sur (x −66…−57, y −83…−88) | En el camino de IO9/IO46/IO3 hacia U6 y de BOOT |
 | Puente H U6 | Junto a los pads del motor de J9 (columna interior, abajo); control al oeste, VM y salidas al este | IPROPI/VREF lejos de las salidas |
-| Elevador U5/L2 | Esquina trasera derecha: SW arriba contra L2, VIN y BOOT al este, VOUT/GND con C18 al sur, FSW/VCC/FB/COMP al oeste en dos columnas | Lazo de salida mínimo; a > 3,5 mm de cualquier bus |
-| Cargador U2 (90°) | Centro trasero: IN al oeste (C2 junto al pin, C1, R4, R3), BAT al sur (C4, Q1, J2/J3), OUT al norte (C3, C17, R5), EN/PGOOD/CHG al este con sus pull-ups y D1/D2 | Entre el USB, los pads de batería y el plano de VSYS |
+| Elevador U5/L2 | Esquina trasera derecha: SW arriba contra L2, VIN (C16) y BOOT (C13) al este, C18 a 0° bajo los pines 5/6 (lazo VOUT–Cout–GND sin vías), FB (R22/R21) y COMP (C15, R24, C14) al oeste pegados a sus pines | Lazo de salida mínimo; a > 3,5 mm de cualquier bus; toma Kelvin de V6 para R21 desde el pad de C18 |
+| Cargador U2 (90°) | Centro trasero: IN al oeste (C2 junto al pin, C1, R4), BAT al sur (C4, Q1, J2/J3), OUT al norte (C3, C17, R5), EN/PGOOD/CHG al este con sus pull-ups y D1/D2 | Entre el USB, los pads de batería y el plano de VSYS |
+| NTC RT1 (TS) | Bajo la batería en (−80,5; −113,5), a 15 mm de U2 y 8 de F1, fuera del pasillo norte-sur | Mide la PCB bajo la celda, no el calor del cargador; BQ_TS es clase D (In2 con vía de retorno al cruzar el pasillo del USB) |
 | USB J1, U1, R1, R2, F1 | Lóbulo; U1 2,3 mm detrás de los pads de J1 | Par corto |
 | J8 (1 × 7), J5 (2 × 3), J_EXP (2 × 5) | Borde izquierdo, de delante hacia atrás, fuera de la batería | Cables de inclinación/lengua/altavoz, micro y expansión |
 | Expansor U10 | Bajo la batería, pegado a la columna izquierda del módulo; I2C/INT al noreste; RC de J8 (2 columnas) entre U10 y J8; pull-ups y filtros de barriga/espalda/leva al sureste | Hub de señales lentas, cerca del I2C del módulo |
 | Amplificador U7 (180°) | Bajo la batería junto a J8: salidas al oeste hacia J8.6/7, VDD al norte (C26), I2S al sur, R31/R32 hacia J5 | I2S corto, altavoz a 6 mm |
-| Buck-boost U3/L1 | Bajo la batería, zona trasera izquierda; VIN/L1/VOUT al este, FB al oeste con R15/R16 pegados | A ≥ 3,5 mm del pasillo del USB |
-| TP1–TP14 | Cara inferior, a ≤ 5 mm de su fuente, sobre vía de su red | Preferencia de el autor del proyecto |
-| Logo | Cara inferior, x −101,5…−87,1, y −117,6…−104,0 (área sin vías ni pads) | Subordinado |
+| Buck-boost U3/L1 | Bajo la batería, zona trasera izquierda; layout de referencia: C6 (Cin) pegado a VIN al norte, C7 (Cout) pegado a VOUT al sur con su GND hacia el plano, C8 al lado, L1 al este, FB al oeste con R15/R16 pegados | A ≥ 3,5 mm del pasillo del USB; sin vías dentro del lazo |
+| TP1–TP14 | Cara inferior, a ≤ 5 mm de su fuente (lo comprueba `revisar-rutado --tp-max 5`, también sin pistas), con su nombre en serigrafía | Preferencia del autor del proyecto |
+| Logo | Cara inferior, 10,1 × 9,5 mm en x −100…−90, y −118…−108 (área sin vías ni pads), a 2 mm de J_EXP y a 2 mm del buck-boost | Subordinado |
 
 ### Pasillos reservados (sin piezas)
 - **Cámara**: de la fila inferior y la columna derecha del módulo a J6 (y −74…−81), 12 líneas en F.Cu en orden de pads (rutado «de río»: el pin de la derecha sube al pad más alto).
@@ -115,14 +118,17 @@ Pads de 0,3 a 0,5 de paso en el orden B7 (D−), A6 (D+), A7 (D−), B6 (D+): lo
 |-------|----------------|-----------------|-----------|----------|
 | 2026-10-24 | 1 (encargo 1) | — | El bus de la cámara cruzaba el elevador | Recolocar |
 | 2026-10-24 | 2 (encargo 1, commits 5e1d428…9d42d8b) | 1 (1.9.0, −mp 20) + remate por rejilla | 15 pads sin unir, `revisar-rutado` FAIL (318 errores), USB_DN sin resolver | Replanteo independiente (este encargo); el rutado se descarta |
-| 2026-10-24 | 3 (replanteo, `scripts/layout.py`) | — | Puerta C: DRC 0/0 con paridad, `comprobar-flujo` PASS | Revisión independiente de la colocación (encargo 3) |
+| 2026-10-24 | 3 (replanteo, `scripts/layout.py`) | — | Puerta C propia: DRC 0/0 con paridad, `comprobar-flujo` PASS | Revisión independiente (encargo 3): NO PASA, 9 importantes (`revisiones/2026-10-24-C-independiente.md`) |
+| 2026-10-24 | 3, vuelta 1 (R1–R9) | — | DRC 0/0, `comprobar-flujo` PASS, `revisar-rutado` PASS (TP a ≤ 5 mm) | Segunda revisión independiente |
 
 ## Revisiones (puertas)
 | Fecha | Puerta | Herramientas y resultado | Revisor | Estado |
 |-------|--------|--------------------------|---------|--------|
 | 2026-10-24 | A | Rúbrica L y tabla de raíles añadidas (`revisiones/2026-10-24-A-arquitectura.md`) | agente T0 (replanteo) | Pasa |
 | 2026-10-24 | B | ERC 0/0, simulación del elevador, pinout verificado; 1 crítico escalado (NTC) (`revisiones/2026-10-24-B-esquematico.md`) | agente T0 (replanteo) | Pasa con B7 escalado |
-| 2026-10-24 | C | DRC 0/0 paridad 0, `comprobar-flujo` PASS (4 avisos), 12 PNG (`revisiones/2026-10-24-C-colocacion.md`) | agente T0 (replanteo, propia) | Pasa; falta la independiente |
+| 2026-10-24 | C | DRC 0/0 paridad 0, `comprobar-flujo` PASS (4 avisos), 12 PNG (`revisiones/2026-10-24-C-colocacion.md`) | agente T0 (replanteo, propia) | Pasa |
+| 2026-10-24 | C independiente | 0 críticos, 9 importantes, 6 mejoras (`revisiones/2026-10-24-C-independiente.md`) | revisor T0 | No pasa → vuelta 1 |
+| 2026-10-24 | C, vuelta 1 | ERC 0/0, DRC 0/0 paridad 0, `comprobar-flujo` PASS (2 avisos), `revisar-rutado` PASS, 10 PNG (`revisiones/2026-10-24-C-colocacion.md`, «Vuelta 1») | agente T0 (propia) | Pasa; falta la independiente |
 
 ## Avisos aceptados del DRC, del ERC y de pcb-toolkit
 | Aviso | Motivo |
@@ -130,13 +136,14 @@ Pads de 0,3 a 0,5 de paso en el orden B7 (D−), A6 (D+), A7 (D−), B6 (D+): lo
 | `comprobar-flujo` desacoplo-lejos: C10 1,9 mm, C32 1,08, C28/C29 1,02 | Dentro del máximo de 2 mm; el pad del módulo y el patio de J9 no dejan acercarlos más |
 | `comprobar-flujo` cruces-en-bus (DVP 15, I2S 13) | Cruces de líneas rectas fila → columna; el pasillo de la cámara se ruta de río sin cruces (orden de pines = orden de pads) |
 | J7: borde del pad trasero a 0,05 mm del borde nominal de la batería | Centro del pad 0,8 mm fuera; cable soldado por delante |
+| Rótulos sin sitio: «IO8» de JP4 en la cara superior (sí en la inferior) y tres pads de J9 (EN+, G y ESP; los demás y los 10 de J_EXP sí) | El patio de J9 y TP11 no dejan hueco; se recolocan con el cobre definitivo |
 
 ## Pendiente para la siguiente versión / otros encargos
-- **el autor del proyecto**: NTC en TS (B7). Confirmar C23179 (470 Ω) e Isat de la FHD4020S-1R0MT antes del pedido.
+- Confirmar C23179 (470 Ω) e Isat de la FHD4020S-1R0MT antes del pedido; medir el agujero del mecanismo en el Furby antes de rutar (R9).
 - Rutado (encargo 4): reescribir `scripts/rutas_fijas.py` con el par USB de la sección «Par USB» y los lazos de los convertidores; `scripts/rutado.dsn`/`.ses`, `router/`, `ensanchar_potencia.py` y `vias_extra.py` son del intento anterior y no se reutilizan (el rutador por rejilla queda prohibido como autorrutador).
 - `TEST-PLAN.md` desfasado: TP renumerados en la cara inferior, pines nuevos, J9/J5 reordenados, LED del encoder desde V6, restricción de USB500 (B8).
 - Serigrafía: rótulos sin sitio (J2 «+», parte de J_EXP/J5/J9) → recolocar con el cobre definitivo.
-- v1.1: TVS en VBUS, agujeros para atar los cables de la batería, PTC de 2 A, pull-ups de I2C según la medida.
+- v1.1: TVS en VBUS, agujeros para atar los cables de la batería, PTC de 2 A, pull-ups de I2C según la medida, RC de VBAT_SNS y LIGHT junto a los pines 38/39 (R12), F1 entre J1 y U2 si cabe (R11).
 
 ## Historial (encargo 1, resumen)
 Commits 7ccbb60…9d42d8b de esta rama: contorno con holgura 1,0 y USB-C de 16 pines (`../PCB-suelo`), esquema jerárquico, dos colocaciones, par USB a mano, BOM/CPL de JLCPCB con giros comparados (`scripts/jlc_post.py`), TEST-PLAN, modelos 3D, logo, pre-rutado y una ejecución de Freerouting 1.9.0 (release oficial, ejecutada sin red desde el scratchpad) con remate por rejilla que no convergió (15 pads sin unir, `render/rutado-pendiente.png` y `render/remate-*.png`). Lecciones pasadas al Cerebro (`layout-pcb.md`, `kicad-automatizacion.md`): rutador propio prohibido, autorrutado acotado, TP junto a su fuente, «DRC 0» no es calidad, Freerouting ignora el margen a borde (franja en el DSN), el Python de KiCad en subprocesos.

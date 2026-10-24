@@ -58,3 +58,47 @@
 - Bus rápido por un convertidor (lección de esta placa): el DVP va por el pasillo de la cámara, el elevador en la esquina trasera derecha y el buck-boost al oeste del pasillo del USB; `comprobar-flujo` lo vigila con 3 mm.
 - TP lejos de su fuente: cada TP a ≤ 5 mm de su pieza, en la cara inferior.
 - El cruce del par USB en J1 queda resuelto desde las reglas (vías 0,45/0,2 solo en la clase USB) y la colocación de U1 (`NOTAS.md`, «Par USB»).
+
+## Vuelta 1 — hallazgos de la revisión independiente (2026-10-24)
+
+Entrada: `revisiones/2026-10-24-C-independiente.md` (commit `3575c85`): 0 críticos, 9 importantes (R1–R9), 6 mejoras (R10–R15). Planta, bloques, pasillos y pines sin cambios; solo piezas pequeñas y serigrafía. Sin rutar y sin Freerouting.
+
+### Qué se hizo con cada hallazgo
+| Hallazgo | Resolución | Verificado |
+|----------|------------|------------|
+| R1 TP6 (3V3) y TP9 (I2S_DOUT) lejos de su fuente | TP6 a (−84,5; −110,0) B, a 4,9 mm de C8.1; TP9 a (−91,5; −92,0) B, a 1,5 mm de U7 | `revisar-rutado --tp-max 5` PASS (0 errores; antes 2 tp-lejos) |
+| R2 TPS63802 sin su layout de referencia | C6 (Cin) a 90° pegado a VIN al norte, C7 (Cout) a 270° pegado a VOUT al sur con el GND hacia el plano, C8 al lado, L1 desplazada al este (−85,4) para no quedar entre VIN y VOUT; R15/R16 pegados a FB al oeste | PNG `zona-U3`; `comprobar-flujo` PASS (sin bulk-lejos) |
+| R3 U5: C18 girado y GND por vías | C18 a 0° en (−50,4; −118,1) bajo los pines 5/6: VOUT–Cout–GND en la misma cara sin vías; C16 a 270° con VIN hacia el pin 7 | PNG `zona-U5`; DRC 0 |
+| R4 TS del cargador sin NTC | RT1 Murata NCP18XH103F03RB (LCSC C13564, extended), 10 kΩ B3380 0603, de TS a VSS sin red de polarización (el BQ2407x inyecta la corriente); red `BQ_TS` en `criticas`; colocada en (−80,5; −113,5) bajo la batería, a 15 mm de U2 | ERC 0; esquema regenerado; PNG `zona-RT1` |
+| R5 C14 y R21 lejos de COMP/FB | Columna x −53,8 pegada al lado oeste de U5: R22 (−114,5), R21 (−116,1), C15 (−117,7), C14 (−119,3); R24 y C12/R20 en la segunda columna (x −57). Toma Kelvin de V6 para R21 desde el pad de C18 (nota en `NOTAS.md`, «Elevador») | PNG `zona-U5`; DRC 0 (C14 a 0,31 mm del borde, mínimo 0,30) |
+| R6 el logo manda sobre los rótulos de J_EXP | Logo regenerado a 0,28 mm/px (10,1 × 9,5 mm) en x −100…−90, y −118…−108; nombre y versión a su derecha y recuadro «PLACA» entre el logo y los pads de cable; `LEYENDA["J11"]` con 5,8 mm de ancho | `render/colocacion-abajo.png`: los 10 pads de J_EXP con su GPIO; logo a 2 mm de J11 y del buck-boost |
+| R7 «+» de BAT+ y nombres de TP | `LADO_ARRIBA["J2"] = "U"` («+» en la cara superior); rótulo de cada TP en la cara inferior (`TP_ABAJO`, `LADO_TP = "UDRL"`, colocado en `gen_pcb.rotulos`) | `render/colocacion-arriba.png` («+» y «−»); `render/colocacion-abajo.png` (14 rótulos de TP) |
+| R8 R23 fuera del contorno | R23 a (−45,55; −115,7) a 90°; R30 a (−56,2; −111,5) | DRC 0 (sin `copper_edge_clearance`) |
+| R9 anillo del mecanismo | Patios a ≥ 2 mm del agujero Ø11,3 (centro supuesto): U9 a 270° en (−47,3; −93,8) con C29 debajo, U11 a 0° con C39 al este, U8 a 270° con C27/C28; JP4 y R40/R42/R50/R51 a la columna x −44 junto a J9 | Linter propio (anillo r + 2 mm); no ha hecho falta cambiar área ni funciones |
+| R11 F1 entre J1 y U2 | Descartada: el patio de J1 ocupa el hueco; F1 sigue en (−82,5; −121) | — |
+| R12 RC del ADC junto a 38/39 | Queda para v1.1 (anotado en `NOTAS.md`) | — |
+
+### Herramientas (vuelta 1)
+| Herramienta | Resultado |
+|-------------|-----------|
+| `kicad-cli sch erc --severity-all` | 0 infracciones |
+| `kicad-cli pcb drc --severity-all --schematic-parity` | 0 infracciones, paridad 0, 362 sin conectar (sin rutar) |
+| `pcb-toolkit comprobar-flujo` | PASS; 2 avisos conocidos (C10 a 1,90 mm de U4:2 y C32 a 1,08 mm de U10:24, ambos ≤ 2 mm) |
+| `pcb-toolkit revisar-rutado --tp-max 5` | PASS, 0 errores (los 14 TP a ≤ 5 mm de su fuente) |
+| `scripts/comprobar_colocacion.py` | OK: TP, puentes, LED y botones accesibles; alturas bajo la batería ≤ 2,1 mm |
+| kicad-happy | no ejecutado (no instalado) |
+| Freerouting | no ejecutado (fuera del encargo) |
+
+### PNG leídos (vuelta 1)
+- `zona-U5`: SW contra L2; C16 (VIN) al este; C18 a 0° bajo VOUT/GND, lazo cerrado en la cara superior; columna FB/COMP pegada al oeste.
+- `zona-U3`: C6 al norte sobre VIN, C7/C8 al sur sobre VOUT, L1 al este fuera del camino VIN–VOUT; R15/R16 en FB.
+- `zona-U2`: C3 (OUT) al norte con R5 al lado, C2 (IN) al oeste, C4 (BAT) al sur; sin cambios de bloque.
+- `zona-U6`: control al oeste con R28/C23, VM/salidas al este con C22/C21; el hull de L2 queda 0,3 mm por debajo del sensado de VREF (antes cruzaba).
+- `zona-U8`: TP10 (3V3) sobre el pad de entrada de U8; C27 al noreste y C28 bajo VOUT; U9 a 270° al este.
+- `zona-RT1`: NTC sola bajo la batería, a 8 mm de F1 y 15 de U2.
+- `zona-J1`: pads del USB-C limpios, U1 detrás; nada en el anillo del mecanismo.
+- `render/colocacion-arriba.png`: «+» y «−» de la batería, LED/botones/puentes con rótulo, nada dentro del anillo de 2 mm del agujero.
+- `render/colocacion-abajo.png`: 14 TP con nombre, 10 pads de J_EXP con GPIO, J5/J7/J8 completos, logo pequeño a la derecha con nombre/versión y recuadro; J9 con 7 de 10 rótulos (EN+, G y ESP sin sitio por TP11; se recolocan con el cobre definitivo) y «IO8» de JP4 solo en la cara inferior.
+
+### Resultado de la vuelta 1
+**PASA la puerta C propia** (0 críticos, 0 importantes). Siguiente paso: segunda revisión independiente de la colocación (Maestro) antes del rutado.
