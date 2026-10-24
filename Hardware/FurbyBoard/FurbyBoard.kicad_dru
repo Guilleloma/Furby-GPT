@@ -81,32 +81,33 @@
 	(condition "A.NetName == 'IR_LED_K'")
 	(constraint track_width (min 0.3mm)))
 
-# Cuellos de entrada a pads finos (<= 1 mm, layout-pcb.md 5.1): la última regla manda.
+# Cuellos de entrada a pads finos (<= 1 mm, layout-pcb.md 5.1), solo en la cara de la
+# pieza (F.Cu): la última regla manda.
 
 (rule "cuello U2"
-	(condition "A.intersectsCourtyard('U2')")
+	(condition "A.Layer == 'F.Cu' && A.intersectsCourtyard('U2')")
 	(constraint track_width (min 0.25mm)))
 
 (rule "cuello U3"
-	(condition "A.intersectsCourtyard('U3')")
+	(condition "A.Layer == 'F.Cu' && A.intersectsCourtyard('U3')")
 	(constraint track_width (min 0.25mm)))
 
 (rule "cuello U5"
-	(condition "A.intersectsCourtyard('U5')")
+	(condition "A.Layer == 'F.Cu' && A.intersectsCourtyard('U5')")
 	(constraint track_width (min 0.25mm)))
 
 (rule "cuello U6"
-	(condition "A.intersectsCourtyard('U6')")
+	(condition "A.Layer == 'F.Cu' && A.intersectsCourtyard('U6')")
 	(constraint track_width (min 0.25mm)))
 
 (rule "cuello U7"
-	(condition "A.intersectsCourtyard('U7')")
+	(condition "A.Layer == 'F.Cu' && A.intersectsCourtyard('U7')")
 	(constraint track_width (min 0.25mm)))
 
 (rule "cuello Q1"
-	(condition "A.intersectsCourtyard('Q1')")
+	(condition "A.Layer == 'F.Cu' && A.intersectsCourtyard('Q1')")
 	(constraint track_width (min 0.5mm)))
 
 (rule "cuello J1"
-	(condition "A.intersectsCourtyard('J1')")
+	(condition "A.Layer == 'F.Cu' && A.intersectsCourtyard('J1')")
 	(constraint track_width (min 0.2mm)))

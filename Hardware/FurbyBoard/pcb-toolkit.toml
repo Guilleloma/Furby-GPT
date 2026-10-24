@@ -10,7 +10,8 @@ gnd = ["GND"]
 criticas = ["USB_D*", "CAM_*", "I2S_*", "IPROPI", "IPROPI_IO", "MOT_VREF", "VBAT_SNS", "LIGHT",
             "ENC_PT", "BQ_TS", "BB_FB", "BST_FB", "BST_COMP", "BST_RC"]
 arcos_permitidos = []
-via_en_pad_permitida = []
+# Vías térmicas del pad expuesto de los QFN (datasheet): tapadas por la cara inferior; ver NOTAS.md
+via_en_pad_permitida = ["U2:17", "U6:9", "U7:17"]
 clearance = 0.15
 
 [rutado]

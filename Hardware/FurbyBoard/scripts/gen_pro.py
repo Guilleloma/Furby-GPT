@@ -118,9 +118,10 @@ def dru():
         out.append('(rule "ancho %s"\n\t(condition "A.NetName == \'%s\'")\n\t(constraint track_width (min %smm)))\n'
                    % (net, net, w))
     cond = " || ".join("A.intersectsCourtyard('%s')" % ref for ref in CUELLOS)
-    out.append("# Cuellos de entrada a pads finos (<= 1 mm, layout-pcb.md 5.1): la última regla manda.\n")
+    out.append("# Cuellos de entrada a pads finos (<= 1 mm, layout-pcb.md 5.1), solo en la cara de la\n"
+               "# pieza (F.Cu): la última regla manda.\n")
     for ref, w in CUELLOS.items():
-        out.append('(rule "cuello %s"\n\t(condition "A.intersectsCourtyard(\'%s\')")\n'
+        out.append('(rule "cuello %s"\n\t(condition "A.Layer == \'F.Cu\' && A.intersectsCourtyard(\'%s\')")\n'
                    '\t(constraint track_width (min %smm)))\n' % (ref, ref, w))
     del cond
     return "\n".join(out)

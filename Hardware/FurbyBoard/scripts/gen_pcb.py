@@ -8,9 +8,9 @@ Se ejecuta con el Python de KiCad:
 - Colocación: scripts/layout.py (coordenadas del STL).
 - Redes: scripts/design.py. Las huellas se enlazan con los símbolos por UUID
   (paridad esquemático↔PCB).
-- Rutado: el par USB va trazado a mano (scripts/rutas_fijas.py). El resto, si
-  existe scripts/rutado.ses (Freerouting sobre el DSN de exportar_dsn.py), se
-  importa; si no, el PCB queda colocado y sin rutar.
+- Rutado: lo crítico va escrito en scripts/rutas_fijas.py (bloqueado); con --ses <fichero>
+  se importa además el resultado de Freerouting sobre esas rutas; con --sin-rutado el PCB
+  queda colocado y sin rutar (puerta C).
 - Serigrafía: nombre y versión, logo y rótulos colocados solos (scripts/serigrafia.py).
 - Planos: GND en In1 (L2) entero; In2 (L3) es capa de señal con relleno de VSYS; relleno de GND en F.Cu y B.Cu tras el rutado.
 - Áreas de reglas: sin cobre bajo la antena (todas las capas) y sin vías ni pads
@@ -412,10 +412,29 @@ def rotulos(board):
 
 
 def rutas_fijas(board, netmap):
-    """Pistas y vías trazadas a mano (scripts/rutas_fijas.py), bloqueadas para el autorrutado."""
+    """Pistas y vías explícitas (scripts/rutas_fijas.py), bloqueadas para el autorrutado."""
     capas = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu, "In2.Cu": pcbnew.In2_Cu}
-    for capa, ancho, red, puntos in RF.TRACKS:
+    pads = {}
+    for fp in board.GetFootprints():
+        for pad in fp.Pads():
+            pos = pad.GetPosition()
+            pads["%s.%s" % (fp.GetReference(), pad.GetNumber())] = (
+                (pcbnew.ToMM(pos.x) - P.STL_OX, P.STL_OY - pcbnew.ToMM(pos.y)), pad.GetNetname())
+
+    def pad_xy(nombre):
+        if nombre not in pads:
+            raise SystemExit("rutas_fijas: pad desconocido " + nombre)
+        return pads[nombre][0]
+
+    pistas, vias = RF.rutas(pad_xy)
+    for (red, capa, ancho, puntos), (_, _, _, nombres, _) in zip(pistas, RF.PISTAS):
+        for n in nombres:
+            ref = n if isinstance(n, str) else (n[0] if isinstance(n, tuple) and isinstance(n[0], str) else None)
+            if ref and pads[ref][1] != red:
+                raise SystemExit("rutas_fijas: %s es de %s, no de %s" % (ref, pads[ref][1], red))
         for a, b in zip(puntos, puntos[1:]):
+            if math.hypot(a[0] - b[0], a[1] - b[1]) < 1e-4:
+                continue
             t = pcbnew.PCB_TRACK(board)
             t.SetStart(pt(*a))
             t.SetEnd(pt(*b))
@@ -424,20 +443,25 @@ def rutas_fijas(board, netmap):
             t.SetNet(netmap[red])
             t.SetLocked(True)
             board.Add(t)
-    for red, xy in RF.VIAS:
+    for red, xy, (diam, taladro) in vias:
         v = pcbnew.PCB_VIA(board)
         v.SetPosition(pt(*xy))
-        v.SetWidth(mm(RF.VIA[0]))
-        v.SetDrill(mm(RF.VIA[1]))
+        v.SetWidth(mm(diam))
+        v.SetDrill(mm(taladro))
         v.SetNet(netmap[red])
         v.SetLocked(True)
         board.Add(v)
+    for red, capa, puntos, clearance, prioridad in RF.ZONAS:
+        z = poly_zone(board, [capas[capa]], puntos, net=netmap[red], priority=prioridad, clearance=clearance)
+        z.SetPadConnection(pcbnew.ZONE_CONNECTION_FULL)
+        z.SetLocked(True)
 
 
 def import_ses(board):
-    ses = os.path.join(P.ROOT, "scripts", "rutado.ses")
-    if not os.path.exists(ses):
+    """Importa el SES de Freerouting si se pasa --ses <fichero> (sobre las rutas fijas ya puestas)."""
+    if "--ses" not in sys.argv:
         return False
+    ses = sys.argv[sys.argv.index("--ses") + 1]
     ok = pcbnew.ImportSpecctraSES(board, ses)
     print("Rutado importado de", os.path.basename(ses), "->", ok)
     return ok
@@ -464,14 +488,20 @@ def main():
     # In1 es el plano de GND (no se ruta). In2 es capa de señal con relleno de VSYS en lo libre.
     board.SetLayerType(pcbnew.In1_Cu, pcbnew.LT_POWER)
     board.SetLayerType(pcbnew.In2_Cu, pcbnew.LT_SIGNAL)
-    rutado = "--sin-rutado" not in sys.argv and import_ses(board)
+    rutado = "--sin-rutado" not in sys.argv
     if rutado:
         rutas_fijas(board, netmap)
+        import_ses(board)
     zones(board, netmap, exteriores=rutado)
-    if "--rellenar" in sys.argv:
-        pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     pcbnew.SaveBoard(P.PCB, board)
+    if rutado or "--rellenar" in sys.argv:
+        # Relleno sobre la placa recargada del disco (kicad-automatizacion.md §3 y §10)
+        board = pcbnew.LoadBoard(P.PCB)
+        pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+        pcbnew.SaveBoard(P.PCB, board)
     print("PCB escrito:", os.path.basename(P.PCB))
+    sys.stdout.flush()
+    os._exit(0)
 
 
 if __name__ == "__main__":
