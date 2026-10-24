@@ -96,3 +96,90 @@ El autor informó de puerta C «PASA» con 0 importantes. Las herramientas confi
 
 ## Siguiente paso
 Vuelta al encargo 2 (colocación) con R1–R9; la planta no cambia. Tras corregir, repetir `comprobar-flujo`, `revisar-rutado` (TP) y `comprobar_colocacion.py`, y añadir `BQ_TS` a `pcb-toolkit.toml`. R9 necesita la medida del mecanismo (Guillermo) o el anillo libre de 2 mm.
+
+---
+
+# Vuelta 1 — re-revisión independiente de la colocación
+
+- Fecha: 2026-10-24 · Commits revisados: `6720812` (NTC RT1), `2e3259a` (logo y rótulos), `96d64e1` (colocación vuelta 1) sobre `3575c85` · Revisor: el mismo revisor independiente (T0, Fable 5.1)
+- Material: diff de `scripts/layout.py`, `design.py`, `gen_pcb.py`, `serigrafia.py`, `pcb-toolkit.toml`, `NOTAS.md`; sección «Vuelta 1» del informe del autor; herramientas vueltas a ejecutar; placa extraída con pcbnew (pads, patios, áreas de reglas); 11 PNG nuevos leídos; datasheet SLUS810N del BQ2407x (descargado de TI) para el pin TS.
+
+## Resultado de la vuelta 1
+**NO PASA** — 0 críticos, **1 importante** (regresión nueva, R16), 5 mejoras abiertas. R1–R9 de la vuelta 0 quedan **resueltos** (R8 y R5 con resto en mejoras). La corrección de R16 es un intercambio de dos piezas en una columna; no toca la planta.
+
+## Herramientas (vuelta 1)
+| Herramienta | Comando | Resultado |
+|-------------|---------|-----------|
+| ERC | `kicad-cli sch erc --severity-all --format json` | **0** infracciones (9 hojas; RT1 integrada) |
+| DRC | `kicad-cli pcb drc --schematic-parity --severity-all` (sin `--refill-zones`) | **0** infracciones, **0** de paridad, 362 sin conectar (sin rutar) |
+| Flujo | `pcb-toolkit comprobar-flujo --png --json` | **PASS**: 0 errores, 2 avisos (C10 1,90 mm; C32 1,08 mm); los de C28/C29 han desaparecido (ahora 0,62/0,68); demanda máxima de celda 0,64; 232 conexiones |
+| Geometría | `pcb-toolkit revisar-rutado --json` | **PASS**, 0 errores: los 14 TP a ≤ 5 mm (R1 resuelto) |
+| Colocación propia del autor | `scripts/comprobar_colocacion.py` | OK (64 piezas bajo la batería, máx. 2,10 mm; calzos libres; nada bajo el flex) |
+| Mecánica | pcbnew: caja, H1–H4, J1 | Sin cambios: coinciden con `geometria.json` |
+| Patios contra el contorno | pcbnew (`GetBoardPolygonOutlines` frente a `F.CrtYd`) | Ningún patio de componente fuera; los más cerca: R50 0,13 mm, C14 0,14, R23 0,24 (R20); J11 0,11 fuera (pads de cable, aceptable) |
+| kicad-happy | — | No ejecutado (no instalado) |
+| PNG | `png-revision --ratsnest --zona L1,L2,J2,J3,Q1,RT1,TP6,TP9,R23,C14` (450) y `comprobar-flujo --png` | 11 leídos: `colocacion`, `montaje-F_placa`, `montaje-B_placa`, zonas U3, U5, U8, RT1, C14 (más U2, J1, J11 de paso) |
+
+## Estado de los hallazgos de la vuelta 0
+| ID | Resolución del autor | Comprobación independiente | Estado |
+|----|----------------------|----------------------------|--------|
+| R1 | TP6 a (−84,5; −110), TP9 a (−91,5; −92) | `revisar-rutado` 0 `tp-lejos`; TP6 fuera del área del logo (x > −90); TP9 a 1,5 mm de U7:1 | **Resuelto** |
+| R2 | C6/C7 pegados a VIN/VOUT, L1 al este | C6–VIN 0,98 mm, C7–VOUT 1,00 mm, L1–SW 1,58 mm (≤ 2). El GND de C6 (3,35) y de C7 (3,90) cierra por el plano: en el DLA el PGND (pin 8) queda entre los pines L1/L2 y no admite un pad de condensador al lado, así que el retorno por vías es el de la figura de layout del datasheet. **Condición para el rutado:** ≥ 2 vías de GND de 0,3 mm pegadas a los pads de GND de C6 y C7 y al pin 8 | **Resuelto** (condición al rutar) |
+| R3 | C18 a 0° bajo los pines 5/6; C16 girado | C18: V6 0,79 mm, GND 0,92 mm (lazo VOUT–Cout–GND en F.Cu, sin vías); C16: VSYS 0,72 mm; L2–SW 0,95 mm; C13 BOOT 1,24 mm (antes 1,61) | **Resuelto** |
+| R4 | RT1 (NCP18XH103F03RB, C13564) de TS a VSS en (−80,5; −113,5) | RT1 a 15,8 mm de U2, 7,8 de F1, 11,8 de L1, 30 de U5/U6; 3,6 mm dentro de la huella de la batería; a 10 mm de los calzos E1/E3; fuera del pasillo norte-sur (x −77…−69) y del logo; `BQ_TS` en `criticas`. Conexión eléctrica contra el datasheet: ver «TS con NTC» abajo | **Resuelto** |
+| R5 | C14 y R21 a la columna oeste de U5 | R21–FB 0,62 mm, R22–FB 0,90, C15–COMP 1,06 ✓. **Pero** R24 (30 kΩ) sigue a 3,99 mm de COMP y C14 a 3,97 mm de R24 (nodo BST_RC de 4 mm); y C12 ha salido de su sitio (R16) | Resuelto en lo esencial; resto en R17 |
+| R6 | Logo a 10 × 10 mm en x −100…−90, y −118…−108 | Área de reglas B.Cu comprobada; los 10 pads de J_EXP con su GPIO (`G, 3V3, VSYS, 5V, IO4 SDA, IO5 SCL, P07, G, IO43 TX, IO44 RX`); las vías de GND de C7/C8 caen en x > −90 (fuera); logo a 2 mm de J11 y a 3,7 mm de U3 | **Resuelto** |
+| R7 | «+» arriba; nombres de TP | F.Silkscreen: `+` en (−68,9; −116,5) y `-` en J3; B.Silkscreen: 14 rótulos de TP (`VBUS, D+, D-, BAT, VSYS, 3V3, 6V, IPR, I2S, 2V8, 1V2, G×3`) | **Resuelto** |
+| R8 | R23 a (−45,55; −115,7) | Patio dentro, a 0,24 mm del borde; cobre a ≥ 0,3 (DRC) y mínimo de JLCPCB 0,2 mm a borde fresado | **Resuelto** (margen en R20) |
+| R9 | Anillo de 2 mm | Patios más cercanos al borde del agujero: U11 2,04, R26 2,07, R52 2,11, D1 2,16, U8 2,21 mm; en B.Cu solo TP10 (1,77, sin altura). La medida real del agujero sigue pendiente (Guillermo), ahora con 2 mm de tolerancia | **Resuelto** (medida pendiente, ya anotada) |
+| R10–R15 | R11 descartada (J1 ocupa el hueco), R12 a v1.1, el resto sin cambios | Coherente | Mejoras, sin cambios |
+
+## TS con NTC directa a VSS, contra el datasheet (SLUS810N, rev. octubre de 2021)
+- **Conexión:** tabla 7-1 («TS: External NTC Thermistor Input. Connect the TS input to the NTC thermistor… TS monitors a 10 kΩ NTC thermistor») y §9.3.6: I_NTC se inyecta desde el pin y se compara V_TS con V_COLD y V_HOT; **no hay red de polarización** salvo para *ampliar* la ventana (figura 9-9, Rs/Rp; «the temperature window cannot be tightened… it can only be extended»). La NTC directa de TS a VSS es la conexión nominal. **Verificado.**
+- **Umbrales (§8.5, «Battery-pack NTC monitor»):** I_NTC 72/75/78 µA; V_HOT 270/300/330 mV (V_TS bajando), histéresis 30 mV; V_COLD 2,0/2,1/2,2 V (subiendo), histéresis 300 mV; t_DGL(TS) 50 ms; V_DIS(TS) = V_IN − 0,2 V (solo con TD alto; aquí TD va a GND, así que TS está activo). Nota (1): «trip points of 0 °C and 50 °C… with a Vishay Type 2 curve NTC with R25 of 10 kΩ».
+- **Ventana con NCP18XH103F03RB (10 kΩ, B25/50 = 3380 K; modelo β):** R_HOT = 0,300 V / 75 µA = 4,00 kΩ → **51 °C** (47–56 °C con los extremos de V_HOT e I_NTC); rearme a 4,40 kΩ → 48 °C (≈ 3 °C de histéresis). R_COLD = 2,1 V / 75 µA = 28,0 kΩ → **0 °C** (−2…+2 °C); rearme a 24 kΩ → 3,6 °C. Con B 3435 (curva tipo 2 de referencia) los puntos se mueven < 0,5 °C. A 25 °C V_TS = 0,75 V; a 45 °C 0,37 V. **Calculado.**
+- **Comportamiento fuera de la ventana (§9.3.6):** la carga se suspende, los temporizadores se congelan y CHG sigue bajo; se reanuda sola al volver a la ventana.
+- **Valoración:** la ventana 0–50 °C es la fija del chip, 5 °C más ancha por arriba que el 0–45 °C habitual de las celdas, y no se puede estrechar desde fuera; como la NTC mide la PCB bajo la celda (decisión de Maestro, opción a), la protección es gruesa pero real, y queda cubierta por el PCM de la celda y por el `TEST-PLAN.md` (que hay que actualizar con RT1: medir V_TS ≈ 0,75 V a 25 °C y la suspensión al calentar la NTC con el dedo o con aire caliente). Sin hallazgo; R21 (mejora) recoge la nota del TEST-PLAN.
+- **Pieza:** NCP18XH103F03RB es 10 kΩ ±1 %, B 3380 ±1 %, 0603: correcta. El autor la marca `extended`; en la puerta E2 se comprueba en la API de JLCPCB si C13564 es básica (en catálogos anteriores lo era), porque cambia el coste de carga.
+
+## Hallazgos nuevos de la vuelta 1
+| ID | Severidad | Área | Hallazgo | Evidencia | Verificado / supuesto | Corrección propuesta | Estado |
+|----|-----------|------|----------|-----------|-----------------------|----------------------|--------|
+| R16 | **Importante** | Elevador U5 (regresión) | **C12 (2,2 µF de VCC del TPS61089) ha pasado de 0,62 mm a 3,86 mm del pin VCC** al mover la columna de FB/COMP: ahora está en la segunda columna (x −57, y −116,4) y el VCC (LDO interno que alimenta el driver de puerta) queda con 4 mm de pista. Fuera del criterio de desacoplo (≤ 1 mm, máx. 2 mm) y de la guía de layout del datasheet («VCC capacitor as close as possible to the pin») | `pads.json`: U5:2 (VCC) ↔ C12 3,86 mm (vuelta 0: 0,62); `design.py` l. 212 | Verificado | Intercambiar C12 y R21: C12 a (−53,8; −114,5… −114,9) frente al pin VCC (y −115,25) y R21 a (−57; −116,4). R22 sigue en el pin FB y fija el nodo; R21 toma V6 en Kelvin desde C18 igual desde la columna exterior | Abierto |
+| R17 | Mejora | Compensación del elevador | R24 a 3,99 mm del pin COMP y C14 a 3,97 mm de R24 (el nodo BST_RC recorre 4 mm); C15 (10 pF) sí está a 1,06 mm | `pads.json` | Verificado | R24 girado 0° (pad BST_RC hacia el este) y C14 justo debajo de R24, en (−57; −119,6), con el GND de C14 a la isla de GND de señal de U5 | Abierto |
+| R18 | Mejora | Pasillo sur | C27 (−48,2; −89,6) y R51 (−44; −89,6) entran 0,5 mm en el extremo este del pasillo sur (y −83…−89,3), donde ya desembocan J6, J9 y los LDO; no estorban al rutado | `layout.py`; comprobación de cajas | Verificado | Nada; anotar que el pasillo sur acaba en x ≈ −52 | Aceptado |
+| R19 | Mejora | Serigrafía | J9 con 7 de 12 rótulos (faltan EN+, ESP y un G) porque TP11 y su rótulo «1V2» están en medio de la leyenda; «IO8» de JP4 solo en la cara inferior | PNG `montaje-B_placa`; nota del autor | Verificado | TP11 1,5 mm al oeste (sigue a < 5 mm de U9/C29) para liberar la leyenda; «IO8» arriba si cabe tras el cobre | Abierto (E2) |
+| R20 | Mejora | DFM, borde | R50 (0,13 mm), C14 (0,14) y R23 (0,24) con el patio a menos de 0,5 mm del borde fresado; los pads cumplen 0,3 (DRC) y el mínimo de JLCPCB (0,2) | pcbnew contra el contorno | Verificado | Donde haya sitio, ≥ 0,5 mm (R23 y R50 a −0,3 mm en x; C14 se mueve con R17) | Abierto |
+| R21 | Mejora | Pruebas | `TEST-PLAN.md` sin RT1: falta medir V_TS (≈ 0,75 V a 25 °C) y la suspensión de carga al calentar la NTC (CHG sigue bajo, I_BAT → 0) | `grep RT1 TEST-PLAN.md` vacío | Verificado | Añadir al TEST-PLAN en el encargo de fabricación (ya figura como desfasado en `NOTAS.md`) | Abierto (E1) |
+
+## PNG leídos (vuelta 1)
+- `colocacion.png`: misma planta; RT1 sola bajo la batería al oeste del pasillo del USB; logo pequeño abajo a la izquierda; el DVP, el par USB y el I2S como en la vuelta 0.
+- `montaje-F_placa`: «+» sobre J2 y «−» junto a J3; IO9/IO46/IO3 arriba; resto igual.
+- `montaje-B_placa`: 14 TP con nombre; J_EXP con sus 10 GPIO; J5 y J7 completos; J9 con la leyenda partida por «1V2» (R19); logo, nombre, versión y recuadro PLACA sin pisar nada.
+- `ratsnest_zona-U3`: C6 encima de VIN (pin 10), C7 bajo VOUT (pin 6), C8 al lado, L1 al este con BB_SW1/2; R16 en FB. Pasa (R2).
+- `ratsnest_zona-U5`: C18 horizontal bajo los pines 5/6; C16 al este con VSYS hacia el pin 9; C13 sobre BOOT; columna oeste pegada; **C12 en la segunda columna** (R16).
+- `ratsnest_zona-C14`: C14 bajo C15, fuera de la zona caliente de L2 y a 0,14 mm del borde (R17, R20).
+- `ratsnest_zona-RT1`: NTC sola, sin nada a < 3 mm; el par USB (verde) pasa 3 mm al este.
+- `ratsnest_zona-U8`: U8 a 270° con TP10 bajo su pad de entrada (cara B) y C27/C28 pegados; U9 a 270° al este. Pasa.
+
+## Checklist de la puerta (4.6), vuelta 1
+| Sev. | Punto | Estado |
+|------|-------|--------|
+| C | Contorno, taladros y conectores coherentes con la carcasa | OK (sin cambios) |
+| C | Interfaz con piezas reales medida | OK salvo el agujero del mecanismo (supuesto, ahora con 2 mm de anillo; medir antes de rutar) |
+| C | Keepout de antena en todas las capas | OK (sin cambios; ninguna pieza dentro) |
+| C | `comprobar-flujo` PASS | OK |
+| I | Convertidores como su layout de referencia | U3 OK; U5: C18/C16/C13 OK, **C12 no (R16)**; U2, U6, U7 OK |
+| I | TP junto a su fuente; accesibles | OK (`revisar-rutado` PASS; linter OK) |
+| I | Alturas | OK |
+| I | Taladros, keepouts, borde | OK; patios al borde en R20 (mejora) |
+| — | Preferencias de Guillermo (pads de batería, TP rotulados, GPIO rotulados, logo subordinado) | OK |
+| — | NTC | OK (R4 resuelto; conexión según datasheet) |
+
+## Revisión final como revisor senior (vuelta 1)
+- Al corregir un hallazgo se rompió otro punto que estaba bien (C12): la lección es volver a medir **todos** los pares pin–condensador del bloque tocado, no solo los del hallazgo; queda recogida en este informe para el Cerebro.
+- TP lejos de su fuente: ya no se repite (`revisar-rutado` PASS sin pistas).
+- Bus rápido por un convertidor: no se repite.
+
+## Siguiente paso
+Vuelta 2 (última, `revision-de-diseno.md` §6.1): intercambiar C12 y R21 (R16), opcionalmente R17/R20, y repetir `comprobar-flujo`, `revisar-rutado` y la medida pin–condensador de U5. Después, revisión independiente breve y rutado.
