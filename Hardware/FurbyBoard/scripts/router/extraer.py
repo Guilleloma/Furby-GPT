@@ -4,8 +4,8 @@
 Se ejecuta con el Python de KiCad:
     $KICAD_PY scripts/router/extraer.py <salida.json>
 
-Coordenadas de KiCad en mm (y hacia abajo). Los TP no entran: se colocan después
-del rutado sobre el cobre de su red (scripts/router/colocar_tp.py).
+Coordenadas de KiCad en mm (y hacia abajo). Los TP que siguen en F.Cu (sin colocar)
+no entran; los ya colocados en B.Cu (rutar.py --solo-tp) son cobre fijo.
 """
 import json
 import os
@@ -50,8 +50,8 @@ def main():
     pads = []
     for fp in board.GetFootprints():
         ref = fp.GetReference()
-        if ref.startswith("TP") or ref.startswith("LOGO"):
-            continue
+        if ref.startswith("LOGO") or (ref.startswith("TP") and fp.GetLayer() == pcbnew.F_Cu):
+            continue        # TP aún sin colocar (los colocados, en B.Cu, son cobre fijo)
         for pad in fp.Pads():
             capas = [c for lay, c in CAPAS.items() if pad.IsOnLayer(lay)]
             tht = pad.GetAttribute() in (pcbnew.PAD_ATTRIB_PTH, pcbnew.PAD_ATTRIB_NPTH)

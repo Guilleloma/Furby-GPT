@@ -1,0 +1,9 @@
+{
+  "orden": ["BST_FSW", "BST_VCC", "BST_FB", "BST_COMP", "BST_RC", "BST_ILIM", "BST_BOOT", "BB_FB",
+            "BQ_TS", "BQ_ISET", "BQ_ILIM", "BAT_G", "MOT_VREF", "IPROPI",
+            "BST_SW", "BB_L1", "BB_L2", "VBUS_IN", "VBUS", "BAT", "BAT_PAD", "VSYS", "V6",
+            "MOT_OUT1", "MOT_OUT2", "SPK_P", "SPK_N", "IR_LED_A", "IR_LED_K", "3V3", "GND"],
+  "anchos": {"BST_SW": 0.8, "BB_L1": 0.8, "BB_L2": 0.8, "VSYS": 0.6, "V6": 0.6, "BAT": 0.6, "BAT_PAD": 0.6,
+             "VBUS": 0.5, "VBUS_IN": 0.5, "MOT_OUT1": 0.5, "MOT_OUT2": 0.5, "SPK_P": 0.4, "SPK_N": 0.4,
+             "IR_LED_A": 0.4, "IR_LED_K": 0.4, "3V3": 0.3, "GND": 0.4}
+}

@@ -496,8 +496,14 @@ class Rejilla:
                     out[(l, j, i)] = (cj, ci)
         return out
 
-    def colocar_tps(self):
-        """Un TP por fuente: vía junto al pad (sin entrar en él) con el pad del TP en B.Cu."""
+    def colocar_tps(self, activo=True):
+        """Un TP por fuente: vía junto al pad (sin entrar en él) con el pad del TP en B.Cu.
+        Con activo=False (TP ya colocados y fijos en el PCB) solo toma la foto del cobre fijo."""
+        if not activo:
+            self.tps = {}
+            self.lab_base = self.lab.copy()
+            self.agujeros_base = self.agujeros.copy()
+            return
         self._fijo = True
         self.tps = {}
         self.reserva_tp = np.zeros((self.H, self.W), dtype=bool)
@@ -756,7 +762,7 @@ def orden_por_bloques(redes):
 
 def una_vuelta(geo, lib, redes, verboso=False):
     rj = Rejilla(geo, lib)
-    rj.colocar_tps()
+    rj.colocar_tps(activo="--sin-tp" not in sys.argv)
     hechas, fallidas = [], []
     for red in redes:
         if red not in rj.nid or (len(rj.pads_de(red)) < 2 and red != "GND"):
@@ -808,6 +814,8 @@ def levantar_y_rerutar(rj, fallidas, orden, rondas=4, intentos=40):
 def main():
     geo = json.load(open(sys.argv[1]))
     salida = sys.argv[2]
+    if "--anchos" in sys.argv:
+        geo["anchos"].update(json.load(open(sys.argv[sys.argv.index("--anchos") + 1])))
     vueltas = int(sys.argv[sys.argv.index("--vueltas") + 1]) if "--vueltas" in sys.argv else 6
     lib = compilar()
     if "--solo-tp" in sys.argv:

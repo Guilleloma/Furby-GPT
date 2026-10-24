@@ -69,6 +69,11 @@ def franja_borde(board):
 if __name__ == "__main__":
     dsn = os.path.join(P.ROOT, "scripts", "rutado.dsn")
     board = pcbnew.LoadBoard(P.PCB)
+    # El relleno de VSYS de In2 (capa de señal) iría al DSN como plano y taparía la capa:
+    # fuera para el autorrutado; los rellenos de F.Cu/B.Cu tampoco existen aún.
+    for z in list(board.Zones()):
+        if not z.GetIsRuleArea() and z.GetLayer() != pcbnew.In1_Cu:
+            board.Remove(z)
     franja_borde(board)
     ok = pcbnew.ExportSpecctraDSN(board, dsn)
     print("DSN exportado:" if ok else "ERROR al exportar el DSN:", os.path.relpath(dsn, P.ROOT))

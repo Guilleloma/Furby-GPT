@@ -35,13 +35,15 @@ def rellenos_exteriores(board):
             G.poly_zone(board, [capa], todo, net=gnd)
 
 
-def rotular_tps(board):
+def rotular_tps(board, refs):
     """Nombre de cada TP en la serigrafía inferior, junto a su pad."""
     import gen_pcb as G
     import serigrafia as SG
     abajo = G.colocador(board, "B")
     sin_sitio = []
     for ref, txt in SG.TP_ABAJO.items():
+        if ref not in refs:
+            continue
         fp = board.FindFootprintByReference(ref)
         if fp.GetLayer() != pcbnew.B_Cu:
             continue
@@ -87,7 +89,11 @@ def main():
             if fp.GetLayer() != pcbnew.B_Cu:
                 fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
             fp.SetPosition(punto(pos))
-    rotular_tps(board)
+    movidos = set()
+    for ruta in [a for a in sys.argv[1:] if not a.startswith("--")]:
+        movidos |= set(json.load(open(ruta)).get("tps", {}))
+    if movidos:
+        rotular_tps(board, movidos)
     if "--rellenos" in sys.argv:
         rellenos_exteriores(board)
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
