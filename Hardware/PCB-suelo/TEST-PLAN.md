@@ -162,6 +162,7 @@ Con el motor del Furby y el mecanismo montado, o con un motor de prueba de la mi
 
 | Prueba | Procedimiento | PASS | Si falla |
 |--------|---------------|------|----------|
+| Bobinado (antes de conectarlo) | Medir la resistencia entre los cables del motor en 5 posiciones del eje; quedarse con la menor (R) | Anotar R. I de bloqueo ≈ 6 V / R. Si pasa de 1,0 A, ITRIP la limita; si no llega a 0,8 A, se puede subir ITRIP (2,2 kΩ → 1,2 A) | No hay datos publicados del motor: esta medida manda sobre la estimación (0,6–1,2 A) |
 | Arranque seguro | Encender sin firmware (BOOT pulsado) | El motor no se mueve | Pull-downs de IN1 e IN2 (GPIO48 y GPIO46) |
 | Dos sentidos | PWM a 20 kHz, 70 %, decaimiento lento, en cada sentido | Gira en los dos; OUT1 y OUT2 conmutan a 20 kHz | Pines, JP1 y JP2 |
 | Corriente en marcha | IPROPI (TP) / 2,25 V por A | Anotar el valor (se esperan 0,1–0,3 A) | — |
@@ -210,7 +211,8 @@ Si falla, se revisa por este orden: la soldadura del cable, el pull-up de 47 kΩ
 
 | Modo | Esperado | PASS | Si falla |
 |------|----------|------|----------|
-| Dormido (sueño profundo, cámara y elevador apagados, JP_LED cortado), polímetro en µA en serie con la batería | ≈ 90 µA | ≤ 150 µA | Ir quitando consumidores: LED, divisor, micro, expansor |
+| Dormido (sueño profundo, cámara, elevador, ampli e IR apagados, leva aparcada, JP_LED cortado), polímetro en µA en serie con la batería | ≈ 80 µA (60–110) | ≤ 150 µA | Ir quitando consumidores: LED, inclinación cerrada (220 kΩ), LDR, micro, expansor, módulo |
+| Despertar | Dormido, tocar barriga, espalda y lengua, inclinar, enchufar el USB y esperar al temporizador | Despierta en cada caso (INT del TCA9535 en GPIO21 y temporizador) y vuelve a dormirse tras N s | Leer y borrar la INT del TCA9535 antes de dormir; configuración de ext0 |
 | Escuchando la palabra de activación | 85–120 mA | ≤ 130 mA | Frecuencia de CPU, modem sleep |
 | Pico (motor bloqueado + TX + cámara + audio limitado a −6 dBFS) | ≈ 2,6 A a 3,7 V; ≈ 2,9 A a 3,3 V | Sin reinicio y sin corte del PCM | Bajar ITRIP o no solapar el motor con la foto |
 
