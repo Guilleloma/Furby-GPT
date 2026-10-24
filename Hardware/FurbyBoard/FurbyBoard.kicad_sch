@@ -1,0 +1,410 @@
+(kicad_sch
+	(version 20260306)
+	(generator "eeschema")
+	(generator_version "10.0")
+	(uuid "8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b")
+	(paper "A3")
+	(title_block
+		(title "FurbyBoard v1.0 · Raíz")
+		(date "2026-10-24")
+		(rev "v1.0")
+		(company "FurbyGPT")
+		(comment 1 "Generado por scripts/gen_sch.py desde scripts/design.py: no editar a mano")
+	)
+	(lib_symbols)
+	(text "FURBYBOARD v1.0 · 2026-10"
+		(exclude_from_sim no)
+		(at 25.4 25.4 0)
+		(effects
+			(font
+				(size 4 4)
+			)
+			(justify left top)
+		)
+		(uuid "e371ddff-0f54-59a8-b725-ee5cbc9144fc")
+	)
+	(text "ESP32-S3-WROOM-1-N16R8 · BQ24073 · TPS63802 · TPS61089 + DRV8231A · MAX98357A · cámara DVP · TCA9535. Arquitectura: ../PCB-suelo/ARQUITECTURA.md"
+		(exclude_from_sim no)
+		(at 25.4 36 0)
+		(effects
+			(font
+				(size 2 2)
+			)
+			(justify left top)
+		)
+		(uuid "fcc50293-4a11-5c8c-933a-92973cc4aefc")
+	)
+	(sheet
+		(at 25.4 124.46)
+		(size 76.2 38.1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "259e0c7a-58f0-5f84-8b75-920a4cd1054d")
+		(property "Sheetname" "Amplificador y micro"
+			(at 25.4 123.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 2 2)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "hojas/audio.kicad_sch"
+			(at 25.4 163.26 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "FurbyBoard"
+				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 311.15 60.96)
+		(size 76.2 38.1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "5568ca9d-1b04-5bc5-b65f-37ff2fdf9368")
+		(property "Sheetname" "Elevador 6 V y puente H"
+			(at 311.15 60.26 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 2 2)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "hojas/motor.kicad_sch"
+			(at 311.15 99.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "FurbyBoard"
+				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 120.65 124.46)
+		(size 76.2 38.1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "560a552f-efe0-507d-88d8-d46e694413a9")
+		(property "Sheetname" "Cámara DVP"
+			(at 120.65 123.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 2 2)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "hojas/camara.kicad_sch"
+			(at 120.65 163.26 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "FurbyBoard"
+				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b"
+					(page "7")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 311.15 124.46)
+		(size 76.2 38.1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "63779300-3eb4-5cbd-9f8f-d02f5aeecfad")
+		(property "Sheetname" "LED, puntos de test y J_EXP"
+			(at 311.15 123.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 2 2)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "hojas/led_tp.kicad_sch"
+			(at 311.15 163.26 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "FurbyBoard"
+				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b"
+					(page "9")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 215.9 60.96)
+		(size 76.2 38.1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "ce6957cf-c353-546a-ba18-3915ac2598ee")
+		(property "Sheetname" "ESP32-S3-WROOM-1"
+			(at 215.9 60.26 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 2 2)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "hojas/mcu.kicad_sch"
+			(at 215.9 99.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "FurbyBoard"
+				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 25.4 60.96)
+		(size 76.2 38.1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "f08d0417-b3d4-5213-abf7-4bf22c25e38f")
+		(property "Sheetname" "USB-C y protección"
+			(at 25.4 60.26 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 2 2)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "hojas/usb.kicad_sch"
+			(at 25.4 99.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "FurbyBoard"
+				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 215.9 124.46)
+		(size 76.2 38.1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "f350d578-0fd8-5f88-a384-ba2bb1768cfe")
+		(property "Sheetname" "Expansor y sensores del Furby"
+			(at 215.9 123.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 2 2)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "hojas/sensores.kicad_sch"
+			(at 215.9 163.26 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "FurbyBoard"
+				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b"
+					(page "8")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 120.65 60.96)
+		(size 76.2 38.1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "f3e50cc9-b269-5cfc-8a97-7683b547d39e")
+		(property "Sheetname" "Carga, batería y 3,3 V"
+			(at 120.65 60.26 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 2 2)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "hojas/alimentacion.kicad_sch"
+			(at 120.65 99.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "FurbyBoard"
+				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+)
