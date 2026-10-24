@@ -653,7 +653,6 @@ stub("GND", "SW1.2", (1.4, 0.0), 0.3)
 stub("GND", "SW2.2", (0.0, 1.0), 0.3)
 pista("GND", "F.Cu", 0.3, (-76.7, -121.194), (-76.7, -120.0))
 via("GND", (-76.7, -120.0))
-stub("GND", "C35.2", (0.95, 0.0), 0.3)
 stub("GND", "C40.2", (-0.95, 0.0), 0.3)
 stub("GND", "JP5.2", (0.0, 0.95), 0.3)
 stub("GND", "R53.2", (0.95, 0.0), 0.3)
@@ -671,3 +670,29 @@ stub("GND", "U4.1", (-1.25, 0.0), 0.3)
 stub("GND", "U4.40", (1.25, 0.0), 0.3)
 stub("GND", "C10.2", (-0.9, 0.0), 0.3)
 stub("GND", "C9.2", (-1.2, 0.0), 0.4)
+# ---------------------------------------------------------------- sensores de J8 (TILT_A/B, TONGUE) junto a U10
+# Bloque RC de dos columnas (x -99,7/-98,1 y -96,2/-94,6) y cinco filas de 1,7 mm al oeste de U10, con una
+# columna de vías de 0,6 entre ambas (x -97,15, una por fila). TILT_A cruza a U10.4 por el hueco de filas
+# y -78,25 y baja por el hueco de 0,8 junto a U10; TILT_B por y -80,015 recto a U10.5; TONGUE por y -81,65 y
+# sube a U10.6. Las tres series a J8 salen por las vías de las filas 1, 3 y 5 a B.Cu, con carriles anidados
+# (x -99,5 a J8.1, -99,9 a J8.2, -100,3 a J8.4). 3V3: R45.2 a R38.2 por y -76,55 (0,4 en un hueco de 0,75:
+# dos avisos de 0,175 aceptados, red de µA); R47.2 y R43.2 por las vías de las filas 2 y 4 a In2 y de ahí al
+# tronco de B.Cu (x -85,5). C35.2, C36.2 y C37.2 (GND) van por el relleno.
+pista("TILT_A", "F.Cu", 0.2, "R46.1", (-99.725, -78.25), (-98.075, -78.25), "C36.1")
+pista("TILT_A", "F.Cu", 0.2, (-98.075, -78.25), (-96.225, -78.25), "R45.1")
+pista("TILT_A", "F.Cu", 0.2, (-96.225, -78.25), (-93.85, -78.25), (-93.85, -79.075), (-93.55, -79.375), "U10.4")
+pista("TILT_B", "F.Cu", 0.2, "C37.1", "R48.1", (-99.725, -80.015), (-94.575, -80.015), "U10.5")
+pista("TILT_B", "F.Cu", 0.2, "R47.1", (-94.575, -80.015))
+pista("TONGUE", "F.Cu", 0.2, "C35.1", "R43.1", "R44.1")
+pista("TONGUE", "F.Cu", 0.2, (-94.575, -81.65), (-93.76, -81.65), (-93.76, -80.675), "U10.6")
+stub("TILT_A_PAD", "R46.2", (0.925, 0.0), 0.2)
+pista("TILT_A_PAD", "B.Cu", 0.2, (-97.15, -77.4), (-99.5, -77.4), (-99.5, -70.6), "J8.1")
+stub("TILT_B_PAD", "R48.2", (0.925, 0.0), 0.2)
+pista("TILT_B_PAD", "B.Cu", 0.2, (-97.15, -80.8), (-99.9, -80.8), (-99.9, -73.14), "J8.2")
+stub("TONGUE_PAD", "R44.2", (-0.925, 0.0), 0.2)
+pista("TONGUE_PAD", "B.Cu", 0.2, (-97.15, -84.2), (-100.3, -84.2), (-100.3, -78.22), "J8.4")
+pista("3V3", "F.Cu", 0.4, "R45.2", (-93.8, -77.4), (-93.8, -76.55), (-96.075, -76.55), "R38.2")
+stub("3V3", "R47.2", (-0.925, 0.0), 0.4)
+stub("3V3", "R43.2", (-0.925, 0.0), 0.4)
+pista("3V3", "In2.Cu", 0.4, (-97.15, -79.1), (-97.85, -79.8), (-97.85, -81.8), (-97.15, -82.5), (-97.85, -83.2), (-97.85, -84.9), (-92.0, -84.9), (-90.6, -86.3), (-85.5, -86.3))
+via("3V3", (-85.5, -86.3))
