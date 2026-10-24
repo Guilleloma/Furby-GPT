@@ -120,9 +120,11 @@ def setup_board(board):
 def place(board, netmap):
     parts = {p["ref"]: p for p in D.parts()}
     lay = LAY.placement()
+    caras = LAY.caras()
     faltan = sorted(set(parts) - set(lay))
-    if faltan:
-        raise SystemExit("Sin colocar: " + ", ".join(faltan))
+    sobran = sorted(set(lay) - set(parts))
+    if faltan or sobran:
+        raise SystemExit("Sin colocar: %s; sin pieza: %s" % (", ".join(faltan), ", ".join(sobran)))
     for ref, part in parts.items():
         x, y, rot = lay[ref]
         fp = load_fp(part["footprint"])
@@ -141,6 +143,9 @@ def place(board, netmap):
         fp.SetField("Description", part.get("desc", ""))
         board.Add(fp)
         fp.SetPosition(pt(x, y))
+        if caras[ref] == "B":
+            # Puntos de test en la cara inferior, sobre una vía de su red junto a la fuente.
+            fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
         fp.SetOrientationDegrees(rot)
         fp.SetDNP(bool(part["dnp"]))
         fp.SetExcludedFromBOM(not part["in_bom"])
@@ -164,7 +169,7 @@ def place(board, netmap):
                     netmap[nc] = pcbnew.NETINFO_ITEM(board, nc)
                     board.Add(netmap[nc])
                 pad.SetNet(netmap[nc])
-        fp.Reference().SetLayer(pcbnew.F_Fab)
+        fp.Reference().SetLayer(pcbnew.B_Fab if caras[ref] == "B" else pcbnew.F_Fab)
         fp.Reference().SetTextSize(pcbnew.VECTOR2I(mm(0.5), mm(0.5)))
         fp.Reference().SetTextThickness(mm(0.08))
         fp.Reference().SetPosition(fp.GetPosition())
@@ -181,7 +186,7 @@ def mechanical(board):
     fp.SetReference("LOGO1")
     board.Add(fp)
     lx, ly = LAY.LOGO_INFERIOR["x"], LAY.LOGO_INFERIOR["y"]
-    fp.SetPosition(pt((lx[0] + lx[1]) / 2, ly[1] - 7.4))
+    fp.SetPosition(pt((lx[0] + lx[1]) / 2, (ly[0] + ly[1]) / 2 + 0.4))
     fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
     for x, y, nombre in LAY.CALZOS:
         shape(board, pcbnew.Cmts_User, pcbnew.SHAPE_T_CIRCLE, c=(x, y), r=LAY.CALZO_D / 2, width=0.1)
@@ -200,7 +205,7 @@ def poly_zone(board, layers, pts_stl, net=None, rule=None, priority=0, clearance
         z.SetDoNotAllowVias("vias" in rule)
         z.SetDoNotAllowPads("pads" in rule)
         z.SetDoNotAllowZoneFills("fills" in rule)
-        z.SetDoNotAllowFootprints(False)
+        z.SetDoNotAllowFootprints("footprints" in rule)
     else:
         z.SetNet(net)
         z.SetLocalClearance(mm(clearance))
@@ -237,6 +242,20 @@ def zones(board, netmap, exteriores):
     poly_zone(board, cu, caja(a["x"][0], a["x"][1], a["y"][0], a["y"][1] + 5), rule=("tracks", "vias", "pads", "fills"))
     lg = LAY.LOGO_INFERIOR
     poly_zone(board, [pcbnew.B_Cu], caja(lg["x"][0], lg["x"][1], lg["y"][0], lg["y"][1]), rule=("vias", "pads"))
+    # Cabeza del tornillo M2: sin cobre ni piezas en las dos caras exteriores (layout-pcb.md 4.1).
+    r = LAY.TORNILLO_KEEPOUT_D / 2
+    for x, y in GEO["taladros"]:
+        circulo = [(x + r * math.cos(2 * math.pi * k / 24), y + r * math.sin(2 * math.pi * k / 24)) for k in range(24)]
+        # Solo cobre: las piezas las aparta el patio de Ø5 de la propia huella del taladro.
+        poly_zone(board, [pcbnew.F_Cu, pcbnew.B_Cu], circulo, rule=("tracks", "vias", "fills"))
+    # Franja del flex de la cámara hasta la pared: sin piezas (pistas y vías sí). Va como dibujo en
+    # Cmts.User y la vigila comprobar_colocacion.py (como área de reglas, KiCad la cruza con el
+    # propio J6 por su serigrafía).
+    fl = LAY.FLEX_SIN_PIEZAS
+    for a, b in (((fl["x"][0], fl["y"][0]), (fl["x"][1], fl["y"][0])), ((fl["x"][1], fl["y"][0]), (fl["x"][1], fl["y"][1])),
+                 ((fl["x"][1], fl["y"][1]), (fl["x"][0], fl["y"][1])), ((fl["x"][0], fl["y"][1]), (fl["x"][0], fl["y"][0]))):
+        shape(board, pcbnew.Cmts_User, pcbnew.SHAPE_T_SEGMENT, a=a, b=b, width=0.1)
+    text(board, pcbnew.Cmts_User, "flex", (fl["x"][0] + fl["x"][1]) / 2, (fl["y"][0] + fl["y"][1]) / 2, 0.8, 0.1)
 
 
 def silk(board):
@@ -438,8 +457,9 @@ def main():
     # In1 es el plano de GND (no se ruta). In2 es capa de señal con relleno de VSYS en lo libre.
     board.SetLayerType(pcbnew.In1_Cu, pcbnew.LT_POWER)
     board.SetLayerType(pcbnew.In2_Cu, pcbnew.LT_SIGNAL)
-    rutas_fijas(board, netmap)
     rutado = "--sin-rutado" not in sys.argv and import_ses(board)
+    if rutado:
+        rutas_fijas(board, netmap)
     zones(board, netmap, exteriores=rutado)
     if "--rellenar" in sys.argv:
         pcbnew.ZONE_FILLER(board).Fill(board.Zones())

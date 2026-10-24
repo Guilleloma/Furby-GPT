@@ -30,6 +30,7 @@ ALTURAS = {
     "TSSOP-24_4.4x7.8mm_P0.65mm": 1.2, "TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm": 0.8,
     "Texas_DLA_VSON-10_2x3mm_P0.5mm": 1.0, "L_Changjiang_FHD4020S": 2.1,
     "MountingHole_2.3mm_M2": 1.6, "Logo_Furby_PixelArt": 0.0,
+    "TestPoint_Pad_D1.5mm": 0.0, "SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm": 0.0,
     "Pads_1x07_P2.54mm": 0.0, "Pads_2x04_P2.54mm": 0.0,   # pads de cable sin montar
 }
 APOYOS = {"U4"}
@@ -75,7 +76,9 @@ def main():
     for fp in board.GetFootprints():
         ref = fp.GetReference()
         nombre = str(fp.GetFPID().GetLibItemName())
-        if ref.startswith(ACCESIBLES) and ref.rstrip("0123456789") in ACCESIBLES:
+        # Los TP de la cara inferior se miden con la placa fuera de la base: la batería (arriba)
+        # no los tapa. Solo se exige fuera de la batería lo que va en la cara superior.
+        if ref.startswith(ACCESIBLES) and ref.rstrip("0123456789") in ACCESIBLES and fp.GetLayer() == pcbnew.F_Cu:
             for pad in fp.Pads():
                 x, y = stl(pad.GetPosition())
                 r = max(pcbnew.ToMM(pad.GetSize(pcbnew.F_Cu).x), pcbnew.ToMM(pad.GetSize(pcbnew.F_Cu).y)) / 2
@@ -103,6 +106,14 @@ def main():
     for cx, cy, calzo in LAY.CALZOS:
         if dentro(cx, cy) < LAY.CALZO_D / 2:
             fallos.append("El calzo %s no queda entero bajo la batería" % calzo)
+    # Franja del flex de la cámara (de J6 a la pared): ninguna otra pieza debajo del flex.
+    fl = LAY.FLEX_SIN_PIEZAS
+    for fp in board.GetFootprints():
+        if fp.GetReference() == "J6" or fp.GetLayer() != pcbnew.F_Cu:
+            continue
+        x0, y0, x1, y1 = caja(fp)
+        if x0 < fl["x"][1] and x1 > fl["x"][0] and y0 < fl["y"][1] and y1 > fl["y"][0]:
+            fallos.append("%s bajo el flex de la cámara" % fp.GetReference())
     bajo.sort(reverse=True)
     print("Bajo la batería: %d piezas, la más alta %s con %.2f mm (hueco %.1f)"
           % (len(bajo), bajo[0][1], bajo[0][0], HUECO_BAJO_BATERIA))

@@ -4,18 +4,16 @@ Placa del Furby: ESP32-S3-WROOM-1-N16R8, cargador BQ24073 con power path, 3,3 V 
 
 La arquitectura y los cálculos están en [`../PCB-suelo/ARQUITECTURA.md`](../PCB-suelo/ARQUITECTURA.md); la geometría que comparte con la base, en [`../PCB-suelo/interfaz-base.md`](../PCB-suelo/interfaz-base.md) y `geometria.json`. El plan de pruebas es [`TEST-PLAN.md`](TEST-PLAN.md) y el pedido, [`fabricacion/README.md`](fabricacion/README.md).
 
-## Estado (2026-10-24)
+## Estado (2026-10-24, replanteo)
 
 | Parte | Estado |
 |-------|--------|
-| Esquema jerárquico (8 hojas) | ERC 0 errores, 0 avisos. LCSC en todas las piezas que se montan |
-| Contorno, taladros, ranura del USB-C | De `geometria.json` (holgura de 1,0 a la pared) |
-| Colocación | DRC sin infracciones salvo lo que falta por rutar; `comprobar_colocacion.py` OK |
-| Par USB | Trazado a mano y bloqueado (`scripts/rutas_fijas.py`) |
-| **Resto del rutado** | **Pendiente**: hace falta ejecutar Freerouting (ver «Rutado») |
-| Serigrafía | Nombre y versión arriba; logo, pads y GPIO del J_EXP abajo; rótulos de TP, LED, botones y puentes arriba |
-| BOM y CPL | `scripts/jlc_post.py`, con giros comprobados contra las huellas EasyEDA |
-| Gerber, renders | Se generan con `scripts/make_fab.sh` cuando el DRC esté limpio |
+| Esquema jerárquico (8 hojas) | ERC 0/0; puertas A y B pasadas (`revisiones/`), con un crítico escalado al autor del proyecto (NTC de la batería) |
+| Contorno, taladros, ranura del USB-C | De `geometria.json` (sin cambios: la base no se toca) |
+| **Colocación** | **Replanteada**: puerta C pasada (DRC 0/0 con paridad, `comprobar-flujo` PASS). Pendiente la revisión independiente de la colocación |
+| Rutado | **No empezado**: el rutado anterior se descartó. Lo crítico explícito y fijado, lo lento con una ejecución acotada de Freerouting (`NOTAS.md`) |
+| Serigrafía | Nombre y versión arriba; logo, pads y GPIO del J_EXP abajo; rótulos de LED, botones y puentes arriba (algunos sin sitio hasta el rutado) |
+| BOM, CPL, Gerber | Tras las puertas D y E1 (`scripts/make_fab.sh`) |
 
 ## Capas
 
@@ -25,7 +23,7 @@ La arquitectura y los cálculos están en [`../PCB-suelo/ARQUITECTURA.md`](../PC
 |------|-----|
 | F.Cu (L1) | Componentes, par USB (0,28 / 0,15 sobre el GND de L2) y señales |
 | In1.Cu (L2) | Plano de GND entero (salvo la zona de la antena) |
-| In2.Cu (L3) | Plano de VSYS: alimenta el 3,3 V, el elevador de 6 V y el amplificador con vías, sin pistas anchas |
+| In2.Cu (L3) | Señal con relleno de VSYS (y espina de 3V3 por pistas) |
 | B.Cu (L4) | Señales y relleno de GND; sin vías bajo el logo |
 
 Por qué 4 y no 2: el módulo, la cámara (12 señales DVP), el expansor y la potencia ocupan casi toda la cara superior, y media placa queda bajo la batería. Con 2 capas no quedaría un plano de GND continuo bajo el par USB ni bajo los lazos de los convertidores. En JLCPCB, 4 capas en 5 placas de este tamaño cuestan del orden de 10–20 USD más que 2.
@@ -58,13 +56,4 @@ Las piezas, redes y LCSC están en `scripts/design.py`; la colocación, en `scri
 
 ## Rutado
 
-El par USB va trazado a mano. El resto se autorruta con [Freerouting](https://github.com/freerouting/freerouting) sobre `scripts/rutado.dsn`, que ya lleva las clases de red (señal 0,2; 3,3 V 0,3; potencia 0,4), los planos de L2 y L3 como «power» y las zonas prohibidas (antena, logo):
-
-```sh
-java -jar freerouting-2.1.0.jar -de scripts/rutado.dsn -do scripts/rutado.ses -mp 100
-$KP scripts/gen_pcb.py --rellenar    # importa scripts/rutado.ses y rellena los planos
-kicad-cli pcb drc --schematic-parity --severity-all FurbyBoard.kicad_pcb
-scripts/make_fab.sh
-```
-
-La v2.1.0 es la última que corre con Java 21; las 2.2 y siguientes piden Java 25.
+Proceso de `layout-pcb.md` §13 (Cerebro): lo crítico (lazos de los convertidores, par USB, bus de la cámara, I2S, realimentaciones) se escribe explícito y bloqueado; lo lento, con **una** ejecución acotada de Freerouting 1.9.0 y post-proceso con `pcb-toolkit limpiar-pistas`. Antes de cada commit de rutado: `pcb-toolkit revisar-rutado --ancho …` sin errores, PNG leídos y DRC con paridad 0/0. `scripts/rutado.dsn` y `rutado.ses` son de la colocación anterior y no sirven.
