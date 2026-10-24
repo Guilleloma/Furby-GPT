@@ -12,7 +12,8 @@ Se ejecuta con el Python de KiCad:
   se importa además el resultado de Freerouting sobre esas rutas; con --sin-rutado el PCB
   queda colocado y sin rutar (puerta C).
 - Serigrafía: nombre y versión, logo y rótulos colocados solos (scripts/serigrafia.py).
-- Planos: GND en In1 (L2) entero; In2 (L3) es capa de señal con relleno de VSYS; relleno de GND en F.Cu y B.Cu tras el rutado.
+- Planos (6 capas, params.STACKUP): GND en In1 (L2) e In4 (L5) enteros; In2 (L3) es capa de señal
+  con relleno de VSYS; In3 (L4) señal; relleno de GND en F.Cu y B.Cu tras el rutado.
 - Áreas de reglas: sin cobre bajo la antena (todas las capas) y sin vías ni pads
   pasantes bajo el logo de la cara inferior.
 """
@@ -228,12 +229,13 @@ def caja(x0, x1, y0, y1):
 
 
 def zones(board, netmap, exteriores):
-    """Plano de GND en In1 y relleno de VSYS en lo que dejen libre las señales de In2.
+    """Planos de GND en In1 e In4 y relleno de VSYS en lo que dejen libre las señales de In2.
     Rellenos de GND en F.Cu y B.Cu solo con el rutado hecho."""
-    cu = [pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu]
+    cu = [pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.In3_Cu, pcbnew.In4_Cu, pcbnew.B_Cu]
     c = GEO["resultado"]["caja"]
     todo = caja(c[0] - 1, c[2] + 1, c[1] - 1, c[3] + 1)
     poly_zone(board, [pcbnew.In1_Cu], todo, net=netmap["GND"])
+    poly_zone(board, [pcbnew.In4_Cu], todo, net=netmap["GND"])
     poly_zone(board, [pcbnew.In2_Cu], todo, net=netmap["VSYS"])
     if exteriores:
         for layer in (pcbnew.F_Cu, pcbnew.B_Cu):
@@ -413,7 +415,7 @@ def rotulos(board):
 
 def rutas_fijas(board, netmap):
     """Pistas y vías explícitas (scripts/rutas_fijas.py), bloqueadas para el autorrutado."""
-    capas = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu, "In2.Cu": pcbnew.In2_Cu}
+    capas = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu, "In2.Cu": pcbnew.In2_Cu, "In3.Cu": pcbnew.In3_Cu}
     pads = {}
     for fp in board.GetFootprints():
         for pad in fp.Pads():
@@ -457,6 +459,38 @@ def rutas_fijas(board, netmap):
         z.SetLocked(True)
 
 
+def escribir_stackup(ruta):
+    """Bloque (stackup ...) del apilado de JLCPCB (params.STACKUP) dentro de (setup ...) del fichero
+    guardado: el descriptor de apilado no está expuesto en el Python de KiCad 10, así que se escribe
+    en el texto. Así el apilado queda en el proyecto (y en el fichero de trabajo de los Gerber)."""
+    with open(ruta, encoding="utf-8") as fh:
+        txt = fh.read()
+    if "(stackup" in txt:
+        return
+    lineas = ['\t\t(stackup',
+              '\t\t\t(layer "F.SilkS" (type "Top Silk Screen"))',
+              '\t\t\t(layer "F.Paste" (type "Top Solder Paste"))',
+              '\t\t\t(layer "F.Mask" (type "Top Solder Mask") (thickness 0.01))']
+    for nombre, tipo, grosor, er in P.STACKUP:
+        if tipo == "copper":
+            lineas.append('\t\t\t(layer "%s" (type "copper") (thickness %s))' % (nombre, grosor))
+        else:
+            lineas.append('\t\t\t(layer "%s" (type "%s") (thickness %s) (material "FR4") (epsilon_r %s) (loss_tangent 0.02))'
+                          % (nombre, tipo, grosor, er))
+    lineas += ['\t\t\t(layer "B.Mask" (type "Bottom Solder Mask") (thickness 0.01))',
+               '\t\t\t(layer "B.Paste" (type "Bottom Solder Paste"))',
+               '\t\t\t(layer "B.SilkS" (type "Bottom Silk Screen"))',
+               '\t\t\t(copper_finish "HAL SnPb")',
+               '\t\t\t(dielectric_constraints no)',
+               '\t\t)']
+    marca = "\t(setup\n"
+    if marca not in txt:
+        raise SystemExit("gen_pcb: no se encuentra (setup) para escribir el apilado")
+    txt = txt.replace(marca, marca + "\n".join(lineas) + "\n", 1)
+    with open(ruta, "w", encoding="utf-8") as fh:
+        fh.write(txt)
+
+
 def import_ses(board):
     """Importa el SES de Freerouting si se pasa --ses <fichero> (sobre las rutas fijas ya puestas)."""
     if "--ses" not in sys.argv:
@@ -485,9 +519,9 @@ def main():
     board = pcbnew.LoadBoard(P.PCB)
     setup_board(board)
     netmap = {n: board.FindNet(n) for n in D.nets()}
-    # In1 es el plano de GND (no se ruta). In2 es capa de señal con relleno de VSYS en lo libre.
-    board.SetLayerType(pcbnew.In1_Cu, pcbnew.LT_POWER)
-    board.SetLayerType(pcbnew.In2_Cu, pcbnew.LT_SIGNAL)
+    # In1 e In4 son planos de GND (no se rutan). In2 (relleno de VSYS en lo libre) e In3 son de señal.
+    for nombre, tipo in P.LAYER_TYPES.items():
+        board.SetLayerType(board.GetLayerID(nombre), pcbnew.LT_POWER if tipo == "power" else pcbnew.LT_SIGNAL)
     rutado = "--sin-rutado" not in sys.argv
     if rutado:
         rutas_fijas(board, netmap)
@@ -499,6 +533,7 @@ def main():
         board = pcbnew.LoadBoard(P.PCB)
         pcbnew.ZONE_FILLER(board).Fill(board.Zones())
         pcbnew.SaveBoard(P.PCB, board)
+    escribir_stackup(P.PCB)
     print("PCB escrito:", os.path.basename(P.PCB))
     sys.stdout.flush()
     os._exit(0)

@@ -102,7 +102,7 @@ DRU_CABECERA = """(version 1)
 \t(condition "A.memberOfFootprint('J1')")
 \t(constraint edge_clearance (min 0.12mm)))
 
-# Vías de 0,45/0,2 (estándar de JLCPCB en 4 capas) solo en el par USB: el cruce de D+/D- en el
+# Vías de 0,45/0,2 (estándar de JLCPCB en multicapa) solo en el par USB: el cruce de D+/D- en el
 # receptáculo de 16 pines (B7 A6 A7 B6) no cabe con vías de 0,6 entre pads a 0,5 de paso.
 # El resto de la placa sigue con 0,6/0,3.
 (rule "vias de 0,6 salvo el par USB"

@@ -25,7 +25,7 @@ echo "== ERC / DRC (errores y avisos)"
 echo "ERC y DRC sin infracciones"
 
 echo "== Gerber + taladros (origen auxiliar = (0,0) del STL, el mismo que el CPL)"
-"$KC" pcb export gerbers --layers F.Cu,In1.Cu,In2.Cu,B.Cu,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,F.Mask,B.Mask,Edge.Cuts \
+"$KC" pcb export gerbers --layers F.Cu,In1.Cu,In2.Cu,In3.Cu,In4.Cu,B.Cu,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,F.Mask,B.Mask,Edge.Cuts \
     --subtract-soldermask --use-drill-file-origin --check-zones -o "$GB/" "$PCB" >/dev/null
 "$KC" pcb export drill --format excellon --excellon-units mm --excellon-zeros-format decimal \
     --drill-origin plot --generate-map --map-format gerberx2 -o "$GB/" "$PCB" >/dev/null
