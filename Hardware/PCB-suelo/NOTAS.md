@@ -18,6 +18,9 @@ Sustituye al planteamiento de `Hardware/PCB/`: el contorno del colaborador (`Fur
 | `scripts/generar_kicad.py` | Crea el proyecto KiCad (se ejecuta con el Python de KiCad) |
 | `ARQUITECTURA.md` | Arquitectura de la FurbyBoard v1.0 (fase 1): ESP32-S3-WROOM-1, cámara, potencia, pines, GPIO libres, LED, puntos de test, BOM, colocación y dudas abiertas |
 | `TEST-PLAN.md` | Borrador del plan de pruebas de hardware (bring-up) de la FurbyBoard |
+| `serigrafia/logo-furby-pixelart.txt` | Logo «Furby» en pixel art de 1 bit (36 × 34 px), la fuente de la huella del logo |
+| `scripts/logo_furby.py` | Genera `kicad/Furby.pretty/Logo_Furby_PixelArt.kicad_mod` y `render/logo-furby.png` desde la matriz |
+| `render/logo-furby.png` | Vista previa del logo a escala (14,4 × 13,6 mm con píxel de 0,40) |
 | `render/planta-arquitectura.png` | Colocación por bloques sobre el contorno: batería en bandeja, WROOM-1 con la antena delante, cámara, potencia, audio, pads, TP y header |
 | `render/bloques.png` | Diagrama de bloques de la FurbyBoard v1.0 |
 | `scripts/render_arquitectura.py` | Comprueba la colocación de la propuesta y dibuja los dos renders anteriores |

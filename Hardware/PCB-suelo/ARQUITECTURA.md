@@ -23,6 +23,7 @@ Convenciones:
 | 2026-10-24 | **Altavoz de 4 Ω y 3 W** (sección 7.2) |
 | 2026-10-24 | **El Furby duerme y se despierta** (no escucha siempre): despierta con los interruptores (INT del TCA9535 en GPIO21) y con el temporizador (sección 11.1) |
 | 2026-10-24 | **Holgura PCB-pared de 1,0 mm** (antes 0,5) como valor por defecto de `--holgura`. La posición la fijan los 4 tornillos. Se aplica al contorno en la fase 2 (sección 12.1) |
+| 2026-10-24 | **Logo «Furby» en pixel art** en la serigrafía de la **cara inferior**, junto al nombre (sección 12.2) |
 | 2026-10-24 | Corriente del motor: se medirá en el bobinado. Hasta entonces, la estimación y un **ITRIP ajustable** con el divisor de VREF |
 
 ## Cambios respecto a la v1
@@ -664,9 +665,62 @@ Se comprobó regenerando el contorno con `contorno_suelo.py --holgura 1.0` en un
 **Serigrafía:**
 
 - Cara superior: **«FurbyBoard v1.0»**, 1,0 mm de alto y 0,15 de trazo, en el borde delantero, delante de la antena (la tinta no afecta a la antena y es lo que se ve al abrir la base). También van los nombres de los TP, de los LED y de los botones, y la polaridad del JST (+/−).
-- Cara inferior, que no lleva componentes: «FurbyBoard v1.0 · 2026-10» con 2 mm de alto y el **número de GPIO de cada pad de J_EXP y de los pads de cable**.
+- Cara inferior, que no lleva componentes: el **logo Furby** con «FurbyBoard» (1,6 mm de alto) y «v1.0 · 2026-10» (1,2 mm) debajo (sección 12.2), y el **número de GPIO de cada pad de J_EXP y de los pads de cable**. Los de los pads de la izquierda («P03», «P04», «P02», de 0,8 mm) van entre los pads y el logo.
 - Un recuadro en blanco para escribir el número de la placa a rotulador (lo usa `TEST-PLAN.md`).
 - Sin nombres de personas.
+
+### 12.2 Logo «Furby» en pixel art (cara inferior)
+
+**Dibujo:**
+
+- Versión propia de **1 bit**, redibujada a partir de la referencia de color (que no está en el repo): **36 × 34 px**, simétrica.
+- Lleva las orejas con el interior vacío, la cresta de cinco puntas, los ojos con anillo y pupila, el puente de las gafas y la marca de la frente, el pico en triángulo, la barriga en anillo y los pies con tres dedos.
+- La matriz está versionada en `serigrafia/logo-furby-pixelart.txt`:
+  - X = tinta;
+  - . = sin tinta;
+  - o = sin tinta, y cobre visto con `--cobre`.
+
+![Logo Furby](render/logo-furby.png)
+
+**Tamaño:** píxel de **0,40 mm** → **14,4 × 13,6 mm**.
+
+- El detalle más fino (un píxel de tinta o un hueco de un píxel) mide 0,40 mm. Más del doble del mínimo de JLCPCB para la serigrafía (0,153 mm de trazo y 0,15 de separación).
+- Con 0,30 mm (10,8 × 10,2) seguiría cumpliendo; con más de 0,45 dejaría de caber en la zona elegida.
+
+**Dónde (comprobado por `render_arquitectura.py`, recuadro morado discontinuo en la planta):**
+
+- **Cara inferior**, x −98,0 a −82,6 e y −90,7 a −72,2, con el texto debajo del logo.
+- Queda debajo de la mitad izquierda de la batería, pero en la otra cara: allí arriba solo hay pistas.
+- Despejes:
+  - sin pads pasantes (los pads de la izquierda están 1,5 mm más allá);
+  - a más de 3 mm del separador de H1;
+  - fuera del WROOM-1 y de los bloques con vías (el expansor empieza en y −91,2);
+  - a más de 0,8 mm del borde con la holgura de 1,0.
+- Comprobado con el contorno actual y con el de holgura 1,0.
+
+En la fase 2, una **rule area sin vías** del tamaño del recuadro asegura que el rutado no ponga vías bajo el logo. El plano de GND de la cara inferior pasa por debajo sin problema: la tinta va sobre la máscara.
+
+**Implementación:** `scripts/logo_furby.py` lee la matriz y escribe la huella `kicad/Furby.pretty/Logo_Furby_PixelArt.kicad_mod`, regenerable.
+
+- Un polígono relleno en F.SilkS por cada tramo horizontal de píxeles, más un courtyard con la zona sin pads ni vías.
+- La huella se coloca **en la cara inferior**: KiCad la pasa a B.SilkS y la espeja. Como el dibujo es simétrico, se lee igual desde abajo.
+- `kicad-cli fp export svg` la carga sin errores.
+- Cambiar el dibujo es editar el `.txt` y volver a ejecutar el script; `--pixel` cambia el tamaño.
+
+**Segundo tono (opcional, `--cobre`):** los píxeles «o» de las **pupilas** pasan a ser pads SMD sin red ni pasta, con la máscara abierta. El cobre queda visto con el acabado de la placa:
+
+- **HASL** (el de serie en JLCPCB): plateado y algo irregular;
+- **ENIG**: dorado y liso, pero encarece el pedido (comprobarlo en el presupuesto de JLCPCB).
+
+No lo recomiendo por defecto:
+
+- son seis pads de 0,4–1,2 mm;
+- el HASL los deja con relieve;
+- y no aportan nada eléctrico.
+
+Si se activa, el plano de GND los rodea con su separación y DRC no da error, porque son cobre sin red.
+
+**Alternativa sin script:** el Image Converter de KiCad (Bitmap2Component) con un PNG de la matriz. Se descarta porque no es regenerable desde el repo.
 
 ## 13. Dudas abiertas
 
