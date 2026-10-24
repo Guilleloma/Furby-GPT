@@ -801,3 +801,23 @@ pista("BACK", "F.Cu", 0.2, (-92.15, -86.2), (-92.15, -88.95), (-91.7, -89.4), "R
 pista("BACK_PAD", "F.Cu", 0.2, "R42.2", (-42.25, -110.4), modo="d")
 via("BACK_PAD", (-42.25, -110.4))
 pista("BACK_PAD", "B.Cu", 0.2, (-42.25, -110.4), (-42.25, -107.0), (-43.07, -106.18), (-43.07, -97.08), "J9.9")
+# CAM_PWDN: tercer carril de la ruta norte; baja por x -50,08 hasta y -111,1 y va al oeste a una vía bajo R34.1.
+# La vía colgante de J6.8 (x -43,9) se une por B.Cu desde una vía del carril al sur de J6 (-50,08, -86,6).
+pista("CAM_PWDN", "F.Cu", 0.2, "U10.18", (-89.6, -81.325))
+via("CAM_PWDN", (-89.6, -81.325))
+pista("CAM_PWDN", "In3.Cu", 0.2, (-89.6, -81.325), (-89.6, -76.85), (-85.2, -76.85), (-83.8, -78.25), (-50.08, -78.25),
+      (-50.08, -111.1), (-56.925, -111.1))
+via("CAM_PWDN", (-56.925, -111.1))
+pista("CAM_PWDN", "F.Cu", 0.2, (-56.925, -111.1), "R34.1")
+via("CAM_PWDN", (-50.08, -86.6))
+pista("CAM_PWDN", "B.Cu", 0.2, (-50.08, -86.6), (-46.85, -86.6), (-43.9, -83.65))
+# CAM_EN: único carril de la banda entre la vía de GND (-82,83, -80,4) y la de IPROPI_IO (y -81,35), al este
+# hasta x -53,5, baja a la vía de U8.3 y sigue por x -54,0 junto al anillo del mecanismo hasta una vía al oeste
+# de R33 (entre D1 y R27) y de ahí a R33.1 en F.Cu. U8.3 y U9.3 se unen por B.Cu bajo el canal de In3.
+pista("CAM_EN", "F.Cu", 0.2, "U10.19", (-88.4, -80.675))
+via("CAM_EN", (-88.4, -80.675))
+pista("CAM_EN", "In3.Cu", 0.2, (-88.4, -80.675), (-86.0, -80.675), (-85.325, -81.35), (-53.5, -81.35),
+      (-53.5, -89.012), (-53.8, -89.312), (-54.0, -89.512), (-54.0, -101.5), (-56.8, -104.3), (-57.8, -104.3))
+via("CAM_EN", (-57.8, -104.3))
+pista("CAM_EN", "F.Cu", 0.2, (-57.8, -104.3), (-57.8, -106.4), "R33.1")
+pista("CAM_EN", "B.Cu", 0.2, (-53.8, -89.312), (-50.3, -89.312), (-49.7, -89.912), (-49.7, -91.6), (-48.25, -91.6))
