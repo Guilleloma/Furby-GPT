@@ -1,28 +1,44 @@
-# Arquitectura electrónica v1 del FurbyGPT (fase 1)
+# FurbyBoard v1.0: arquitectura electrónica (fase 1)
 
-Propuesta para aprobar antes del esquemático y el layout (fase 2). Es la electrónica que sustituye a la Raspberry Pi, al HAT WM8960 y al L298N del README, y va sobre la PCB con forma de suelo de este directorio (`NOTAS.md`, `interfaz-base.md`, `geometria.json`).
+La **FurbyBoard** es la placa que sustituye a la Raspberry Pi, al HAT WM8960 y al L298N del README. Va sobre la PCB con forma de suelo de este directorio (`NOTAS.md`, `interfaz-base.md`, `geometria.json`). Este documento es la propuesta de la fase 1. El esquemático y el layout son de la fase 2, en un proyecto KiCad llamado `FurbyBoard.kicad_pro`.
 
 Convenciones:
 
-- **Verificado:** comprobado en la hoja de datos, el esquema del fabricante, la API de piezas de JLCPCB o la geometría del repo.
+- **Verificado:** comprobado en la hoja de datos, en el esquema del fabricante, en la API de piezas de JLCPCB o en la geometría del repo.
 - **Estimado:** cálculo o valor típico sin medir.
 - **Por medir:** hay que medirlo en el Furby o en el banco.
-- Precios en USD por unidad a 1–49 uds, y stock de la API de piezas de JLCPCB del 2026-10-24.
+- Precios en USD por unidad en el tramo de 1 a 49 uds, con el stock de la API de JLCPCB del 2026-10-24.
+
+## Decisiones tomadas
+
+| Fecha | Decisión |
+|-------|----------|
+| 2026-10-24 | MCU: **módulo ESP32-S3-WROOM-1 montado por JLCPCB** en la placa. Se descartan el ESP32-S3 Zero, el S3 SuperMini y el C6 SuperMini (sección 2) |
+| 2026-10-24 | **Cámara DVP** con conector FPC de 24 pines a 0,5 mm (OV2640, OV3660 u OV5640) |
+| 2026-10-24 | Los GPIO que no use el Furby quedan **accesibles**, porque la placa servirá también de placa de desarrollo |
+| 2026-10-24 | **LED** de alimentación, carga, programación y estado; **puntos de test** en carriles y señales clave; borrador de plan de pruebas en `TEST-PLAN.md` |
+| 2026-10-24 | Nombre: **FurbyBoard**, serigrafiado con la versión y la fecha |
+| 2026-10-24 | **Altura de la batería: confirmado que cabe tumbada sobre la PCB** dentro del Furby. Deja de ser un riesgo |
 
 ## Resumen
 
 | Bloque | Elección | Por qué |
 |--------|----------|---------|
-| MCU | **Waveshare ESP32-S3 Zero**, castellated soldado en la cara superior | Requisito. Mismo módulo que el Furbygotchi |
-| USB | **USB-C trasero de 6 pines actual, solo carga**. Se programa por OTA (WiFi) y, para el primer flasheo y la recuperación, por el USB-C del propio Zero | **El Zero no saca D+ ni D− a ningún pad** (verificado en su esquema). Alternativa con datos por el conector trasero: sección 7 |
-| Carga y power path | **TI BQ24072** (cargador lineal con gestión de ruta y modo suplemento) + **LM66100** (diodo ideal hacia el pin 5V del Zero) | Un solo integrado: prioriza el sistema, completa con la batería los picos que el USB no da y saca PGOOD y CHG. La salida sigue a la batería (VBAT + 0,225 V), así que el LDO del Zero calienta poco |
-| Batería | LiPo 1S 1400 mAh, 7,6 × 33 × 50, en una **bandeja impresa elevada** sobre el lado izquierdo | No caben batería y Zero uno al lado del otro (sección 5) |
-| Motor | **TPS61089** (elevador a 6 V) + **DRV8231A** (puente H con regulación de corriente y salida IPROPI al ADC) | El TPS61023 del mod de la Game Boy no llega a 6 V (máximo 5,5 V). El DRV8231A limita la corriente de bloqueo y la mide |
-| Audio | **MAX98357A** (clase D I2S) en VSYS + micrófono I2S **ICS-43434** en una plaquita con cable | El amplificador no aguanta 6 V (máximo 5,5 V): va en VSYS, no en el elevador. El micro va arriba, en el cuerpo: en el suelo de la base, bajo la batería, oiría muy mal |
-| Sensores | Pads pasantes para los cables del Furby, con pull-up, filtro RC y Schmitt en el encoder | |
-| Coste | **≈ 7 USD de componentes por placa** y **10 piezas extended (30 USD por pedido)**. Pedido de 5 PCB con 2 montadas: **≈ 62 USD (31 USD por placa)**; con 5 montadas, **≈ 84 USD (17 USD por placa)**. Más el Zero, que se compra aparte | Estimado (sección 3) |
+| MCU | **ESP32-S3-WROOM-1-N16R8** (C2913202) | 16 MB de flash y 8 MB de PSRAM octal. Más stock que el N8R8 por 0,31 USD más. USB nativo al conector trasero y 33 GPIO útiles |
+| USB | **USB-C de 16 pines de montaje medio para PCB de 1,6** (TYPE-C-CB16-16P, C42418806), con **USBLC6-2SC6** | Mantiene el eje en la cara superior de la PCB (z 5,505) y el ancho de 8,94: el corte de la base no cambia. D+ y D− van a GPIO19/20 |
+| Carga | **BQ24073** (power path y modo suplemento) + PTC | Si el USB no da bastante corriente, la batería aporta el resto. PGOOD y CHG sirven para la lógica y para los LED |
+| 3,3 V | **TPS63802** (buck-boost de 2 A) | Mantiene 3,3 V en todo el rango de la batería (3,0–4,2 V) con 0,6 A de pico (WiFi + cámara). Un LDO caería por debajo de 3,6 V de batería |
+| Motor | **TPS61089** (elevador a 6 V) + **DRV8231A** (IN/IN, regulación de corriente e IPROPI) | Inversiones frecuentes: hay que limitar la corriente. PWM a 20 kHz (sección 6) |
+| Audio | **MAX98357A** en VSYS + micro I2S **ICS-43434** en una plaquita con cable; un solo bus I2S full duplex a 16 kHz | Con la cámara no quedan pines para dos buses I2S |
+| Cámara | FPC 24p 0,5 (AFC01-S24FCA-00) + LDO de **2,8 V** y de **1,2 o 1,5 V** con enable; pines como el **ESP32-S3-EYE** | El ejemplo CameraWebServer funciona con el preset `CAMERA_MODEL_ESP32S3_EYE` sin tocar pines (verificado en `camera_pins.h`) |
+| E/S lentas | **TCA9535** (16 E/S por I2C) en el mismo bus que el SCCB de la cámara | Sensores táctiles, inclinación, estado de carga, enables y LED de estado. Libera GPIO nativos para la cámara y el audio |
+| Coste | **≈ 15,5 USD de componentes por placa** y **17 piezas extended (51 USD por pedido)**. Pedido de 5 PCB con 2 montadas: **≈ 103 USD (52 por placa)**; con 5 montadas, **≈ 150 USD (30 por placa)** | Estimado (sección 10). La cámara y la plaquita del micro van aparte |
 
-**Riesgo principal:** la batería de 33 × 50 entra con 1,66 mm de margen a la pared y al agujero del mecanismo, y su cara superior queda en z 19,0. Lo que haya del cuerpo del Furby por encima de z 19 o junto al mecanismo no está medido.
+**Riesgos principales:**
+
+1. **Antena.** La del WROOM-1 queda a 4,90 mm de la huella de la batería, en planta, y la batería va 4,6 mm más arriba. Es menos que lo ideal. La huella admite también el **WROOM-1U** (antena externa por U.FL) como plan B, sin rehacer la PCB.
+2. **Cámara.** El cable flex hasta la cara del Furby, con PCLK de hasta 20 MHz, y el pinout del FPC, que hay que comprobar con el módulo concreto.
+3. **Pico de 2,9–3,2 A** con el motor bloqueado y todo lo demás a la vez: puede disparar el PCM de la batería.
 
 ## 1. Diagrama de bloques
 
@@ -30,410 +46,483 @@ Convenciones:
 
 ```mermaid
 flowchart LR
-    USB[USB-C trasero<br/>solo carga, Rd 5,1k] --> PTC[PTC 1,5 A] --> BQ[BQ24072<br/>carga + power path]
-    BQ <-->|BAT| BAT[LiPo 1S 1400 mAh<br/>con PCM, JST-PH]
-    BQ -->|VSYS| LM[LM66100<br/>diodo ideal] -->|5V| ZERO[ESP32-S3 Zero<br/>LDO 3,3 V]
-    BQ -->|VSYS| BOOST[TPS61089<br/>6 V] -->|6 V| DRV[DRV8231A] --> MOT[Motor]
+    USB[USB-C 16 pines] -->|VBUS| PTC[PTC + USBLC6] --> BQ[BQ24073<br/>carga + power path]
+    USB -->|D+/D-| ESD[USBLC6] --> MCU[ESP32-S3-WROOM-1<br/>N16R8]
+    BQ <-->|BAT| BAT[LiPo 1S 1400 mAh]
+    BQ -->|VSYS| BB[TPS63802 3,3 V] -->|3V3| MCU
+    BB --> LDO[LDO 2,8 V y 1,2/1,5 V] --> CAM[FPC 24p · cámara DVP]
+    MCU <-->|DVP| CAM
+    BQ -->|VSYS| BOOST[TPS61089 6 V] --> DRV[DRV8231A] --> MOT[Motor]
     BQ -->|VSYS| AMP[MAX98357A] --> SPK[Altavoz]
-    MIC[ICS-43434<br/>en cable] -->|I2S0| ZERO
-    ZERO -->|I2S1| AMP
-    ZERO -->|PWM x2, EN| DRV
-    DRV -->|IPROPI| ZERO
-    SENS[Sensores del Furby] --> ACOND[Pull-ups, RC, Schmitt] --> ZERO
-    BQ -->|PGOOD, CHG| ZERO
-    ZERO -->|EN2| BQ
+    MIC[ICS-43434] -->|I2S DIN| MCU
+    MCU -->|I2S| AMP
+    MCU -->|PWM x2| DRV
+    DRV -->|IPROPI| MCU
+    MCU <-->|I2C| EXP[TCA9535] <--> IO[Sensores, LED, enables]
+    SENS[Leva, encoder, IR, luz] --> MCU
 ```
 
-### Raíles
+### Carriles
 
-| Raíl | De dónde sale | Tensión | Qué alimenta |
-|------|---------------|---------|--------------|
-| VBUS | USB-C trasero, tras el PTC | 5 V | Entrada IN del BQ24072 (OVP a 6,6 V, máximo absoluto 28 V) |
-| BAT | Batería, tras su PCM | 3,0–4,2 V | BQ24072 (carga y descarga) y divisor de VBAT |
-| VSYS | OUT del BQ24072 | VBAT + 0,225 V con USB (mín. 3,4 V); VBAT − 50 mV sin USB | LM66100, TPS61089, MAX98357A, LED IR |
-| 5V_ZERO | Salida del LM66100 al pin 5V del Zero | ≈ VSYS | LDO ME6217 del Zero |
-| 3V3 | LDO ME6217C33 del Zero (800 mA) | 3,3 V | ESP32-S3, micro, pull-ups, Schmitt, LED del encoder |
+| Carril | Origen | Tensión | Alimenta |
+|--------|--------|---------|----------|
+| VBUS | USB-C, tras el PTC | 5 V | BQ24073 (OVP 6,6 V; 28 V máx. absoluto), LED CHG y PG |
+| BAT | Batería, tras su PCM | 3,0–4,2 V | BQ24073 y divisor de VBAT |
+| VSYS | OUT del BQ24073 | 4,4 V con USB; VBAT − 50 mV sin USB | TPS63802, TPS61089, MAX98357A, LED IR |
+| 3V3 | TPS63802 | 3,3 V, 2 A | WROOM-1, TCA9535, micro, DOVDD de la cámara, LDO de la cámara, pull-ups, LED |
+| 2V8 | ME6211C28 (EN por el expansor) | 2,8 V | AVDD de la cámara |
+| 1V2 o 1V5 | ME6211C12 o C15 (misma huella, EN por el expansor) | 1,2 V (OV2640) o 1,5 V (OV3660/OV5640) | DVDD de la cámara |
 | 6V | TPS61089 | 5,94 V (390k/100k) | Solo el DRV8231A |
 
-**Por qué hay un LM66100 entre VSYS y el pin 5V del Zero (verificado en el esquema de Waveshare):** el pin 5V del Zero está unido directamente al VBUS de su USB-C, sin diodo. Si se enchufa el USB del módulo para programar con la batería puesta, los 5 V del ordenador entrarían en el OUT del BQ24072 y, a través de su FET de batería, cargarían la LiPo sin control. El LM66100 con CE a VOUT se abre cuando su salida supera la entrada en 35 mV (hoja de datos de TI, «VOFF») y bloquea ese camino. Caída: 0,125 Ω × 0,35 A = 44 mV.
+## 2. Por qué el ESP32-S3-WROOM-1 (comparativa breve)
 
-## 2. Selección de componentes
+| Criterio | ESP32-C6 SuperMini | ESP32-S3 SuperMini | ESP32-S3 Zero | **ESP32-S3-WROOM-1-N16R8** |
+|----------|--------------------|--------------------|---------------|-----------------------------|
+| CPU y RAM | RISC-V de 1 núcleo a 160 MHz, 512 KB de SRAM. **No admite PSRAM** | 2 núcleos a 240 MHz, 512 KB + 2 MB de PSRAM (FH4R2, el más común) | Igual (ESP32-S3FH4R2): 4 MB de flash y 2 MB de PSRAM | 2 núcleos a 240 MHz, **16 MB de flash y 8 MB de PSRAM octal** |
+| Palabra de activación | ESP-SR la admite desde la v2.6 con WakeNet9s/10s (modelos reducidos, sin SIMD) | WakeNet9/10 y AFE con AEC | Igual | Igual, con margen de PSRAM para AFE + WakeNet + búferes de TLS |
+| Audio por I2S y TLS | Posible, justo de RAM | Sí | Sí | Sí |
+| **Cámara DVP** | **No: el C6 no tiene interfaz de cámara** | Sí (LCD_CAM), pero sin pines suficientes | Ídem | Sí, con pines |
+| GPIO accesibles | 22 en el borde | ≈ 15 | 15 castellated + 11 pads inferiores | **33** (36 en el módulo menos GPIO35–37 de la PSRAM octal) |
+| D+/D− accesibles | GPIO12/13 en pads interiores | No | **No** (verificado en el esquema de Waveshare) | Sí, GPIO19/20 en pads del módulo |
+| Montaje | Soldado a mano | Soldado a mano | Soldado a mano (pads inferiores difíciles) | **JLCPCB** |
+| Cargador propio | **Sí**, según una fuente (LTH7R, sin verificar). Chocaría con nuestro power path, así que B+ y B− se dejarían sin conectar | No | No | No |
+| Precio | ≈ 3–4 € | ≈ 4 € | ≈ 5–6 € | 5,35 USD + 3 USD de cargo por pedido |
 
-### 2.1 Carga y power path: BQ24072 frente a TP4056 + P-MOSFET + Schottky
+Picovoice Porcupine (el del README actual) no está verificado en ninguno de estos chips. ESP-SR y microWakeWord sí funcionan en el ESP32-S3.
 
-| | **BQ24072RGTR** (C140288) | TP4056 + AO3401A + SS34 (load sharing) |
-|---|---|---|
-| Piezas | 1 IC + 6 resistencias + 3 condensadores | 3 IC/discretos + ≈ 8 pasivos |
-| Coste de piezas | 1,09 USD (0,71 a 100 uds) | ≈ 0,25 USD |
-| Cargo de JLCPCB | 3 USD (extended) | 0 USD (TP4056 C16581 es «preferred»; AO3401A y SS34, básicas) |
-| Sistema con USB | Desde VBUS, limitado por ILIM; **modo suplemento**: si la carga pasa del límite de entrada, la batería aporta el resto sin cortes | Todo desde VBUS por el Schottky (0,4 V de caída). Un puerto de 500 mA se cae con el motor |
-| Al desenchufar | Conmuta internamente: OUT pasa a VBAT − 50 mV | El P-MOSFET tarda en abrirse: durante unos ms conduce su diodo (0,7 V), y el LDO del Zero baja de 3,3 V |
-| Estado | PGOOD (USB presente) y CHG (cargando), en colector abierto | Sin señal de USB presente (hay que añadir un divisor) |
-| Protecciones | OVP, temporizadores, NTC (TS), regulación térmica a 125 °C, cortocircuito en OUT | Las del TP4056 |
+**El C6 queda descartado** porque no tiene interfaz de cámara ni PSRAM. Los S3 en placa de desarrollo no tienen pines para cámara + audio + motor + sensores. El WROOM-1 es un módulo certificado, sin diseño de RF propio, y lo monta JLCPCB.
 
-**Elegido: BQ24072.** Cuesta unos 4 USD más por pedido, pero el modo suplemento es lo que permite mover el motor con un puerto USB de 500 mA. El BQ24073 (C15220, 30 252 en stock, 0,88 USD) es **pin a pin** (mismo encapsulado RGT0016B y mismo pinout, según la figura 7-1 de la hoja de datos) y sirve de segunda fuente. Su OUT es fijo a 4,4 V con USB, así que el LDO del Zero disiparía más (sección 4.4).
+**Variante: N16R8 (C2913202)**: 27 796 en stock, 5,35 USD (3,75 a 100 uds).
 
-Configuración (hoja de datos SLUS810N):
+- El N8R8 (C2913201) tiene 5444 en stock y cuesta 5,03 USD. El N16R8 cuesta 0,31 USD más y deja sitio para dos particiones OTA, los modelos de ESP-SR y los recursos de audio.
+- **Ojo:** las variantes R8 tienen un rango de temperatura de −40 a **+65 °C** de ambiente (parámetro de JLCPCB/LCSC). Dentro del Furby y con la carga a 0,8 W no debería llegarse, pero el cargador va lejos del módulo.
 
-| Pin | Conexión | Resultado |
-|-----|----------|-----------|
-| ISET | 1,8 kΩ 1 % (C4177, básica) | ICHG = KISET / RISET = 890 / 1800 = **0,494 A** (0,44–0,54 A con KISET de 797 a 975 AΩ). 0,35 C para 1400 mAh |
-| ILIM | 1,2 kΩ (C22765, básica) | IIN = 1610 / 1200 = **1,34 A** cuando EN2 = 1 |
-| EN1 / EN2 | EN2 = GPIO45 con 100 kΩ a GND. EN1 = la inversa: 100 kΩ a VSYS y un 2N7002 a GND con la puerta en GPIO45 | Con EN2 = 1 y EN1 = 1 el BQ se suspende (tabla de EN1/EN2), así que EN1 tiene que ir al revés que EN2. GPIO45 bajo (arranque, sueño o ESP apagado): EN2 = 0 y EN1 = 1 → **USB500 (475 mA típ.)**, seguro para cualquier puerto. GPIO45 alto: EN2 = 1 y EN1 = 0 → **ILIM, 1,34 A**, solo si el firmware sabe que el cargador es bueno |
-| TS | 10 kΩ a GND | Sin NTC (lo indica la hoja de datos para baterías sin termistor). Si la batería trae tercer hilo NTC de 10 k, va aquí |
-| TD | GND | Terminación activada |
-| TMR | Al aire | Temporizador de 5 h (18 000 s), suficiente para 3,5 h de carga |
-| CE | GND | Carga siempre habilitada |
-| PGOOD, CHG | 100 kΩ a 3V3 y a GPIO38 / GPIO39 | Colector abierto: no superan 3,3 V |
+## 3. Mapa de pines
 
-### 2.2 Motor
+**GPIO del WROOM-1:** 36 en el módulo. Con PSRAM octal no se usan GPIO35–37 (verificado). GPIO19/20 son el USB, GPIO43/44 la consola de rescate y GPIO0 el BOOT. **Quedan 28 para el Furby, y se usan los 28.** Lo lento va al TCA9535.
 
-**Motor del Furby de 1998.** Es un motor DC de escobillas, bidireccional, que mueve todo (ojos, orejas, boca, cuerpo) a través de una leva. Lo lee un encoder óptico (LED IR + fototransistor a través de un engranaje ranurado) y un interruptor de posición de la leva (fuentes en la sección 10). Iba con 4 pilas AA: de 6,4 V con pilas nuevas a ≈ 4,4 V gastadas.
+| GPIO | Función | Notas |
+|------|---------|-------|
+| 0 | BOOT | Botón a GND y 10 kΩ a 3V3. TP |
+| 1 | VBAT (ADC1_CH0) | Divisor 100k/100k + 100 nF |
+| 2 | Luz (ADC1_CH1) | 47 kΩ a GND + 100 nF |
+| 3 | IPROPI del motor (ADC1_CH2) | Strapping de JTAG, ignorado salvo eFuse. RIPROPI lo deja bajo al arrancar. **JP3** |
+| 4 | SIOD = SDA del I2C | Cámara (SCCB) + TCA9535; 4,7 kΩ a 3V3 |
+| 5 | SIOC = SCL del I2C | Ídem |
+| 6 | VSYNC | Cámara |
+| 7 | HREF | Cámara |
+| 8 | Y4 (D2) | Cámara |
+| 9 | Y3 (D1) | Cámara |
+| 10 | Y5 (D3) | Cámara |
+| 11 | Y2 (D0) | Cámara |
+| 12 | Y6 (D4) | Cámara |
+| 13 | PCLK | Cámara |
+| 14 | Encoder (PCNT) | Tras el 74LVC1G17. **JP4** |
+| 15 | XCLK | Cámara (LEDC, 10–20 MHz) |
+| 16 | Y9 (D7) | Cámara |
+| 17 | Y8 (D6) | Cámara |
+| 18 | Y7 (D5) | Cámara |
+| 19 / 20 | USB D− / D+ | Al USB-C trasero, con USBLC6. TP |
+| 21 | INT del TCA9535 | GPIO RTC: despierta del sueño profundo (ext0) al tocar la barriga, la espalda o la lengua, o al enchufar el USB |
+| 35–37 | — | PSRAM octal |
+| 38 | I2S BCLK | Micro y amplificador comparten BCLK y WS. TP |
+| 39 | I2S WS | TP |
+| 40 | I2S DOUT → MAX98357A | TP |
+| 41 | I2S DIN ← micro | TP |
+| 42 | Receptor IR (RMT RX) | |
+| 43 | U0TXD | Consola de rescate (J_EXP y TP) y **LED PROG** |
+| 44 | U0RXD | Consola de rescate (J_EXP y TP) |
+| 45 | Emisor IR (RMT → AO3400A) | **Strapping VDD_SPI: tiene que estar bajo al arrancar.** Solo 100 kΩ a GND, puerta del MOSFET |
+| 46 | MOT_IN2 (PWM) | **Strapping: bajo al arrancar** (con GPIO0 bajo, 46 alto es inválido). Pull-down interno del DRV y 100 kΩ. **JP2** |
+| 47 | Leva (inicio) | 47 kΩ a 3V3, 1 kΩ en serie y 100 nF |
+| 48 | MOT_IN1 (PWM) | 100 kΩ a GND. **JP1** |
 
-**Corriente: no hay ninguna medida publicada.** Estimación, por ser un motor del tamaño de los de bandeja de DVD (con los que se ha sustituido en reparaciones): **0,1–0,3 A en marcha y 0,6–1,2 A bloqueado a 6 V (ESTIMADO)**. Hay que medirlo: la resistencia del bobinado con el polímetro, en varias posiciones del eje, da la de bloqueo (I = 6 V / R); y la de marcha, con una fuente limitada a 2 A.
+**TCA9535** (dirección 0x20; I2C a 400 kHz):
 
-| | Pieza | Datos verificados | Dimensionado |
-|---|---|---|---|
-| Elevador | **TPS61089RNRR** (C165129, extended, 10 369 en stock, 0,71 USD) | VIN 2,7–12 V, VOUT 4,5–12,6 V, interruptor de 7 A, ILIM = 1 030 000 / RILIM, VREF 1,212 V, fSW con RFREQ, arranque suave de 4 ms, EN | VOUT = 1,212 × (1 + 390k/100k) = **5,94 V**. RILIM 270 kΩ (C22965) → **3,8 A** de pico. RFREQ 150 kΩ (C22807) → ≈ 0,96 MHz a 3,7 V (ecuación 1). Pasar a 5 V es cambiar una resistencia del divisor |
-| Bobina | **FHD4020S-1R0MT** (C602028, 0,07 USD), **la misma del mod de la Game Boy** | 1 µH, 4 × 4 × 2 mm, saturación > 6,7 A | Rizado: 3,7 × 0,445 / (1 µH × 0,96 MHz) = 1,7 A p-p. Pico con 1,2 A a la salida y 3,3 V a la entrada: 2,42 + 0,87 = **3,3 A**, por debajo del ILIM (3,8 A) y lejos de la saturación |
-| Puente H | **DRV8231ADDAR** (C5218849, extended, 2056 en stock, 1,05 USD). Segunda fuente: DRV8231ADSGR (C5139865, 8895 en stock) | VM 4,5–33 V, 3,7 A de pico, RDS(on) 0,3 + 0,3 Ω, IPROPI = 1500 µA/A, regulación de corriente con VREF, entradas con pull-down y reposo automático con IN1 = IN2 = 0 | RIPROPI 1,5 kΩ → 2,25 V por amperio en el ADC. VREF = 3,3 × 10k / (2,2k + 10k) = 2,70 V → **ITRIP = 2,70 / (1,5k × 1500 µA/A) = 1,2 A** |
+- todos sus pines arrancan como entradas, así que las resistencias fijan el estado al encender;
+- sus E/S toleran 5,5 V: lee PGOOD y CHG aunque los LED vayan a VBUS.
 
-**Por qué el DRV8231A y no el DRV8837 (C39159, 0,20 USD).** Con el motor sin medir, la regulación de corriente:
+| Pin | Función | Estado al arrancar |
+|-----|---------|--------------------|
+| P0.0 | Barriga | Pull-up de 47 kΩ |
+| P0.1 | Espalda | Pull-up de 47 kΩ |
+| P0.2 | Lengua | Pull-up de 47 kΩ |
+| P0.3 | Inclinación A | Pull-up de 47 kΩ |
+| P0.4 | Inclinación B | Pull-up de 47 kΩ |
+| P0.5 | PGOOD (USB presente) | LED PG a VBUS |
+| P0.6 | CHG (cargando) | LED CHG a VBUS |
+| P0.7 | **Libre** → J_EXP | |
+| P1.0 | EN1 del BQ24073 | 100 kΩ a VSYS: 1 |
+| P1.1 | EN2 del BQ24073 | 100 kΩ a GND: 0 → USB500 (475 mA). Con EN1 = 0 y EN2 = 1 pasa a ILIM (1,34 A) |
+| P1.2 | EN del elevador de 6 V y LED del encoder | 100 kΩ a GND: apagado |
+| P1.3 | SD_MODE del MAX98357A | Pull-down interno de 100 kΩ: apagado |
+| P1.4 | PWDN de la cámara | 10 kΩ a 3V3: cámara en reposo |
+| P1.5 | EN de los LDO de la cámara | 100 kΩ a GND: cámara sin alimentación |
+| P1.6 | LED RUN (latido) | Sin pull-up: LED apagado |
+| P1.7 | **Libre** → J_EXP | |
 
-- protege el engranaje, que en el Furby de 1998 es el punto débil conocido;
-- evita que el PCM de la batería corte por sobrecorriente (sección 4);
-- y permite detectar el bloqueo por corriente, además de por el encoder.
+El RESET de la cámara va a 3V3 con una RC (10 kΩ + 100 nF). La cámara se reinicia apagando sus LDO.
 
-El DRV8837 solo tiene protección por sobrecorriente a 1,9–3,5 A, sin regulación. Si el motor medido bloquea a menos de 0,8 A, se puede volver al DRV8837 en la v1.1. Disipación del DRV8231A con 1,2 A: 0,6 Ω × 1,2² = 0,86 W → +37 °C (RθJA de 42,8 °C/W). El firmware tiene que cortar a los 200 ms de bloqueo.
+### GPIO libres y por dónde salen
 
-**¿El elevador puede alimentar también el amplificador?** No. El MAX98357A admite 2,5–5,5 V de VDD, así que 6 V lo saca de rango. Además, el raíl del motor lleva ruido de conmutación y de escobillas. El amplificador va en VSYS (3,4–4,4 V): da 0,77 W en 8 Ω al 1 % de THD con 3,7 V (hoja de datos), de sobra para el altavoz original.
+| Con el Furby completo | Dónde |
+|-----------------------|-------|
+| Expansor P0.7 y P1.7 | J_EXP, pines 7 y 8 |
+| Bus I2C (GPIO4 y GPIO5), para añadir sensores | J_EXP, pines 5 y 6 |
+| UART0 (GPIO43 y GPIO44) | J_EXP, pines 9 y 10, y TP |
 
-### 2.3 Audio
+| Liberables para usar la placa en otro proyecto | Cómo |
+|------------------------------------------------|------|
+| GPIO48, 46 y 3 (motor) | Cortar **JP1–JP3** (puentes de soldadura cerrados). El lado del GPIO queda en su TP. Sin el corte, el DRV8231A movería el motor |
+| GPIO14 (encoder) | Cortar **JP4**: si no, el Schmitt manda en la línea |
+| GPIO4–13 y 15–18 (cámara) | Sin cámara quedan libres en el **conector FPC**: con un adaptador de FPC de 24p 0,5 a 2,54 (≈ 1 €) salen a una protoboard |
+| GPIO38–41 (I2S) | En sus TP. El amplificador (apagado por SD_MODE) y el micro (sin montar) no cargan la línea |
+| GPIO42, 47 y 2 (IR, leva, luz) | En sus pads de cable. Solo tienen pull-ups o divisores de 47 kΩ |
 
-**Amplificador: MAX98357AETE+T** (C910544, extended, 21 765 en stock, 1,32 USD).
+Los jumpers que merecen la pena son JP1–JP4: el motor y el encoder son los únicos que **mueven o fuerzan** la línea si no se desconectan. En el audio y los sensores no hace falta: sus pines quedan en alta impedancia o con resistencias de 47 kΩ.
 
-- I2S estándar de 8 a 96 kHz, sin MCLK, 2,4 mA en reposo y 0,6 µA apagado.
-- Ganancia de 9 dB con GAIN_SLOT al aire.
-- SD_MODE a un GPIO: alto (3,3 V) = canal izquierdo; bajo = apagado (tabla 5 de la hoja de datos).
-- Alternativa más barata: NS4168 (C910588, 0,71 USD), peor documentado.
+**J_EXP: header de 1 × 10 a 2,54, sin montar**, en el borde izquierdo y fuera de la batería:
 
-**Altavoz original: impedancia y potencia por medir.** Con 8 Ω y 3,7 V puede recibir 0,77 W. Si es de 0,25 W, el firmware limita el volumen digital, que es lo que lo protege.
+1. GND
+2. 3V3
+3. VSYS
+4. VBUS (5 V)
+5. SDA (GPIO4)
+6. SCL (GPIO5)
+7. EXP P0.7
+8. EXP P1.7
+9. U0TX (GPIO43)
+10. U0RX (GPIO44)
 
-**Micrófono: ICS-43434** (C5656610, extended, 3981 en stock, 4,60 USD).
+El número de cada pad va serigrafiado en la cara inferior: arriba, entre el header y la batería, quedan 2 mm, y no cabe texto legible. En la cara superior se marca el pin 1.
 
-- Hoja de datos verificada: en modo de bajo consumo trabaja de 6,25 a 18,75 kHz, con 230 µA y 64 dBA de SNR. En alto rendimiento, de 23 a 51,6 kHz.
-- **16 kHz cae en el modo de bajo consumo**, y es justo la frecuencia que piden WakeNet (ESP-SR) y microWakeWord: mono, 16 bit, 16 kHz. También sirve para enviar el audio a la nube.
-- Va en una plaquita de 6 pines (VDD, GND, SCK, WS, SD, L/R) con cable de 15 cm como máximo, junto al agujero del micro original del cuerpo. En la PCB base, encerrado en el suelo, debajo de la bandeja y con pelo alrededor, oiría muy mal.
-- En la PCB se dejan 6 pads y resistencias serie de 33 Ω en SCK y WS. La plaquita entra en el mismo pedido como diseño aparte, o se usa un módulo comercial INMP441/ICS-43434.
+## 4. Circuitería del módulo y USB
 
-**Dos buses I2S:** I2S0 en recepción (micro) e I2S1 en emisión (amplificador). Cuestan 2 GPIO más que compartir BCLK y WS, pero:
+- **Alimentación:** 22 µF + 100 nF junto al pin 3V3 del módulo. Hoja de datos del WROOM-1: 10 µF como mínimo; se pone más por los picos de 340 mA del TX.
+- **EN:** 10 kΩ a 3V3 y 1 µF a GND (retardo recomendado por Espressif), botón RESET a GND y TP.
+- **BOOT:** GPIO0 con 10 kΩ a 3V3, botón a GND y TP.
+- **Botones:** TS-1088-AR02016 (C720477, básica, 4 × 3 mm). Con el USB nativo, `esptool` entra y sale del modo descarga sin tocarlos; solo hacen falta para recuperar la placa.
+- **USB:**
+  - D+ y D− (GPIO20/19) van al USB-C con el **USBLC6-2SC6** (C2687116) junto al conector, en pareja diferencial de 90 Ω. A 12 Mbit/s, los ≈ 50 mm hasta el módulo no son problema.
+  - CC1 y CC2 llevan 5,1 kΩ a GND.
+  - VBUS pasa por el PTC y llega al BQ24073.
+  - Programación y consola por USB-Serial-JTAG. Sin cables sueltos ni puente UART.
+- **Antena (verificado en planta con `render_arquitectura.py`):**
+  - el WROOM-1 va con la antena en el borde delantero, centrada en x = −73;
+  - debajo de la antena y 3 mm a cada lado, **sin cobre en ninguna capa, sin pistas y sin vías** (x −85 a −61, desde y −63,5 hasta el borde);
+  - la antena queda a 4,90 de la huella de la batería, y la batería, 4,6 mm más arriba;
+  - el módulo asoma un 55 % fuera de la batería;
+  - nada metálico delante: el borde de la base es plástico y encima está la cara del Furby.
 
-- el micro sigue a 16 kHz mientras el altavoz reproduce el TTS a 22,05 o 24 kHz, sin remuestrear;
-- y el micro sigue abierto mientras habla el Furby, que es lo que necesita la cancelación de eco (AEC) de ESP-SR.
+  Si en la prueba el RSSI sale más de 10 dB por debajo de un ESP32 de referencia, se monta el **WROOM-1U-N16R8** (C3013946, 33 190 en stock, 5,18 USD) con una antena flexible pegada en la cabeza. Tiene los mismos pads y es más corto.
 
-**Palabra de activación.**
+## 5. Cámara
 
-- ESP-SR (WakeNet) solo trae palabras predefinidas («Hi ESP», «Alexa»…). Una propia («Hey Furby») la entrena Espressif como servicio de pago.
-- microWakeWord (TFLite Micro, el de ESPHome) corre en el ESP32-S3 y se puede entrenar con palabras propias.
-- Picovoice Porcupine, el del README actual, no está verificado en ESP32-S3.
-- Las dos primeras necesitan PSRAM, y el Zero trae 2 MB.
+**Conector:** AFC01-S24FCA-00 (C262669, 27 234 en stock, 0,12 USD). 24 pines a 0,5 mm, contacto inferior y tapa abatible, como el del ESP32-CAM. Va entre el módulo y H2, con la abertura hacia delante. El flex sube en vertical por delante, hacia la cara.
 
-**Riesgo: 4 MB de flash.** Hay que meter dos particiones OTA (≈ 1,5 MB cada una), el modelo de la palabra de activación y NVS. No está comprobado que quepan: se mide al compilar el primer firmware.
+**Pinout del FPC.** Es el estándar de facto de los módulos OV2640, OV3660 y OV5640 para ESP32. **Hay que verificarlo con la ficha del módulo comprado** antes de la fase 2:
 
-### 2.4 Sensores del Furby de 1998
+| Pin | Señal | Pin | Señal | Pin | Señal |
+|-----|-------|-----|-------|-----|-------|
+| 1 | NC | 9 | HREF | 17 | PCLK |
+| 2 | AGND | 10 | DVDD | 18 | Y6 |
+| 3 | SIOD | 11 | DOVDD | 19 | Y2 |
+| 4 | AVDD | 12 | Y9 | 20 | Y5 |
+| 5 | SIOC | 13 | XCLK | 21 | Y3 |
+| 6 | RESETB | 14 | Y8 | 22 | Y4 |
+| 7 | VSYNC | 15 | DGND | 23 | Y1 |
+| 8 | PWDN | 16 | Y7 | 24 | Y0 |
 
-| Sensor | Qué es | Acondicionamiento | Pads | Estado |
-|--------|--------|-------------------|------|--------|
-| Leva (posición de inicio) | Interruptor mecánico | 47 kΩ a 3V3, 1 kΩ en serie y 100 nF (τ = 4,7 ms) | 2 (SEÑAL, GND) | Verificado que existe (sección 10) |
-| Encoder del engranaje | LED IR + fototransistor, ranuras en el engranaje | LED: 3V3 → 220 Ω → LED → AO3400A con la puerta en EN_6V (≈ 9,5 mA, solo con el motor en marcha). Fototransistor: 10 kΩ a 3V3 (ajustable de 4,7 a 47 kΩ) → **74LVC1G17** (Schmitt) → PCNT | 4 (ánodo LED, cátodo LED, colector, emisor) | Verificado que existe; las resistencias originales, por medir |
-| Barriga, espalda, lengua | Interruptores normalmente abiertos | Como la leva. GPIO RTC: despiertan del sueño profundo | 2 cada uno | Verificado (NA en barriga y lengua) |
-| Inclinación o vuelco | Interruptor de bola | Como la leva, con 47 kΩ: si está cerrado en reposo, gasta 70 µA y no 330 | 3 (COMÚN, A, B) | **Supuesto** que tiene 2 contactos (inclinado y bocabajo). Si tiene uno, sobra el pad B y su GPIO |
-| Luz | Fotorresistencia en la frente | Divisor con 47 kΩ a GND y 100 nF → ADC1 | 2 | **Supuesto** que es una LDR (un hacker la describe así). Si es un fototransistor, mismo circuito con otra resistencia |
-| IR (emisor) | LED IR en la frente | VSYS → 22 Ω (0805) → LED → AO3400A ← GPIO43 (portadora por RMT). ≈ 100 mA en pulsos | 2 | Verificado que existe |
-| IR (receptor) | Fotosensor IR en la frente | Pads para un receptor demodulador de 38 kHz de 3 pines (tipo VS1838B) que sustituya al original: 3V3, GND y salida → GPIO44 | 3 | **Supuesto**: el original va al coprocesador y no está claro que sea demodulador. Prioridad baja |
+Y0 e Y1 no se usan: el bus es de 8 bits, de Y2 a Y9.
 
-Todos los pads son pasantes de Ø1,0 mm en paso de 2,54 mm. El cable atraviesa la placa y se suelda arriba, lo que aguanta mejor los tirones que una pad SMD. Por debajo, el hilo se corta a ras: solo hay 2 mm hasta el suelo.
+**Alimentación, como en el ESP32-CAM:**
 
-### 2.5 Resto
+- DOVDD: **3,3 V**, del carril 3V3, igual que las E/S del ESP32.
+- AVDD: **2,8 V**, con ME6211C28M5G-N (C53099, 450 mA).
+- DVDD: **1,2 V** para el OV2640 (ME6211C12M5G-N, C236672) o **1,5 V** para el OV3660/OV5640 (ME6211C15M5G-N, C53100). Es la misma huella SOT-23-5: se elige en la BOM. Algunos módulos OV5640 traen su propio regulador: mirar la ficha.
+- Los dos LDO tienen el EN en P1.5 del expansor: con la cámara apagada no consume nada.
 
-| Ref. | Pieza | LCSC | Tipo | Notas |
-|------|-------|------|------|-------|
-| J1 | USB-C HRO TYPE-C-31-M-28A (6 pines, montaje medio) | C2848622 | Extended | **Sin cambios**: el eje y el corte de la base se mantienen |
-| F1 | PTC 1,5 A / 16 V, 1206 (BSMD1206-150-16V) | C883133 | Extended | Protege el VBUS de cortocircuitos aguas abajo |
-| J2 | JST-PH 2 pines SMD (S2B-PH-SM4-TB) | C295747 | Extended | **La polaridad de los JST-PH de las LiPo cambia según el vendedor**: comprobar con el polímetro antes de enchufar (dudas, punto 4) |
-| D1 | LED verde 0805 (KT-0805G) en CHG | C2297 | Básica | 3V3 → 1 kΩ → LED → CHG, con 100 kΩ en paralelo. Con CHG en alta impedancia el LED queda a 0 V y el GPIO lee 3,3 V |
-| Q1, Q2 | AO3400A | C20917 | Básica | LED IR y LED del encoder |
-| Q3 | 2N7002 | C8545 | Básica | Inversor de EN1 del BQ24072 |
+**Hasta la cara del Furby.** Lo más sencillo es un módulo con **flex largo** (los hay de 75 y 150 mm para ESP32). Si no llega:
 
-No se pone protección contra la inversión de polaridad de la batería. Un P-MOSFET en serie con la batería añadiría 0,1–0,2 V de caída con el motor bloqueado (2,4 A), justo donde el margen es menor.
+- un adaptador hembra-hembra de FPC de 24p 0,5;
+- y un **FFC de 24p 0,5 con contactos del mismo lado** (C6936341, 150 mm).
 
-## 3. BOM preliminar y coste
+Con PCLK de hasta 20 MHz y solo dos masas en el cable, **conviene no pasar de 20 cm**, bajar XCLK a 10–16 MHz y usar JPEG (sección 5.1). Sitio propuesto: la ventana de la frente, donde están el sensor de luz y el IR, o la zona de la nariz. Se decide al abrir el Furby.
 
-API de piezas de JLCPCB del 2026-10-24. Precio por unidad en el tramo de 1–49 uds.
+### 5.1 Ancho de banda de PSRAM
 
-| Ref. | Pieza | LCSC | Tipo | Stock | USD/ud | Cant. |
-|------|-------|------|------|-------|--------|-------|
-| U1 | BQ24072RGTR | C140288 | Extended | 2499 | 1,094 | 1 |
-| U2 | LM66100DCKR | C2869734 | Extended | 19 243 | 0,224 | 1 |
-| U3 | TPS61089RNRR | C165129 | Extended | 10 369 | 0,715 | 1 |
-| L1 | FHD4020S-1R0MT | C602028 | Extended | 13 988 | 0,074 | 1 |
-| U4 | DRV8231ADDAR | C5218849 | Extended | 2056 | 1,055 | 1 |
-| U5 | MAX98357AETE+T | C910544 | Extended | 21 765 | 1,323 | 1 |
-| U6 | SN74LVC1G17DBVR (TI) | C7836 | Extended | 9943 | 0,155 | 1 |
-| J1 | TYPE-C-31-M-28A | C2848622 | Extended | 15 510 | 0,126 | 1 |
-| J2 | S2B-PH-SM4-TB(LF)(SN) | C295747 | Extended | 27 506 | 0,223 | 1 |
-| F1 | BSMD1206-150-16V | C883133 | Extended | 46 173 | 0,068 | 1 |
-| Q1, Q2 | AO3400A | C20917 | Básica | 1 227 194 | 0,089 | 2 |
-| Q3 | 2N7002 | C8545 | Básica | 2 911 361 | 0,016 | 1 |
-| D1 | KT-0805G | C2297 | Básica | 2 447 313 | 0,016 | 1 |
-| C | 22 µF 25 V X5R 0805 (CL21A226MAQNNNE) | C45783 | Básica | 4 309 410 | 0,191 | 7 |
-| C | 10 µF 10 V X5R 0603 (CL10A106KP8NNNC) | C19702 | Básica | 13 172 933 | 0,027 | 4 |
-| C | 1 µF 50 V X5R 0603 | C15849 | Básica | 13 890 693 | 0,015 | 3 |
-| C | 100 nF 50 V X7R 0603 | C14663 | Básica | 44 646 550 | 0,008 | 16 |
-| R | 0603 1 % UNI-ROYAL: 5,1k (C23186), 1,8k (C4177), 1,2k (C22765), 1,5k (C22843), 2,2k (C4190), 10k (C25804), 100k (C25803), 47k (C25819), 1k (C21190), 220 Ω (C22962), 33 Ω (C23140), 150k (C22807) | | Básicas | > 0,5 M cada una | ≈ 0,002 | ≈ 45 |
-| R | 390k (C23150) y 270k (C22965) | | Extended «preferred», sin cargo | 291 717 / 278 304 | 0,002 | 2 |
-| R | 22 Ω 0805 (LED IR) | En la fase 2 | Básica | | ≈ 0,005 | 1 |
-| — | ESP32-S3 Zero (Waveshare) | No está en JLCPCB | Se compra aparte | | ≈ 5–6 € | 1 |
-| — | ICS-43434 en la plaquita del micro | C5656610 | Extended | 3981 | 4,600 | 1 (otro diseño) |
+- **Disponible:** la PSRAM octal del WROOM-1 R8 va a 80 MHz DDR en ESP-IDF, unos 160 MB/s teóricos.
+- **Cámara:** en JPEG (compresión en el sensor) en SVGA a 15 fps ≈ 0,5 MB/s; QVGA RGB565 a 15 fps ≈ 2,3 MB/s; VGA YUV a 15 fps ≈ 9 MB/s.
+- **Audio:** 16 kHz × 16 bit × 2 sentidos ≈ 64 KB/s.
+- **Modelos de ESP-SR:** en PSRAM.
 
-- **Componentes por placa: ≈ 7,0 USD** sin el Zero ni el micro.
-- **Piezas extended con cargo: 10 → 30 USD por pedido** (3 USD por referencia; las «preferred» no pagan).
+**Holgura de un orden de magnitud o más.** El cuello de botella será el WiFi (≈ 1–2 MB/s útiles con TLS) y la CPU, no la PSRAM. Recomendación:
+
+- la cámara en JPEG y por foto («¿qué ves?»), no vídeo continuo;
+- y apagada (LDO con EN a 0) el resto del tiempo.
+
+## 6. Motor
+
+**Uso actual** (`hardware_control.py` con el L298N):
+
+- IN1 e IN2 con PWM a **100 Hz y 70 %**, una entrada por sentido;
+- inversiones cada **0,4 s** («pensando») y cada **1,0 s** («hablando»);
+- final de carrera con pull-up, activo a nivel bajo; a partir de ahí se posiciona por tiempo.
+
+**DRV8231A (verificado en su hoja de datos):**
+
+| Requisito | DRV8231A |
+|-----------|----------|
+| Control IN/IN con PWM en las dos entradas, sin pin de dirección | Sí: 10 y 01 mueven, **11 frena** (lado bajo, decaimiento lento) y **00 deja libre** (alta impedancia) |
+| Inversiones con margen | Regulación de corriente a ITRIP = 2,70 V / (1,5 kΩ × 1500 µA/A) = **1,2 A**. Al invertir en marcha, la corriente llega a (V + fcem) / R, casi el doble que la de bloqueo, y el DRV la recorta en cada ciclo (tOFF de 25 µs). Pico máximo de 3,7 A. Disipación con 1,2 A: 0,86 W → +37 °C (42,8 °C/W) |
+| Protecciones | Sobrecorriente (3,7 A), térmica (150 °C), subtensión |
+| Motor parado al arrancar | Pull-down internos en IN1 e IN2, más 100 kΩ externos; GPIO46 y GPIO48 arrancan bajos |
+
+**El PWM tiene que subir a 20 kHz.** A 100 Hz con libre en el tiempo apagado, el DRV8231A **se duerme**:
+
+- con IN1 = IN2 = 0 durante más de tSLEEP (0,8–1,5 ms) entra en reposo, y el 30 % apagado de 100 Hz son 3 ms;
+- y al volver tarda tWAKE (250 µs) en reaccionar.
+
+Por eso **PWM a 20 kHz** (LEDC con 11 bits de resolución). Además:
+
+- queda fuera del oído, sin el zumbido de 100 Hz que capta el micro;
+- usar **decaimiento lento** (una entrada a 1 y PWM invertido en la otra) da par más estable;
+- al invertir: **freno de 20–30 ms y rampa de 30–50 ms**. Así el pico al invertir no llega al PCM de la batería.
+
+**Encoder: sí, recomiendo posicionar por pulsos.** Los pads ya están, y GPIO14 (PCNT) más el Schmitt también.
+
+- Con el final de carrera como referencia y el encoder contando, cada postura es un número de pulsos. No depende de la tensión de la batería, del desgaste ni de la carga, como el posicionamiento por tiempo.
+- El encoder también detecta el bloqueo: no llegan pulsos en 150 ms con PWM aplicado. IPROPI lo confirma por corriente.
+
+**Corriente del motor: por medir.** Estimación: 0,1–0,3 A en marcha y 0,6–1,2 A bloqueado a 6 V. Se mide la resistencia del bobinado (I ≈ 6 V / R) y se ajusta ITRIP con el divisor de VREF.
+
+## 7. Carga, 3,3 V y audio
+
+- **BQ24073** (C15220, 30 252 en stock, 0,88 USD):
+  - RISET 1,8 kΩ → **ICHG 0,494 A**; RILIM 1,2 kΩ → 1,34 A;
+  - TS con 10 kΩ, TD a GND y TMR al aire;
+  - EN1 y EN2 desde el expansor, arrancando en USB500.
+  - Con el buck-boost para el 3,3 V ya no importa que OUT sea fijo a 4,4 V, así que vuelve el BQ24073 (más stock y más barato que el BQ24072, y con el mismo pinout).
+  - Ya no hace falta el LM66100: no hay otro USB que pueda inyectar 5 V.
+- **TPS63802DLAR** (C2845237, 37 713 en stock, 0,91 USD):
+  - VIN de 1,3 a 5,5 V, 2 A, 11 µA de consumo en reposo;
+  - bobina FHD4020S-R47MT (C602026, 0,47 µH);
+  - divisor de realimentación a 3,3 V en la fase 2.
+- **TPS61089** + FHD4020S-1R0MT (la bobina del mod de la Game Boy), con RILIM de 270 kΩ (3,8 A) y RFREQ de 150 kΩ (≈ 0,96 MHz).
+- **MAX98357A** en VSYS: 0,77 W en 8 Ω con 3,7 V (hoja de datos). Ahora comparte BCLK y WS con el micro (I2S0 full duplex a 16 kHz): el TTS se pide a 16 kHz o se remuestrea en el ESP32. El full duplex síncrono es lo que mejor le va a la AEC de ESP-SR.
+- **ICS-43434** a 16 kHz en modo de bajo consumo (230 µA, rango de 6,25 a 18,75 kHz, verificado). Va en una plaquita con cable de ≤ 15 cm hasta el agujero del micro original.
+- **Palabra de activación:** ESP-SR WakeNet10 ya admite español. Las palabras propias se pueden entrenar con el proceso de Espressif o con su TTS Pipeline. microWakeWord es la alternativa abierta.
+
+## 8. LED
+
+Todos con 0,6–1,5 mA. Solo LED rojos y verdes básicos de JLCPCB: KT-0603R, C2286; KT-0805G, C2297.
+
+| LED | Color | Circuito | Corriente | Cómo se apaga | Qué indica |
+|-----|-------|----------|-----------|---------------|------------|
+| PWR | Verde | 3V3 → 2,2 kΩ → LED → GND | 0,6 mA | **JP_LED** (puente cerrado: cortarlo tras el bring-up) | Hay 3,3 V |
+| CHG | Rojo | VBUS → 2,2 kΩ → LED → CHG del BQ | 1,45 mA, solo con USB | No gasta batería | Cargando |
+| PG | Verde | VBUS → 2,2 kΩ → LED → PGOOD | 1,4 mA, solo con USB | No gasta batería | USB válido. **PG encendido y CHG apagado = cargada** (equivale al STDBY de otros cargadores, que el BQ no tiene) |
+| PROG | Rojo | 3V3 → 1,5 kΩ → LED → **U0TXD (GPIO43)** | 1 mA mientras TX está bajo | Apagado en reposo: la UART en reposo está alta | Actividad del ROM y del bootloader |
+| RUN | Verde | 3V3 → 1,5 kΩ → LED → P1.6 del TCA9535 | 0,9 mA | Por firmware | Latido: el programa corre |
+
+**Por qué PROG en U0TXD:**
+
+- En cada arranque, el ROM escribe su log por U0TXD, y lo hace también al entrar en modo descarga («waiting for download»). El LED parpadea en cada reset y al entrar a programar, sin firmware.
+- GPIO43 no es strapping, y un LED hacia 3V3 no fuerza la línea a nivel bajo.
+- Con USB nativo, la transferencia del firmware va por USB-Serial-JTAG y no pasa por la UART. Por eso, **«programándose» se ve como: PROG parpadea al reset y RUN se apaga** mientras dura la escritura. Ninguna línea física cambia durante la transferencia, así que no hay forma más directa.
+- Descartado un LED en GPIO0: solo se encendería con el botón pulsado, y un LED a GND en ese pin podría forzar el modo descarga.
+
+Descartado un WS2812/SK6812 para el estado: gasta **0,6 mA en reposo** (parámetro de LCSC del SK6812MINI-E) incluso apagado. Eso es más que todo lo demás de la placa dormida.
+
+## 9. Puntos de test
+
+Pads SMD de Ø1,5 (o los propios pads de cable), todos fuera de la batería y accesibles con ella montada.
+
+| TP | Tensión o señal esperada | Dónde |
+|----|--------------------------|-------|
+| VBUS | 5,0 V ± 0,25 con USB | Grupo de potencia (derecha) |
+| VBAT | 3,0–4,2 V; 4,20 V ± 0,02 al terminar la carga | Grupo de potencia |
+| VSYS | 4,4 V ± 0,1 con USB; VBAT − ≈ 50 mV sin USB | Grupo de potencia |
+| 3V3 | 3,30 V ± 0,1 | Grupo de potencia y J_EXP |
+| 6V | 5,94 V ± 0,15 con EN; ≈ VSYS − 0,4 V con el elevador apagado (diodo del FET alto) | Grupo de potencia |
+| 2V8 | 2,80 V ± 0,06 con la cámara encendida; 0 V apagada | Bloque de LDO de la cámara |
+| 1V2 o 1V5 | 1,20 o 1,50 V ± 0,05 con la cámara encendida | Bloque de LDO de la cámara |
+| GND | 0 V | Grupo de potencia, lóbulo, botones y J_EXP (4 en total) |
+| EN | 3,3 V en marcha; 0 V con RESET pulsado | Bloque de botones |
+| IO0 | 3,3 V; 0 V con BOOT pulsado | Bloque de botones |
+| D+ / D− | Datos USB FS (osciloscopio: 0–3,3 V) | Junto al USBLC6 |
+| CHG | 0 V cargando; ≈ VBUS − Vf sin cargar | Bloque de carga |
+| PGOOD | 0 V con USB válido | Bloque de carga |
+| IPROPI | 2,25 V/A × corriente del motor | Bloque del puente H |
+| MOT OUT1 / OUT2 | ±6 V con PWM a 20 kHz | Pads del motor |
+| SPK+ / SPK− | PWM de clase D (≈ 300 kHz), en modo diferencial | Pads del altavoz (lóbulo) |
+| I2S BCLK / WS / DIN | 512 kHz / 16 kHz / datos | Pads del micro |
+| I2S DOUT | Datos | TP del lóbulo |
+| U0TX / U0RX | 115 200 baudios, 3,3 V | J_EXP |
+
+## 10. BOM preliminar y coste
+
+API de piezas de JLCPCB del 2026-10-24. Precio por unidad de 1 a 49 uds.
+
+| Ref. | Pieza | LCSC | Tipo | Stock | USD |
+|------|-------|------|------|-------|-----|
+| U1 | ESP32-S3-WROOM-1-N16R8 | C2913202 | Extended | 27 796 | 5,346 |
+| U2 | BQ24073RGTR | C15220 | Extended | 30 252 | 0,880 |
+| U3 | TPS63802DLAR | C2845237 | Extended | 37 713 | 0,908 |
+| L1 | FHD4020S-R47MT (0,47 µH) | C602026 | Extended | 2359 | 0,071 |
+| U4 | TPS61089RNRR | C165129 | Extended | 10 369 | 0,715 |
+| L2 | FHD4020S-1R0MT (1 µH) | C602028 | Extended | 13 988 | 0,074 |
+| U5 | DRV8231ADDAR | C5218849 | Extended | 2056 | 1,055 |
+| U6 | MAX98357AETE+T | C910544 | Extended | 21 765 | 1,323 |
+| U7 | TCA9535PWR (TI) | C130204 | Extended | 7294 | 1,330 |
+| U8 | SN74LVC1G17DBVR | C7836 | Extended | 9943 | 0,155 |
+| U9 | ME6211C28M5G-N | C53099 | Extended | 30 205 | 0,066 |
+| U10 | ME6211C12M5G-N (OV2640) o C15 (C53100) | C236672 | Extended | 34 518 | 0,062 |
+| U11 | USBLC6-2SC6 | C2687116 | Extended | 124 155 | 0,048 |
+| J1 | USB-C 16p montaje medio 1,6 (TYPE-C-CB16-16P) | C42418806 | Extended | **1200** | 0,217 |
+| J2 | JST-PH 2p SMD (S2B-PH-SM4-TB) | C295747 | Extended | 27 506 | 0,223 |
+| J3 | FPC 24p 0,5 (AFC01-S24FCA-00) | C262669 | Extended | 27 234 | 0,121 |
+| F1 | PTC 1,5 A/16 V (BSMD1206-150-16V) | C883133 | Extended | 46 173 | 0,068 |
+| Q1, Q2 | AO3400A | C20917 | Básica | 1 227 194 | 0,089 ×2 |
+| SW1, SW2 | TS-1088-AR02016 | C720477 | Básica | 528 738 | 0,053 ×2 |
+| D | LED KT-0603R (rojo) ×2 y KT-0805G (verde) ×3 | C2286 / C2297 | Básicas | > 2 M | ≈ 0,064 en total |
+| C | 22 µF 25 V 0805 ×10, 10 µF 10 V 0603 ×6, 1 µF ×6, 100 nF ×25 | C45783 / C19702 / C15849 / C14663 | Básicas | > 4 M | ≈ 2,37 en total |
+| R | ≈ 60 resistencias 0603 UNI-ROYAL (las de la iteración anterior) | | Básicas o «preferred» | | ≈ 0,15 en total |
+
+- **Componentes: ≈ 15,5 USD por placa.**
+- **17 piezas extended, a 3 USD cada una: 51 USD por pedido.**
+- Fuera de la BOM: módulo de cámara (≈ 5–10 €), plaquita del micro con el ICS-43434 (C5656610, 4,60 USD) y batería.
 
 | Pedido en JLCPCB (estimado) | 2 montadas de 5 | 5 montadas de 5 |
 |-----------------------------|-----------------|-----------------|
-| PCB de 2 capas, 70 × 76, 5 uds | ≈ 4 | ≈ 4 |
-| Montaje económico: preparación + plantilla | 8 + 1,5 | 8 + 1,5 |
-| Cargos de extended | 30 | 30 |
-| Componentes, con mínimos de compra y merma (×1,35 y ×1,15) | ≈ 19 | ≈ 40 |
-| **Total sin envío ni impuestos** | **≈ 62 USD (31 por placa)** | **≈ 84 USD (17 por placa)** |
+| PCB de 2 capas, 70 × 76 | ≈ 4 | ≈ 4 |
+| Montaje: preparación + plantilla | 9,5 | 9,5 |
+| Cargos de extended | 51 | 51 |
+| Componentes, con mínimos y merma | ≈ 39 | ≈ 85 |
+| **Total sin envío ni impuestos** | **≈ 103 USD (52 por placa)** | **≈ 150 USD (30 por placa)** |
 
-Para bajar el cargo de las extended:
+Para bajar el cargo de extended, se pueden soldar a mano el JST, el PTC y el FPC (−9 USD).
 
-- montar a mano J2, F1 y U6 (−9 USD);
-- o pasar a TP4056 + load sharing (−3 USD), perdiendo el modo suplemento.
+**El USB-C tiene poco stock (1200).** Segundas fuentes:
 
-Las tres están descartadas para la v1: el BQ24072 es el que deja mover el motor con un puerto de 500 mA.
+- KH-TYPE-C-CB.W-16P (C2688792): pensado para PCB de 0,8; el eje subiría 0,78 mm;
+- HRO TYPE-C-31-M-12 (C165948): de superficie; el eje subiría 1,63 mm.
 
-**Lecciones del mod de la Game Boy que se aplican en la fase 2:**
+Las dos obligan a regenerar `geometria.json` y la base. **El HRO TYPE-C-31-M-14 queda descartado**: es de 16 pines y montaje medio, pero solo admite 1 A (plano del fabricante).
 
-- el Gerber y el CPL, con el mismo origen;
-- en la BOM, una línea por valor, con las referencias juntas;
-- rotaciones del CPL revisadas en el visor de JLCPCB (QFN y SOT).
+## 11. Presupuesto de potencia
 
-## 4. Presupuesto de potencia
+Corrientes en la batería a 3,7 V, con el buck-boost a η ≈ 0,9.
 
-### 4.1 Consumos por bloque
+| Modo | Corriente | Autonomía con 1400 mAh (85 % útil) |
+|------|-----------|------------------------------------|
+| Dormido: ESP32-S3 en sueño profundo (8 µA), TPS63802 (11 µA), BQ (6,5 µA), divisor VBAT (21 µA), micro (12 µA), TCA9535 (1,5 µA), PCM (≈ 5 µA) y resto (< 5 µA) | **≈ 0,09 mA** sin el LED PWR; ≈ 0,7 mA con él | Más de un año sin el LED (manda la autodescarga); ≈ 70 días con él |
+| Escuchando la palabra de activación (240 MHz, WiFi en modem sleep, PSRAM activa) | ≈ 85–120 mA | **≈ 10–14 h** |
+| Conversación (WiFi, audio, motor a ratos) | ≈ 200–350 mA de media | **≈ 3,5–6 h** |
+| Foto con la cámara | +40–100 mA durante unos segundos (**estimado**; según el sensor) | Despreciable si es por foto |
+| Motor en marcha a 6 V | 0,3 A × 6 V → 0,54 A | |
+| Motor bloqueado o invirtiendo (ITRIP 1,2 A) | 2,16 A a 3,7 V; 2,42 A a 3,3 V | |
+| **Pico simultáneo** (motor + TX + cámara + ampli) | 2,42 + 0,38 + 0,1 + 0,25 ≈ **3,15 A** a 3,3 V; ≈ 2,9 A a 3,7 V | |
 
-| Bloque | Reposo | Activo típico | Pico | Fuente |
-|--------|--------|---------------|------|--------|
-| ESP32-S3, sueño profundo | 7–8 µA | | | Hoja de datos, tabla 5-10 |
-| ESP32-S3 a 240 MHz, sin radio | | 66–81 mA (dos núcleos) | 108 mA | Hoja de datos, tabla 5-9 (sin PSRAM: con ella, algo más) |
-| ESP32-S3, WiFi TX 802.11b a 21 dBm | | | **340 mA** | Hoja de datos, tabla 5-7 |
-| ESP32-S3, WiFi RX | | 88–91 mA | | Hoja de datos, tabla 5-7 |
-| LDO ME6217 + LED WS2812 del Zero | ≈ 0,1 + 0,6–1 mA | | | **Estimado**: el WS2812 no está documentado por Waveshare |
-| Micro ICS-43434 (16 kHz) | 12 µA (sin reloj) | 0,23 mA | | Hoja de datos |
-| MAX98357A | 0,6 µA (apagado) | 2,4 mA + audio | 0,77 W en 8 Ω → **0,25 A** de VSYS | Hoja de datos |
-| Motor en marcha, 6 V | | 0,3 A × 6 V → **0,54 A** de batería a 3,7 V | | **Estimado** (η 0,9) |
-| Motor bloqueado, ITRIP 1,2 A | | | 1,2 A × 6 V → **2,16 A** a 3,7 V; **2,42 A** a 3,3 V | Calculado |
-| BQ24072, LM66100, DRV, TPS, divisor VBAT, PCM | ≈ 6,5 + 0,2 + 1 + 1 + 21 + 5 µA | | | Hojas de datos; el PCM, estimado |
+**Con USB:**
 
-### 4.2 Modos y autonomía con 1400 mAh
+- en USB500, el BQ completa con la batería (modo suplemento);
+- con un cargador bueno (ILIM 1,34 A), la batería solo aporta en los picos del motor;
+- el BQ nunca toma más de 1,5 A del USB;
+- la corriente de carga es de 0,494 A (≈ 3,5 h).
 
-Se cuenta con el 85 % de la capacidad. El regulador del Zero es lineal, así que la corriente de la batería es la misma que la de 3,3 V.
+El pico de unos 3 A puede disparar el PCM de la batería (≈ 3 A en un DW01 + 8205A). Lo evitan:
 
-| Modo | Corriente de la batería | Autonomía |
-|------|-------------------------|-----------|
-| Dormido (sueño profundo; despierta al tocar la barriga, la espalda o la lengua, o al enchufar el USB) | ≈ 0,8–1,2 mA (≈ 0,2 mA sin el WS2812) | **≈ 40–60 días** (≈ 8 meses quitando el WS2812) |
-| Escuchando la palabra de activación (240 MHz, WiFi asociado con modem sleep) | ≈ 80–110 mA | **≈ 11–15 h** |
-| Conversación (WiFi transmitiendo y recibiendo, audio a volumen medio, motor a ratos) | ≈ 200–350 mA de media | **≈ 3,5–6 h** hablando sin parar |
-| **Pico simultáneo** (motor bloqueado + TX WiFi + amplificador a tope) | 2,42 + 0,34 + 0,25 + 0,03 = **3,0 A** a 3,3 V; 2,75 A a 3,7 V | |
+- la regulación a 1,2 A del DRV;
+- la rampa y el freno antes de invertir;
+- no arrancar el motor mientras transmite una foto.
 
-**Conclusión:** escuchando todo el tiempo, dura un día de uso; para que dure semanas tiene que dormirse y despertar con un toque. Es una decisión de producto (dudas, punto 9).
+**Temperaturas (peor caso):**
 
-**El pico de 3,0 A puede disparar el PCM de la batería.** Las placas de protección típicas (DW01 + 8205A) cortan hacia 3 A. Por eso:
+| Pieza | ΔT |
+|-------|-----|
+| BQ24073 cargando: (5 − 3,6) × 0,494 + (5 − 4,4) × 0,3 = 0,87 W | +39 °C |
+| TPS61089 con el motor bloqueado | +27 °C |
+| DRV8231A durante ≤ 200 ms | +37 °C |
+| TPS63802 con 0,6 A | Pérdidas ≈ 0,2 W, repartidas |
 
-- ITRIP del motor a 1,2 A (y no más);
-- y en el firmware: rampa de PWM de 50 ms al arrancar el motor, corte a los 200 ms de bloqueo y volumen no máximo mientras el motor arranca.
+El WROOM-1 R8 admite +65 °C de ambiente: el cargador y el elevador van al otro lado del mecanismo.
 
-Falta el dato de sobrecorriente del PCM de la batería (dudas, punto 4).
+## 12. Colocación y alturas
 
-### 4.3 ¿Basta un USB de 500 mA o hace falta uno de 1,5–3 A?
+![Planta de la FurbyBoard](render/planta-arquitectura.png)
 
-| Fuente | Qué pasa |
-|--------|----------|
-| **Puerto de ordenador, 500 mA** (BQ en USB500, 475 mA) | Dormido, escuchando y conversación: sí, y sobra para cargar despacio. Motor y picos: **la batería completa la diferencia (modo suplemento)**. Con la batería por debajo de ≈ 3,4 V o sin batería, el firmware no debe mover el motor |
-| **Cargador de 1,5–3 A** (EN2 = 1, IIN 1,34 A) | Todo menos el pico simultáneo. Con el motor bloqueado: 7,2 W / (VSYS 3,9 V × 0,9) = 2,05 A + 0,34 + 0,25 = 2,6 A en VSYS; el USB da 1,34 y la batería 1,3 |
+`scripts/render_arquitectura.py` comprueba la colocación sobre `geometria.json` antes de dibujar:
 
-**El BQ24072 nunca toma más de 1,5 A del USB**, así que un cargador de 3 A no aporta más que uno de 1,5 A.
+- PCB, mecanismo, tornillos, USB-C, zona sin cobre de la antena y solapes;
+- que la batería solo tape lo marcado como «bajo la bandeja»;
+- que los TP, J_EXP, los botones y los LED queden fuera de la batería.
 
-**Detección de cortocircuito en modo suplemento** (VBAT − VOUT > 200 mV mínimo, hoja de datos «VO(SC2)»): el FET de batería tiene 50 mΩ típicos y 100 mΩ máximos. En USB500 con el motor bloqueado, la batería aporta ≈ 2,1 A → 105–210 mV, **en el límite**. Por eso el firmware sube a 1,34 A en cuanto ve un cargador bueno, y la prueba de bring-up incluye «motor bloqueado con USB de 500 mA».
+Pasa sin fallos.
 
-### 4.4 Temperaturas
+| Elemento | Dónde | Notas |
+|----------|-------|-------|
+| Batería | Lado izquierdo, centro (−84,5; −91,8), −4°, sobre una bandeja | Único sitio donde cabe (búsqueda de la iteración anterior). A 1,66 de la pared y del agujero |
+| WROOM-1 | x −82 a −64, y −81 a −55,5; antena hacia delante | 3,1 mm de alto: la bandeja baja a z 9,3–10,1 |
+| Botones, LED PWR, PROG y RUN, TP de EN e IO0 | Entre el módulo y H2 | Accesibles |
+| FPC de la cámara y LDO | Debajo de los botones, encima del mecanismo | Flex hacia delante |
+| Elevador, puente H, pads del motor | A la derecha del mecanismo | Cerca de los cables del motor |
+| Carga, 3,3 V, JST, ESD | Entre el mecanismo y el lóbulo | Lejos del módulo (calor) |
+| TP de potencia | Grupo de 2 × 3 junto al borde derecho | VBUS, VBAT, VSYS, 3V3, 6V y GND |
+| Bajo la bandeja | TCA9535, acondicionamiento, divisor de VBAT y MAX98357A | Todo de menos de 1,2 mm y sin calor apreciable |
+| Pads de cables | Micro (6) delante a la derecha; IR (6) delante a la izquierda; inclinación y lengua (5) a la izquierda; leva, encoder, barriga y espalda (10) a la derecha; motor (2); luz y altavoz (4) en el lóbulo | Pasantes de Ø1,0, paso de 2,54 |
+| J_EXP | 1 × 10 en el borde izquierdo, y −84 a −107 | Fuera de la batería |
+| Apoyos de la bandeja | H1 y H3 atornillados, A1 (−70,5; −100) y A2 (−99; −103) apoyados | La pata mide ≈ 4,6 (de z 5,505 a 10,1). Con M2 × 8 quedan 1,8 mm de rosca en el separador, frente a los 2,4 del M2 × 4 actual: es justo. Alternativa: la pata abraza la cabeza del M2 × 4 y se sujeta con clip. Lo cierra el 3d-architect con esta planta |
 
-| Pieza | Peor caso | Disipación | ΔT | Fuente de RθJA |
-|-------|-----------|------------|----|----------------|
-| BQ24072 cargando | VIN 5 V, VBAT 3,6 V, 0,494 A + 0,1 A de sistema a VOUT 3,83 V | (5 − 3,6) × 0,494 + (5 − 3,83) × 0,1 = 0,81 W | +36 °C (44,5 °C/W) | Hoja de datos |
-| ME6217 del Zero, con USB | VSYS 4,4 V (BQ24073) frente a 3,9 V (BQ24072), 0,2 A de media en conversación | 0,22 W frente a 0,12 W | +55 °C frente a +30 °C (≈ 250 °C/W, SOT-23-5) | **Estimado**: es la razón para elegir el BQ24072 |
-| TPS61089 | Motor bloqueado, 7,2 W de salida, η 0,88 | ≈ 0,5 W en el IC | +27 °C (53,4 °C/W) | Hoja de datos |
-| DRV8231A | ITRIP 1,2 A | 0,86 W | +37 °C durante ≤ 200 ms | Hoja de datos |
-| LM66100 | 0,35 A | 15 mW | +3 °C | Hoja de datos |
+**Alturas (z):**
 
-Con 40 °C dentro del Furby, todas quedan por debajo de los 110 °C de Tj. El cargador y el elevador van fuera de la batería, como en el render.
+| Elemento | z |
+|----------|---|
+| PCB | 3,905 a 5,505 |
+| WROOM-1 | hasta 8,6 |
+| Bandeja | 9,3 a 10,1 |
+| **Batería** | **10,1 a 17,7** (confirmado que cabe) |
+| JST-PH SMD | ≈ 11,0 (fuera de la bandeja) |
+| FPC | 7,5 |
+| Pared de la base | 22,0 |
 
-## 5. Colocación sobre el contorno real
+**Serigrafía:**
 
-![Planta de la arquitectura](render/planta-arquitectura.png)
+- Cara superior: **«FurbyBoard v1.0»**, 1,0 mm de alto y 0,15 de trazo, en el borde delantero, delante de la antena (la tinta no afecta a la antena y es lo que se ve al abrir la base). También van los nombres de los TP, de los LED y de los botones, y la polaridad del JST (+/−).
+- Cara inferior, que no lleva componentes: «FurbyBoard v1.0 · 2026-10» con 2 mm de alto y el **número de GPIO de cada pad de J_EXP y de los pads de cable**.
+- Sin nombres de personas.
 
-`scripts/render_arquitectura.py` comprueba la colocación sobre `geometria.json` antes de dibujar: si algo no cabe, sale con código 1. Comprueba:
-
-- PCB, exclusión del mecanismo, cabezas de los tornillos, USB-C y zona sin cobre de la antena;
-- que los bloques no se solapen;
-- que la batería quede dentro de la pared y a más de 1,5 mm del agujero.
-
-Hecho con la geometría actual: la batería queda a **1,66** de la pared y del agujero, y la antena del Zero a **4,05** por fuera de la huella de la batería.
-
-**La batería y el Zero no caben uno al lado del otro.** Se probó una búsqueda exhaustiva en posición y giro (pasos de 0,25–1 mm y de 1–15°):
-
-- la batería de 33 × 50 solo cabe en el lado izquierdo, ligeramente girada (−4°), entre la pared y el agujero del mecanismo;
-- con 1 mm de margen al agujero, no queda ningún hueco de 18 × 23,5 para el Zero fuera de ella;
-- sin margen, solo hay posiciones con 0,2–0,3 mm de holgura, imposibles con las tolerancias de la batería.
-
-Por eso **la batería va en una bandeja impresa por encima del Zero**.
-
-| Elemento | Dónde | Por qué |
-|----------|-------|---------|
-| Batería | Lado izquierdo, centro en (−84,5; −91,8), girada −4°, sobre la bandeja | El único sitio donde cabe |
-| ESP32-S3 Zero | x −87 a −69, y −80 a −56,5; castellated en la cara superior | La antena (extremo delantero, ≈ 6 mm) queda fuera de la batería, mirando al frente; el 44 % del módulo asoma. Debajo de la antena, en nuestra PCB: sin cobre en ninguna capa (x −89 a −67, y −63,5 al borde). Su USB-C queda bajo la bandeja |
-| Carga y power path (BQ24072, LM66100, PTC) | x −66,5 a −55, y −114,5 a −104,5 | Junto al USB-C, debajo del mecanismo, fuera de la batería (calienta) |
-| JST-PH de la batería | x −52,5 a −44,5, y −113,5 a −105,5 | Junto al cargador. El cable de la batería sale por su lado corto trasero |
-| Elevador 6 V | x −52 a −41,5, y −94,5 a −84 | A la derecha del mecanismo, cerca del motor. Bobina de 2 mm, fuera de la bandeja |
-| Puente H y pads del motor | x −52 a −46, y −102,5 a −96 | Junto al mecanismo, que es por donde bajan los cables del motor y del encoder |
-| Amplificador y pads del altavoz | x −64,5 a −55,5, y −82,5 a −74 | Entre la batería, H2 y el mecanismo |
-| Pads delanteros (15) | 5 × 3 a la derecha de la antena | Micro, barriga, espalda, lengua y luz: cables que bajan por delante |
-| Pads derechos (8) | 2 × 4 junto al borde derecho | Leva, encoder y LED IR |
-| Pads izquierdos (6) | Columna junto al borde izquierdo | Inclinación y receptor IR |
-| Acondicionamiento de sensores | Bajo la bandeja, x −97 a −74, y −110 a −88 | Solo pasivos 0603 y el Schmitt en SOT-23-5: menos de 1,1 mm |
-| Apoyos de la bandeja | H1 y H3 atornillados (M2 × 10 en vez de M2 × 4, misma rosca en el separador); A1 (−72; −108) y A2 (−99; −103), círculos de Ø4 sin componentes | Coordinar con el 3d-architect: la bandeja es una pieza nueva |
-
-Debajo de la bandeja no va nada que caliente ni piezas de más de 1,1 mm, salvo el propio Zero.
-
-**El Zero queda entre la PCB y la bandeja.** Su LDO y el ESP32 disipan 0,1–0,3 W con 0,6 mm de aire hasta la bandeja, y la batería está encima. En la fase 2, la bandeja lleva una ventana sobre el ESP32 y su LDO.
-
-## 6. Alturas
-
-| Elemento | z inferior | z superior | Notas |
-|----------|------------|------------|-------|
-| Suelo de la base | | 1,905 | |
-| PCB | 3,905 | 5,505 | Separadores de 2,0 |
-| USB-C trasero | | 7,085 | Sin cambios |
-| Bobina del elevador | 5,505 | 7,5 | 4 × 4 × 2 |
-| ESP32-S3 Zero con su USB-C | 5,505 | **10,1** | PCB de 1,0 + USB-C de 3,6 (medidas del Furbygotchi) |
-| JST-PH SMD | 5,505 | ≈ 11,0 | **Por confirmar** en el plano de JST |
-| Bandeja | 10,6 | 11,4 | 0,5 de aire sobre el Zero y 0,8 de suelo |
-| **Batería** | **11,4** | **19,0** | 7,6 de grosor |
-| Pared de la base | | **22,0** | Quedan **3,0** sobre la batería |
-| Cuerpo del Furby | ? | ? | **RIESGO: sin medir.** En el Furby original esta zona era el portapilas de 4 AA (≥ 15 mm de alto), así que es probable que esté libre. Hay que comprobar que nada del cuerpo baja de z 19,5 en la mitad izquierda ni junto al mecanismo |
-
-Las paredes de la base son verticales hasta z ≈ 16: se midió en el STL modificado a z 10, 12 y 16, con el mismo hueco que el suelo. A z 20 el hueco es 1,5 mm mayor por lado. La batería tiene, por tanto, la misma planta disponible que la PCB.
-
-## 7. USB: el Zero no saca D+ ni D−
-
-**Verificado en el esquema de Waveshare (ESP32-S3-Zero-Sch.pdf):**
-
-- GPIO19 y GPIO20 van solo a su USB-C, a través de R7 y R8 (22 Ω);
-- en el conector de 18 pines castellated (P15) están 5V, GND, 3V3, GPIO1–13, GPIO44 y GPIO43 (este, con 499 Ω en serie);
-- las pads inferiores son GPIO14–18, GPIO38–42 y GPIO45;
-- GPIO47 y GPIO48 no están conectados.
-
-| Opción | Programar sin abrir | Cambios | Coste | Veredicto |
-|--------|---------------------|---------|-------|-----------|
-| **A. Zero + USB-C trasero de 6 pines (solo carga) + OTA por WiFi** con dos particiones y vuelta atrás automática. El USB del Zero, para el primer flasheo y la recuperación, quitando la bandeja | Sí, por WiFi; por cable no | Ninguno: ni el conector ni la base | 0 | **Recomendada para la v1**: cumple el requisito del Zero y no toca la base |
-| B. Zero + soldar hilos a R7 y R8 del módulo y llevarlos al USB-C trasero de 16 pines | Sí | Hilos de 0,1 mm a resistencias 0402 del módulo, y un tramo sin terminar en paralelo con su conector | ≈ 0 | Descartada: frágil, y no está verificado dónde están R7 y R8 en la placa del Zero |
-| C. ESP32-S3 SuperMini | No verificado | | | Descartada: los pinouts publicados sacan GPIO1–13, 43 y 44, no GPIO19/20, y los clones no tienen documentación fiable |
-| D. **ESP32-S3-MINI-1-N4R2** (C3013941, extended, 2782 en stock, 5,00 USD; 3,64 a 100 uds), soldado por JLCPCB, con USB-C trasero de 16 pines | Sí, por cable | Módulo de 15,4 × 20,5 × 2,4 en vez del Zero: LDO propio (ME6217C33M5G, C427602) y antena en el borde de la PCB. Conector de 16 pines | +≈ 2 USD por placa, sin el Zero | **La alternativa** si programar por cable sin abrir es imprescindible: es el mismo chip (ESP32-S3FH4R2) y el mismo firmware. Saca todos los GPIO, sin soldar pads inferiores a mano, y con 2,4 de alto la bandeja baja 2,2 mm |
-
-**Si se elige la D, el conector de 16 pines:**
-
-- **HRO TYPE-C-31-M-12** (C165948, 327 675 en stock, 0,19 USD): es de montaje en superficie. El eje sube 1,63 mm, a z 7,135 (ya calculado en `geometria.json`, `alturas.z_centro_top_mount`). El corte de la base sube lo mismo y la ranura de la PCB desaparece: hay que regenerar `geometria.json` y la base.
-- De montaje medio con 16 pines: KH-TYPE-C-CB.W-16P (C2688792, 922 en stock) o TYPE-C-CB16-16P (C42418806, 1200 en stock). Mantendrían el eje si su plano lo confirma para PCB de 1,6. Stock bajo y plano sin revisar.
-
-## 8. Mapa de pines del ESP32-S3 Zero
-
-Según el esquema de Waveshare: el orden físico P15 va del 1 (GPIO43) al 18 (5V). Las pads inferiores no tienen cotas publicadas en el wiki: hay que medirlas en el módulo para hacer la huella en la fase 2.
-
-| GPIO | Dónde | Función | Notas |
-|------|-------|---------|-------|
-| 1 | Castellated | VBAT (ADC1_CH0) | Divisor 100k/100k + 100 nF, como en el Furbygotchi |
-| 2 | Castellated | Luz (ADC1_CH1) | 47 kΩ a GND + 100 nF |
-| 3 | Castellated | IPROPI del motor (ADC1_CH2) | **Strapping** (fuente de JTAG): se ignora salvo que se queme el eFuse STRAP_JTAG_SEL. RIPROPI (1,5 kΩ a GND) lo deja a nivel bajo al arrancar, que también es válido |
-| 4 | Castellated | MOT_IN1 (PWM, LEDC) | Pull-down interno del DRV: el motor está parado al arrancar |
-| 5 | Castellated | MOT_IN2 (PWM, LEDC) | |
-| 6 | Castellated | Encoder (PCNT) | Tras el Schmitt |
-| 7 | Castellated | Leva (inicio) | |
-| 8 | Castellated | I2S0 SCK del micro | 33 Ω en serie |
-| 9 | Castellated | I2S0 WS del micro | 33 Ω en serie |
-| 10 | Castellated | I2S0 SD del micro | |
-| 11 | Castellated | I2S1 BCLK del amplificador | |
-| 12 | Castellated | I2S1 LRCLK del amplificador | |
-| 13 | Castellated | I2S1 DIN del amplificador | |
-| 43 | Castellated (TX) | Emisor IR (RMT → AO3400A) | El ROM lo usa para el log al arrancar: el LED IR parpadea un instante, sin consecuencias. 499 Ω en serie en el módulo |
-| 44 | Castellated (RX) | Receptor IR (RMT RX) | Entrada |
-| 14 | Pad inferior | Barriga | RTC: despierta del sueño profundo (ext1) |
-| 15 | Pad inferior | Espalda | RTC |
-| 16 | Pad inferior | Lengua | RTC |
-| 17 | Pad inferior | Inclinación A | RTC |
-| 18 | Pad inferior | Inclinación B | RTC. Libre si el interruptor tiene un solo contacto |
-| 38 | Pad inferior | USB presente (PGOOD) | |
-| 39 | Pad inferior | Cargando (CHG) | Con el LED D1 |
-| 40 | Pad inferior | EN_6V: EN del TPS61089 y LED del encoder | 100 kΩ a GND: elevador apagado al arrancar |
-| 41 | Pad inferior | **Libre** | Reserva: segundo micro, alimentación conmutada del micro… |
-| 42 | Pad inferior | SD_MODE del MAX98357A | Alto = canal izquierdo; bajo = apagado (pull-down interno de 100 kΩ) |
-| 45 | Pad inferior | EN2 del BQ24072 y, invertido con el 2N7002, EN1 (límite de entrada de 1,34 A) | **Strapping VDD_SPI: tiene que estar a nivel bajo al arrancar** (flash a 3,3 V). Solo 100 kΩ a GND; nunca un pull-up |
-
-**No se pueden usar:**
-
-- GPIO0: botón BOOT del módulo, sin pad;
-- GPIO19 y GPIO20: USB del módulo;
-- GPIO21: WS2812 del módulo;
-- GPIO26–37: flash y PSRAM internas; Waveshare marca GPIO33–37 como reservados;
-- GPIO46: strapping, sin pad;
-- GPIO47 y GPIO48: sin conectar.
-
-**ADC:** solo ADC1 (GPIO1–10) funciona con el WiFi encendido. Por eso VBAT, luz e IPROPI van en GPIO1–3.
-
-**Balance:** 26 GPIO accesibles, 25 usados y 1 libre. No hace falta un expansor.
-
-- Lo imprescindible (motor, encoder, leva, audio, VBAT, luz, IR) va en los **15 castellated**, que se sueldan a mano sin problema.
-- Lo que va en las **11 pads inferiores** (interruptores táctiles, inclinación y estado de carga) necesita soldar el módulo con pasta y placa caliente o aire. La fase 2 deja una vía de Ø0,6 en cada pad para poder soldarlo desde abajo.
-- Si las pads inferiores fallan, el Furby habla y se mueve, pero no siente las caricias.
-- Plan B sin pads inferiores: un expansor I2C (PCA9557 o similar) en GPIO43/44, a cambio del IR.
-
-## 9. Dudas abiertas
+## 13. Dudas abiertas
 
 | # | Duda | Recomendación |
 |---|------|---------------|
-| 1 | **USB con datos.** El Zero no saca D+ ni D−. ¿Basta con programar por OTA (y por el USB del módulo quitando la bandeja), o hace falta programar por cable sin abrir? | **OTA (opción A)** para la v1. Si el cable es imprescindible, la opción D (ESP32-S3-MINI-1-N4R2 montado por JLCPCB) en lugar del Zero |
-| 2 | **Altura sobre la base.** La batería llega a z 19,0 y la pared a 22,0. ¿Qué hay del cuerpo del Furby por debajo de z 19,5 en la mitad izquierda? | Medirlo con el Furby abierto. Si no hay sitio: batería de ≈ 1000 mAh y 30 × 40, que cabe plana junto al Zero sin bandeja (comprobado con la misma búsqueda), y −30 % de autonomía |
-| 3 | **Mecanismo.** La batería queda a 1,66 mm del agujero Ø11,3. ¿Qué se mueve por encima de la PCB alrededor del agujero? (Su posición también es un supuesto, en `NOTAS.md`) | Medir el centro y el diámetro del agujero y la envolvente del mecanismo por encima. Con más de 1 mm de holgura, sigue la propuesta |
-| 4 | **Batería.** ¿Los 50 mm incluyen el PCM? ¿Por qué lado salen los cables? ¿Qué polaridad tiene el JST? ¿A cuánto corta el PCM por sobrecorriente? | Medir con el calibre y mirar la ficha del vendedor. Con un PCM de menos de 3 A, bajar ITRIP a 0,9 A |
-| 5 | **Motor.** Corriente de marcha y de bloqueo | Medir la resistencia del bobinado (I_bloqueo ≈ 6 V / R) y la corriente de marcha a 6 V con fuente limitada. Con eso se ajustan ITRIP (VREF) y se decide entre DRV8231A y DRV8837 |
-| 6 | **¿6 V o 5 V para el motor?** Con pilas, el Furby funcionaba de 6,4 a ≈ 4,4 V | 6 V (requisito). Bajarlo a 5 V es cambiar una resistencia si hace mucho ruido o fuerza los engranajes |
-| 7 | **Altavoz.** Impedancia y potencia | Medir la resistencia en continua. El firmware limita el volumen según la potencia |
-| 8 | **Micrófono.** ¿Dónde estaba el original y cuánto cable hace falta? | Plaquita con ICS-43434 junto al agujero original del cuerpo, con 15 cm de cable como máximo |
-| 9 | **Escuchando siempre o dormido.** Escuchando la palabra de activación dura ≈ 11–15 h; dormido y despertando con un toque, semanas | Por defecto, dormido y despertar al tocar la barriga o la espalda, con la escucha continua solo enchufado. Es decisión de producto |
-| 10 | **Palabra de activación.** ESP-SR solo trae palabras predefinidas; una propia la entrena Espressif con coste | microWakeWord con palabra propia; «Hi ESP» de ESP-SR para la primera prueba |
-| 11 | **Sensores.** ¿La bola de inclinación tiene uno o dos contactos? ¿La luz es una LDR o un fototransistor? ¿El receptor IR es un fotodiodo o un demodulador? | Al abrirlo, fotografiar cada sensor y medirlo con el polímetro antes de la fase 2. Los pads ya tienen 3 contactos donde hay dudas |
-| 12 | **WS2812 del Zero.** Gasta ≈ 0,6–1 mA siempre (estimado) | Si importa la autonomía dormido, desoldarlo: el estado se ve por WiFi |
-| 13 | **Bandeja de la batería.** Pieza nueva | Encargarla al 3d-architect con esta planta: atornillada en H1 y H3 con M2 × 10, apoyada en A1 y A2, con ventana sobre el ESP32 del Zero |
+| 1 | **Módulo de cámara concreto** (OV2640, OV3660 u OV5640), longitud de su flex y pinout del FPC | OV2640 con flex de 75–150 mm para empezar: es el más documentado con el ESP32. Verificar el pinout con su ficha antes de la fase 2 y elegir 1,2 o 1,5 V de DVDD según el sensor |
+| 2 | **Dónde va la cámara en la cara** | En la ventana de la frente (sensor de luz e IR) o en la nariz. Hay que medir la distancia hasta el FPC |
+| 3 | **Antena**: WROOM-1 junto a la batería, o WROOM-1U con antena externa en la cabeza | WROOM-1 en la v1.0 y medir el RSSI en el bring-up. La huella admite los dos |
+| 4 | **Motor**: corriente de marcha y de bloqueo | Medir la resistencia del bobinado y ajustar ITRIP |
+| 5 | **Pasar el firmware a PWM de 20 kHz** con freno y rampa, y a posicionar por encoder | Sí: a 100 Hz el DRV8231A se duerme en cada ciclo |
+| 6 | **Batería**: PCM (corriente de corte), polaridad del JST y si los 50 mm incluyen el PCM | Ficha del vendedor y calibre. Con un corte por debajo de 3 A, bajar ITRIP a 0,9 A |
+| 7 | **Altavoz y micro**: impedancia y sitio del micro original | Medir |
+| 8 | **Sensores**: contactos de la bola de inclinación, tipo del sensor de luz y del receptor IR | Fotografiar y medir al abrir el Furby |
+| 9 | **Escuchando siempre o dormido** | Dormido y despertar con un toque (INT del expansor en GPIO21); escuchando siempre solo enchufado |
+| 10 | **USB-C con 1200 en stock** | Pedir con margen. Si se agota, la segunda fuente sube el eje (sección 10) |
+| 11 | **Bandeja de la batería** | Encargarla al 3d-architect con la planta |
 
-## 10. Fuentes
+## 14. Fuentes
 
-- Waveshare, [ESP32-S3-Zero](https://www.waveshare.com/wiki/ESP32-S3-Zero) y su esquema (ESP32-S3-Zero-Sch.pdf): pines, pads inferiores, USB solo en el conector, LDO ME6217C33M5G y entrada de 3,7 a 6 V en el pin 5V.
-- Espressif, ESP32-S3 Series Datasheet v2.2, tablas 5-7, 5-9 y 5-10 (consumos).
-- TI: BQ2407x (SLUS810N), TPS61089 (SLVSD38C), DRV8231A, LM66100 y DRV8837. Maxim/ADI: MAX98357A/B. TDK InvenSense: ICS-43434.
-- Furby de 1998: [Sundberg-Ferar](https://sundbergferar.com/furby-product-teardown-why-embedded-systems-engineering-and-human-centered-design-go-hand-in-hand/) (un motor bidireccional, LED + fototransistor y engranaje ranurado); [element14, Upcycle It](https://community.element14.com/challenges-projects/design-challenges/upcycleit/b/blog/posts/upcycle-it-interactive-race-car-driver---furby-hacking) (pulsos del sensor óptico e interruptor de inicio); [Official Furby Wiki, Tilt Sensor Maintenance](https://official-furby.fandom.com/wiki/Furby_(1998)/Tilt_Sensor_Maintenance) (bola de inclinación); hacks en Instructables, [Furby Brain Surgery](https://www.instructables.com/Furby-Brain-Surgery/) y [Furby Hijack](https://www.instructables.com/Furby-Hijack/) (según los resúmenes de búsqueda: barriga y lengua normalmente abiertos, y luz leída por ADC; no se pudieron abrir las páginas); [iFixit](https://www.ifixit.com/Answers/View/942382/1998+Furby+Motor+-+Gears+Seizing+()+after+jump,+anybody+know+a+fix) (engranajes que se agarrotan).
-- API de piezas de JLCPCB: stock, clase (básica, extended o «preferred») y precios del 2026-10-24.
-- El sustituto del DC-DC U5 de la Game Boy Pocket, pedido y montado en JLCPCB (bobina FHD4020S-1R0MT, resistencias UNI-ROYAL y lecciones de la v1.1) y el repo del Furbygotchi (medidas del Zero y divisor de VBAT).
+- Espressif:
+  - ESP32-S3 Series Datasheet v2.2: consumos y strapping;
+  - hoja de datos del ESP32-S3-WROOM-1/1U: GPIO35–37 con PSRAM octal, pinout, antena;
+  - [README de ESP-SR](https://github.com/espressif/esp-sr): chips soportados por WakeNet y entrenamiento de palabras;
+  - `camera_pins.h` del ejemplo CameraWebServer de arduino-esp32: preset ESP32-S3-EYE.
+- TI: BQ2407x (SLUS810N), TPS63802, TPS61089 (SLVSD38C), DRV8231A (tSLEEP, tWAKE, tabla IN1/IN2, ITRIP, IPROPI), TCA9535.
+- ADI: MAX98357A/B (SD_MODE y potencia a 3,7 V). TDK: ICS-43434.
+- Planos de los USB-C: TYPE-C-CB16-16P («mid mount 1.6mm», 1,60 por encima y por debajo de la PCB), KH-TYPE-C-CB.W-16P (hundido 0,8) y HRO TYPE-C-31-M-14 (1 A).
+- Waveshare: esquema del ESP32-S3-Zero (sin D+/D− accesibles).
+- C6 SuperMini: [espboards.dev](https://www.espboards.dev/esp32/esp32-c6-super-mini/) (cargador LTH7R, sin verificar) y [mischianti.org](https://mischianti.org/esp32-c6-supermini-high-resolution-pinout-datasheet-schema-and-specs/).
+- Furby de 1998: [Sundberg-Ferar](https://sundbergferar.com/furby-product-teardown-why-embedded-systems-engineering-and-human-centered-design-go-hand-in-hand/), [element14](https://community.element14.com/challenges-projects/design-challenges/upcycleit/b/blog/posts/upcycle-it-interactive-race-car-driver---furby-hacking), [Official Furby Wiki](https://official-furby.fandom.com/wiki/Furby_(1998)/Tilt_Sensor_Maintenance), [Instructables](https://www.instructables.com/Furby-Brain-Surgery/), [iFixit](https://www.ifixit.com/Answers/View/942382/1998+Furby+Motor+-+Gears+Seizing+()+after+jump,+anybody+know+a+fix).
+- Código actual del Furby: `hardware_control.py` (PWM a 100 Hz, 70 %, inversiones y final de carrera).
+- El sustituto del DC-DC U5 de la Game Boy Pocket, pedido y montado en JLCPCB: bobina FHD4020S-1R0MT y lecciones de la v1.1 (Gerber y CPL con el mismo origen, una línea de BOM por valor y rotaciones del CPL revisadas).
 
 ## Regenerar los renders
 
@@ -442,4 +531,4 @@ cd Hardware/PCB-suelo
 .venv/bin/python -I scripts/render_arquitectura.py
 ```
 
-Lee `geometria.json`, comprueba la colocación y escribe `render/planta-arquitectura.png` y `render/bloques.png`. Las posiciones de la batería, el Zero, los bloques, los pads y los apoyos son constantes al principio del script.
+Las posiciones de la batería, el módulo, los bloques, los pads, los TP y los apoyos son constantes al principio del script.
