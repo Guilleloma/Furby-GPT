@@ -6,7 +6,7 @@ Bring-up paso a paso para cuando llegue la placa montada de JLCPCB. Es un **borr
 
 - Se hace en orden, y no se pasa de un paso con un FAIL sin entenderlo.
 - Se anota el valor medido junto al esperado, en una copia de esta tabla por placa. La placa se numera a rotulador en el recuadro en blanco de la serigrafía de la cara inferior.
-- La batería no se conecta hasta el paso 8.
+- La batería no se suelda hasta el paso 8, después de probar la protección contra la inversión (paso 8.1) y de medir su polaridad (paso 8.2).
 
 ## Equipo
 
@@ -19,7 +19,8 @@ Bring-up paso a paso para cuando llegue la placa montada de JLCPCB. Es un **borr
 | Resistencias de potencia: 10 Ω / 5 W y 4,7 Ω / 10 W | Carga del elevador de 6 V |
 | Termómetro de contacto o cámara térmica | Temperaturas |
 | PC con `esptool` y ESP-IDF o Arduino; cable USB-C de datos | Enumeración, flasheo y firmwares de prueba |
-| Altavoz de 8 Ω de referencia, motor del Furby o motor DC de prueba | Audio y motor |
+| Altavoz del Furby (4 Ω, 3 W), motor del Furby o motor DC de prueba | Audio y motor |
+| Dos cables con pinzas de cocodrilo o puntas para soldar provisionalmente a los pads BAT+/BAT− | Pruebas con la fuente en la entrada de batería |
 | Módulo de cámara OV2640 (o el elegido) y su flex | Cámara |
 | Otro ESP32 de referencia | Comparar el RSSI del WiFi |
 | Batería LiPo 1S de 1400 mAh con PCM | Pasos 8 a 17 |
@@ -31,7 +32,8 @@ Bring-up paso a paso para cuando llegue la placa montada de JLCPCB. Es un **borr
 | Orientación de U1 (WROOM-1), de los QFN (BQ24073, MAX98357A), TSSOP (TCA9535), SOT y LED | Pin 1 coincide con la serigrafía | Reclamar a JLCPCB o resoldar. Revisar las rotaciones del CPL para el siguiente pedido |
 | Puentes de estaño en los QFN, TSSOP, conector USB-C y FPC | Ninguno (lupa ×10) | Retirar con malla y flux |
 | Conector USB-C asentado en la ranura, con las patas soldadas | Sin holgura | Resoldar las patas de la carcasa |
-| Polaridad del JST frente a la batería | El + de la serigrafía coincide con el rojo del cable de la batería (polímetro en el conector de la batería) | **No conectar.** Cambiar los pines del conector de la batería |
+| Pads de la batería | BAT+ cuadrado y BAT− redondo, con su serigrafía legible | Defecto de serigrafía: marcar a mano antes de seguir |
+| P-MOSFET de polaridad (SI7615ADN) | Soldado y bien orientado (pin 1) | Resoldar |
 | Jumpers JP1–JP4 y JP_LED | Cerrados de fábrica | Cerrarlos con estaño |
 | Zona de la antena | Sin cobre ni componentes (x −85 a −61, delante) | Defecto de diseño: anotarlo |
 
@@ -42,7 +44,8 @@ Polímetro en ohmios, punta negra en GND (TP GND).
 | Carril | Esperado | PASS | Si falla |
 |--------|----------|------|----------|
 | VBUS–GND | > 10 kΩ | No es un corto (< 10 Ω) | Revisar el PTC, el USBLC6 y la entrada del BQ24073 |
-| VBAT–GND | ≈ 200 kΩ (divisor 100k + 100k) en paralelo con el BQ | > 50 kΩ | Revisar el divisor, el BQ y el JST |
+| VBAT (TP, lado del BQ)–GND | ≈ 200 kΩ (divisor 100k + 100k) en paralelo con el BQ | > 50 kΩ | Revisar el divisor y el BQ |
+| Pad BAT+–GND | > 100 kΩ (FET cortado sin alimentar) | No es un corto | Revisar el SI7615ADN |
 | VSYS–GND | > 1 kΩ | > 100 Ω | Revisar el TPS63802, el TPS61089 y el MAX98357A |
 | 3V3–GND | Del orden de kΩ (módulo sin alimentar) | > 100 Ω | Levantar el TPS63802 y medir otra vez para aislar |
 | 6V–GND | > 10 kΩ | > 1 kΩ | Revisar el DRV8231A y los condensadores |
@@ -52,12 +55,13 @@ Polímetro en ohmios, punta negra en GND (TP GND).
 
 ## 3. Primer arranque por la entrada de batería (fuente limitada)
 
-Fuente de laboratorio en el JST (o en el TP VBAT y GND): **3,70 V, límite de 150 mA**. Sin USB, sin cámara, sin motor ni altavoz.
+Fuente de laboratorio en los pads **BAT+ y BAT−** (pinzas o cables soldados provisionalmente): **3,70 V, límite de 150 mA**. Sin USB, sin cámara, sin motor ni altavoz.
 
 | Medida | Esperado | PASS / FAIL | Si falla |
 |--------|----------|-------------|----------|
 | Corriente al encender | Pico < 150 mA y luego 30–60 mA (el módulo arranca en blanco o con la prueba de fábrica) | PASS: < 100 mA estable. FAIL: la fuente limita | Apagar. Medir VSYS y 3V3 con la fuente limitada a 50 mA y buscar el carril que cae |
 | VSYS | 3,65 V ± 0,05 (VBAT − ≈ 50 mV) | ± 0,1 | BQ24073 sin soldar o en cortocircuito |
+| Caída en el P-MOSFET (pad BAT+ − TP VBAT) | < 5 mV a 50 mA | < 10 mV | FET sin conducir: puerta a GND (10 kΩ) |
 | 3V3 | 3,30 V ± 0,10 | ± 0,10 | TPS63802: comprobar el divisor de realimentación y la bobina |
 | LED PWR | Encendido | | Polaridad del LED o JP_LED abierto |
 | LED PROG | Parpadea al arrancar y al pulsar RESET | | Revisar el LED y GPIO43 |
@@ -110,7 +114,24 @@ Medidor USB-C en línea, con un cargador de 5 V. Se quita la fuente del paso 3: 
 
 ## 8. Batería, carga y power path
 
-Con la batería real, tras comprobar la polaridad del JST (paso 1).
+### 8.1 Prueba de la protección contra la polaridad inversa (antes de soldar la batería)
+
+| Paso | PASS | Si falla |
+|------|------|----------|
+| Fuente a **4,2 V con límite de 100 mA**, conectada **al revés**: + al pad BAT− y − al pad BAT+. Sin USB | Corriente < 1 mA. TP VBAT, VSYS y 3V3 entre 0 y +0,1 V, **nunca negativos**. Nada se calienta | Cortar la fuente. Revisar la orientación del SI7615ADN (pin 1) y la puerta a GND |
+| Igual, pero con el **USB enchufado** (5 V con medidor) | Corriente por la fuente invertida de 4 a 11 mA (detección de cortocircuito del BQ). TP VBAT entre +0,4 y +1,6 V, positivo. LED CHG apagado o parpadeando. FET < 40 °C a los 2 min | Con más de 60 mA: el BQ ha entrado en precarga. Si la VGS(th) del FET está en el límite, sigue siendo seguro (≈ 0,3 W). Anotarlo para la v1.1 |
+| Quitar la fuente, conectarla bien (3,7 V) y repetir el paso 3 | Todo funciona igual que antes de la prueba | Revisar el BQ24073 y el divisor del ADC |
+
+### 8.2 Polaridad de la batería y soldadura
+
+| Paso | PASS | Si falla |
+|------|------|----------|
+| Medir con el polímetro en continua entre los dos cables de la batería, con la punta roja en el cable que se piensa soldar a BAT+ | +3,0 a +4,2 V. Si sale negativo, ese cable es el −. Marcar el + con cinta | Si sale 0 V: la protección de la batería está cortada. Despertarla con una fuente limitada a 4,2 V / 100 mA |
+| Soldar el cable + al pad **cuadrado** (BAT+) y el − al **redondo** (BAT−). Volver a medir entre el pad BAT+ y el TP GND | +3,0 a +4,2 V | Desoldar y corregir. La protección evita daños (8.1), pero la placa no funcionará |
+
+### 8.3 Carga y power path
+
+Con la batería real, ya soldada (8.2).
 
 | Prueba | Procedimiento | PASS | Si falla |
 |--------|---------------|------|----------|
@@ -124,7 +145,7 @@ Con la batería real, tras comprobar la polaridad del JST (paso 1).
 
 | Procedimiento | PASS | Si falla |
 |---------------|------|----------|
-| Fuente en el JST a 3,40, 3,80 y 4,20 V. Comparar la lectura del ADC (GPIO1, divisor × 2, calibración de eFuse) con el polímetro | Error ≤ 2 % (≤ 80 mV) | Valor de las resistencias del divisor, el condensador de 100 nF o la atenuación del ADC (12 dB) |
+| Con la batería soldada, en tres momentos de la carga (≈ 3,5, ≈ 3,9 y 4,2 V, con el USB quitado un momento para medir en reposo). Comparar la lectura del ADC (GPIO1, divisor × 2, calibración de eFuse) con el polímetro | Error ≤ 2 % (≤ 80 mV) | Valor de las resistencias del divisor, el condensador de 100 nF o la atenuación del ADC (12 dB) |
 
 ## 10. Elevador de 6 V
 
@@ -144,7 +165,7 @@ Con el motor del Furby y el mecanismo montado, o con un motor de prueba de la mi
 | Arranque seguro | Encender sin firmware (BOOT pulsado) | El motor no se mueve | Pull-downs de IN1 e IN2 (GPIO48 y GPIO46) |
 | Dos sentidos | PWM a 20 kHz, 70 %, decaimiento lento, en cada sentido | Gira en los dos; OUT1 y OUT2 conmutan a 20 kHz | Pines, JP1 y JP2 |
 | Corriente en marcha | IPROPI (TP) / 2,25 V por A | Anotar el valor (se esperan 0,1–0,3 A) | — |
-| Bloqueo | Frenar el eje con cuidado 200 ms (o con el motor de prueba) | IPROPI ≈ 2,7 V (≈ 1,2 A, regulado); el ESP no se reinicia y el PCM no corta | Bajar ITRIP (divisor de VREF) |
+| Bloqueo | Frenar el eje con cuidado 200 ms (o con el motor de prueba) | IPROPI ≈ 2,25 V (≈ 1,0 A, regulado con ITRIP por defecto); el ESP no se reinicia y el PCM no corta | Bajar ITRIP (resistencia de arriba del divisor de VREF: 6,8 kΩ → 0,87 A) |
 | Inversiones | Bucle de 5 min alternando cada 0,4 s, con freno de 20–30 ms y rampa | Sin reinicios; DRV8231A < 80 °C | Alargar el freno o la rampa, o bajar ITRIP |
 | Posición | Ir al final de carrera (GPIO47) y contar pulsos del encoder (GPIO14) en un ciclo completo | Mismo número de pulsos (± 1) en 10 ciclos | Schmitt, pull-up del fototransistor (10 kΩ, ajustable de 4,7 a 47 kΩ), LED del encoder (P1.2) |
 
@@ -165,7 +186,8 @@ Si falla, se revisa por este orden: la soldadura del cable, el pull-up de 47 kΩ
 | Prueba | Procedimiento | PASS | Si falla |
 |--------|---------------|------|----------|
 | Micro | Grabar 10 s a 16 kHz (I2S DIN, GPIO41) y escuchar el fichero | Voz clara; ruido de fondo < −60 dBFS en silencio | L/R del micro, BCLK y WS (TP), longitud del cable (≤ 15 cm) |
-| Altavoz | Tono de 1 kHz a −12 dBFS con el altavoz de 8 Ω de referencia | Sin distorsión audible; SD_MODE (P1.3) a 1 | SD_MODE, GAIN, I2S DOUT (TP) |
+| Altavoz | Tono de 1 kHz a −12 dBFS con el altavoz del Furby (4 Ω) | Sin distorsión audible; SD_MODE (P1.3) a 1 | SD_MODE, GAIN, I2S DOUT (TP) |
+| Potencia máxima | Tono a −6 dBFS (el límite del firmware) con la batería a 3,7 V; medir la corriente de VSYS | ≤ 0,45 A de pico, sin reinicios ni distorsión fea | GAIN_SLOT (6 dB) y el limitador |
 | Full duplex | Reproducir y grabar a la vez | El micro graba mientras suena, sin cortes | Configuración de I2S0 |
 | Motor y audio | Motor en marcha mientras se graba | Sin zumbido del PWM (20 kHz, fuera de banda) | Masa del elevador y del puente H, condensadores de 6V |
 
@@ -190,7 +212,7 @@ Si falla, se revisa por este orden: la soldadura del cable, el pull-up de 47 kΩ
 |------|----------|------|----------|
 | Dormido (sueño profundo, cámara y elevador apagados, JP_LED cortado), polímetro en µA en serie con la batería | ≈ 90 µA | ≤ 150 µA | Ir quitando consumidores: LED, divisor, micro, expansor |
 | Escuchando la palabra de activación | 85–120 mA | ≤ 130 mA | Frecuencia de CPU, modem sleep |
-| Pico (motor bloqueado + TX + cámara + audio) | ≈ 2,9 A a 3,7 V | Sin reinicio y sin corte del PCM | Bajar ITRIP o no solapar el motor con la foto |
+| Pico (motor bloqueado + TX + cámara + audio limitado a −6 dBFS) | ≈ 2,6 A a 3,7 V; ≈ 2,9 A a 3,3 V | Sin reinicio y sin corte del PCM | Bajar ITRIP o no solapar el motor con la foto |
 
 ## 17. Temperatura
 
