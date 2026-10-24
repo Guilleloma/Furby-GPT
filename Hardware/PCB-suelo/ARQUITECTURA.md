@@ -21,6 +21,8 @@ Convenciones:
 | 2026-10-24 | **Altura de la batería: confirmado que cabe tumbada sobre la PCB** dentro del Furby. Deja de ser un riesgo. Va **directamente sobre la PCB, con calzos de espuma** y sin bandeja (sección 12) |
 | 2026-10-24 | **Batería soldada a pads**, sin conector, con **protección contra la polaridad inversa** que deja cargar y descargar (sección 7.1). Los 50 mm incluyen el PCM y los cables salen por un lateral |
 | 2026-10-24 | **Altavoz de 4 Ω y 3 W** (sección 7.2) |
+| 2026-10-24 | **El Furby duerme y se despierta** (no escucha siempre): despierta con los interruptores (INT del TCA9535 en GPIO21) y con el temporizador (sección 11.1) |
+| 2026-10-24 | **Holgura PCB-pared de 1,0 mm** (antes 0,5) como valor por defecto de `--holgura`. La posición la fijan los 4 tornillos. Se aplica al contorno en la fase 2 (sección 12.1) |
 | 2026-10-24 | Corriente del motor: se medirá en el bobinado. Hasta entonces, la estimación y un **ITRIP ajustable** con el divisor de VREF |
 
 ## Cambios respecto a la v1
@@ -121,8 +123,8 @@ Picovoice Porcupine (el del README actual) no está verificado en ninguno de est
 | GPIO | Función | Notas |
 |------|---------|-------|
 | 0 | BOOT | Botón a GND y 10 kΩ a 3V3. TP |
-| 1 | VBAT (ADC1_CH0) | Divisor 100k/100k + 100 nF |
-| 2 | Luz (ADC1_CH1) | 47 kΩ a GND + 100 nF |
+| 1 | VBAT (ADC1_CH0) | Divisor 470k/470k (C23178) + 100 nF: 4,5 µA en reposo en vez de 21 |
+| 2 | Luz (ADC1_CH1) | 470 kΩ a GND + 100 nF: con luz, la LDR (≈ 10 kΩ) gasta 7 µA en vez de 60 |
 | 3 | IPROPI del motor (ADC1_CH2) | Strapping de JTAG, ignorado salvo eFuse. RIPROPI lo deja bajo al arrancar. **JP3** |
 | 4 | SIOD = SDA del I2C | Cámara (SCCB) + TCA9535; 4,7 kΩ a 3V3 |
 | 5 | SIOC = SCL del I2C | Ídem |
@@ -151,7 +153,7 @@ Picovoice Porcupine (el del README actual) no está verificado en ninguno de est
 | 44 | U0RXD | Consola de rescate (J_EXP y TP) |
 | 45 | Emisor IR (RMT → AO3400A) | **Strapping VDD_SPI: tiene que estar bajo al arrancar.** Solo 100 kΩ a GND, puerta del MOSFET |
 | 46 | MOT_IN2 (PWM) | **Strapping: bajo al arrancar** (con GPIO0 bajo, 46 alto es inválido). Pull-down interno del DRV y 100 kΩ. **JP2** |
-| 47 | Leva (inicio) | 47 kΩ a 3V3, 1 kΩ en serie y 100 nF |
+| 47 | Leva (inicio) | 100 kΩ a 3V3, 1 kΩ en serie y 10 nF (τ = 1 ms). Antes de dormir, el firmware aparca la leva unos pulsos fuera del inicio para que el interruptor quede abierto |
 | 48 | MOT_IN1 (PWM) | 100 kΩ a GND. **JP1** |
 
 **TCA9535** (dirección 0x20; I2C a 400 kHz):
@@ -164,8 +166,8 @@ Picovoice Porcupine (el del README actual) no está verificado en ninguno de est
 | P0.0 | Barriga | Pull-up de 47 kΩ |
 | P0.1 | Espalda | Pull-up de 47 kΩ |
 | P0.2 | Lengua | Pull-up de 47 kΩ |
-| P0.3 | Inclinación A | Pull-up de 47 kΩ |
-| P0.4 | Inclinación B | Pull-up de 47 kΩ |
+| P0.3 | Inclinación A | Pull-up de 220 kΩ: si la bola queda cerrada en reposo, gasta 15 µA en vez de 70 |
+| P0.4 | Inclinación B | Pull-up de 220 kΩ |
 | P0.5 | PGOOD (USB presente) | LED PG a VBUS |
 | P0.6 | CHG (cargando) | LED CHG a VBUS |
 | P0.7 | **Libre** → J_EXP | |
@@ -176,7 +178,7 @@ Picovoice Porcupine (el del README actual) no está verificado en ninguno de est
 | P1.4 | PWDN de la cámara | 10 kΩ a 3V3: cámara en reposo |
 | P1.5 | EN de los LDO de la cámara | 100 kΩ a GND: cámara sin alimentación |
 | P1.6 | LED RUN (latido) | Sin pull-up: LED apagado |
-| P1.7 | **Libre** → J_EXP | |
+| P1.7 | Alimentación del receptor IR (VS1838B o similar, ≈ 1 mA) | Sin pull-up: apagado. Se enciende solo despierto |
 
 El RESET de la cámara va a 3V3 con una RC (10 kΩ + 100 nF). La cámara se reinicia apagando sus LDO.
 
@@ -184,7 +186,7 @@ El RESET de la cámara va a 3V3 con una RC (10 kΩ + 100 nF). La cámara se rein
 
 | Con el Furby completo | Dónde |
 |-----------------------|-------|
-| Expansor P0.7 y P1.7 | J_EXP, pines 7 y 8 |
+| Expansor P0.7 | J_EXP, pin 7 |
 | Bus I2C (GPIO4 y GPIO5), para añadir sensores | J_EXP, pines 5 y 6 |
 | UART0 (GPIO43 y GPIO44) | J_EXP, pines 9 y 10, y TP |
 
@@ -194,7 +196,7 @@ El RESET de la cámara va a 3V3 con una RC (10 kΩ + 100 nF). La cámara se rein
 | GPIO14 (encoder) | Cortar **JP4**: si no, el Schmitt manda en la línea |
 | GPIO4–13 y 15–18 (cámara) | Sin cámara quedan libres en el **conector FPC**: con un adaptador de FPC de 24p 0,5 a 2,54 (≈ 1 €) salen a una protoboard |
 | GPIO38–41 (I2S) | En sus TP. El amplificador (apagado por SD_MODE) y el micro (sin montar) no cargan la línea |
-| GPIO42, 47 y 2 (IR, leva, luz) | En sus pads de cable. Solo tienen pull-ups o divisores de 47 kΩ |
+| GPIO42, 47 y 2 (IR, leva, luz) | En sus pads de cable. Solo tienen pull-ups o divisores de 100–470 kΩ |
 
 Los jumpers que merecen la pena son JP1–JP4: el motor y el encoder son los únicos que **mueven o fuerzan** la línea si no se desconectan. En el audio y los sensores no hace falta: sus pines quedan en alta impedancia o con resistencias de 47 kΩ.
 
@@ -207,7 +209,7 @@ Los jumpers que merecen la pena son JP1–JP4: el motor y el encoder son los ún
 5. SDA (GPIO4)
 6. SCL (GPIO5)
 7. EXP P0.7
-8. EXP P1.7
+8. GND
 9. U0TX (GPIO43)
 10. U0RX (GPIO44)
 
@@ -507,14 +509,72 @@ Corrientes en la batería a 3,7 V, con el buck-boost a η ≈ 0,9.
 
 | Modo | Corriente | Autonomía con 1400 mAh (85 % útil) |
 |------|-----------|------------------------------------|
-| Dormido: ESP32-S3 en sueño profundo (8 µA), TPS63802 (11 µA), BQ (6,5 µA), divisor VBAT (21 µA), micro (12 µA), TCA9535 (1,5 µA), PCM (≈ 5 µA) y resto (< 5 µA) | **≈ 0,09 mA** sin el LED PWR; ≈ 0,7 mA con él | Más de un año sin el LED (manda la autodescarga); ≈ 70 días con él |
-| Escuchando la palabra de activación (240 MHz, WiFi en modem sleep, PSRAM activa) | ≈ 85–120 mA | **≈ 10–14 h** |
+| **Dormido** (sueño profundo; detalle en 11.1) | **≈ 0,08 mA** (0,06–0,11) sin el LED PWR; ≈ 0,7 mA con él | Meses: manda la autodescarga de la LiPo (≈ 2–3 % al mes). Con el LED PWR, ≈ 70 días |
+| Despierto escuchando (tras un toque; 240 MHz, WiFi conectado) | ≈ 85–120 mA | **≈ 10–14 h** si nunca se durmiera |
 | Conversación (WiFi, audio, motor a ratos) | ≈ 200–350 mA de media | **≈ 3,5–6 h** |
 | Foto con la cámara | +40–100 mA durante unos segundos (**estimado**; según el sensor) | Despreciable si es por foto |
 | Motor en marcha a 6 V | 0,3 A × 6 V → 0,54 A | |
 | Motor bloqueado o invirtiendo (ITRIP 1,0 A) | 1,80 A a 3,7 V; 2,02 A a 3,3 V | |
 | Altavoz de 4 Ω | 0,44 A de media a 1,4 W y picos de 0,9 A; con el limitador a −6 dBFS, ≈ 0,4 A de pico | |
 | **Pico simultáneo** (motor + TX + cámara + ampli) | Con limitador: 2,02 + 0,38 + 0,1 + 0,4 ≈ **2,9 A** a 3,3 V (≈ 2,6 A a 3,7 V). Sin limitador, con el ampli a 0,9 A: ≈ 3,4 A | |
+
+### 11.1 Modo dormido
+
+Decisión de producto: **el Furby duerme y se despierta**.
+
+- **Despierta con:**
+  - barriga, espalda, lengua e inclinación: el TCA9535 activa su INT, que va a **GPIO21 (RTC, ext0)**;
+  - enchufar el USB: PGOOD entra por el TCA9535 y también activa la INT;
+  - el **temporizador**, por ejemplo cada 30 min y sin WiFi, solo para medir la batería: 50 ms a 40 mA, ≈ 1 µA de media.
+- **Se duerme:** tras N s sin interacción, con N ajustable en el firmware.
+  - Antes de dormir, el firmware aparca la leva fuera del final de carrera.
+  - Al despertar graba el audio en PSRAM mientras se reconecta al WiFi (0,3–1 s con los credenciales guardados).
+- **Qué se apaga:**
+
+  | Bloque | Cómo | Consumo dormido |
+  |--------|------|-----------------|
+  | Cámara | EN de sus LDO a 0 (P1.5) y PWDN a 1 | ≈ 0,1 µA (LDO apagados) |
+  | Elevador de 6 V y LED del encoder | EN a 0 (P1.2) | 1 µA (TPS61089) |
+  | Puente H | IN1 = IN2 = 0: reposo automático | 1 µA |
+  | Amplificador | SD_MODE a 0 (P1.3) | 0,6 µA |
+  | Micro | Sin reloj I2S: modo sleep | 12 µA (hoja de datos del ICS-43434) |
+  | Receptor IR | Alimentación desde P1.7, a 0 | 0 |
+  | LED | RUN apagado; PROG apagado (TX en reposo); CHG y PG solo con USB; **PWR con JP_LED cortado** | 0 (0,6 mA si JP_LED sigue cerrado) |
+  | WiFi, CPU, PSRAM | Sueño profundo, con la RTC y ext0 activos | 8 µA del ESP32-S3 + fugas del módulo (**por medir**: ≈ 10–20 µA) |
+
+- **Lo que queda encendido:** TPS63802, TCA9535 (mantiene sus salidas), BQ24073 y la protección de la batería.
+
+| Consumidor en reposo | Corriente | Fuente |
+|----------------------|-----------|--------|
+| WROOM-1 en sueño profundo | 10–20 µA en 3V3 | Hoja de datos del ESP32-S3 (8 µA) + estimación del módulo |
+| TCA9535 | 1,5 µA | Hoja de datos |
+| Micro en sleep | 12 µA | Hoja de datos |
+| Divisor de realimentación del TPS63802 y LDO de la cámara | ≈ 3 µA | Estimado |
+| Pull-ups (inclinación cerrada a 220 kΩ, el peor caso) y LDR con luz (470 kΩ) | 0–22 µA | Calculado |
+| **Total en 3V3** | **≈ 27–58 µA** | |
+| TPS63802: Iq + pérdidas a carga tan baja (η ≈ 0,75) | 11 µA + 3,3 × I / (0,75 × 3,7) | Hoja de datos (Iq) y estimación (η) |
+| BQ24073 sin USB (IBAT(PDWN)) | 4,3 µA típicos | Hoja de datos |
+| Divisor de VBAT 470k/470k | 4,5 µA | Calculado |
+| SI7615ADN, DRV8231A, TPS61089, MAX98357A | ≈ 3,6 µA | Hojas de datos (máximos) |
+| Protección de la batería (DW01 típico) | ≈ 3 µA | Estimado |
+| **Total en la batería** | **≈ 60–110 µA (típico ≈ 80 µA)** | |
+
+**Autonomía según el uso** (1400 mAh, 85 % útil; despertar = 30 s escuchando a 100 mA + 60 s de conversación a 300 mA con el motor ≈ 5,8 mAh):
+
+| Uso | Consumo al día | Autonomía |
+|-----|----------------|-----------|
+| 5 interacciones al día | 29 + 2 (dormido) ≈ 31 mAh | **≈ 5 semanas** |
+| 20 al día | 116 + 2 ≈ 118 mAh | **≈ 10 días** |
+| 100 al día | 580 + 2 ≈ 582 mAh | **≈ 2 días** |
+| Escuchando siempre, como referencia | ≈ 2,4 Ah | ≈ 12 h |
+
+Cambios en la placa por el modo dormido:
+
+- divisor de VBAT de 470k/470k;
+- LDR con 470 kΩ;
+- inclinación con 220 kΩ;
+- leva con 100 kΩ;
+- receptor IR alimentado por P1.7 (J_EXP pierde un pin libre: el 8 pasa a GND).
 
 **Con USB:**
 
@@ -565,8 +625,30 @@ Pasa sin fallos.
 | TP de potencia | Grupo de 2 × 3 junto al borde derecho | VBUS, VBAT, VSYS, 3V3, 6V y GND |
 | Bajo la batería | TCA9535, acondicionamiento, divisor de VBAT y MAX98357A | Todo de menos de 1,2 mm y sin calor apreciable (el ampli con 4 Ω pierde ≈ 0,2 W en los picos) |
 | Pads de cables | Micro (6) delante a la derecha; IR (6) delante a la izquierda; inclinación y lengua (5) a la izquierda; leva, encoder, barriga y espalda (10) a la derecha; motor (2); luz y altavoz (4) en el lóbulo | Pasantes de Ø1,0, paso de 2,54 |
-| J_EXP | 1 × 10 en el borde izquierdo, y −84 a −107 | Fuera de la batería |
+| J_EXP | 1 × 10 en el borde izquierdo, x −104,5, y −84 a −107 | Fuera de la batería |
 | Calzos de la batería | E1, E2 y E3 (espuma de 4,1) + blindaje del WROOM-1 (espuma de 1,0) | Espuma adhesiva por las dos caras (tipo VHB o EVA), sobre zonas sin componentes ni vías expuestas |
+
+### 12.1 Holgura PCB-pared de 1,0 mm (decidido; se aplica al contorno en la fase 2)
+
+Se comprobó regenerando el contorno con `contorno_suelo.py --holgura 1.0` en una copia fuera del repo, con el DXF del suelo y `test_contorno.py` adaptado. Pasan todos los tests.
+
+| Consecuencia | Con 0,5 (actual) | Con 1,0 | Qué hacer |
+|--------------|------------------|---------|-----------|
+| Holgura a la pared | 0,500 mín. / 0,697 máx. | **1,000 / 1,199** | — |
+| Área de la PCB | 4248 mm² | **4129 mm²** (−119) | Ninguna: todos los bloques, pads, TP y J_EXP siguen cabiendo (el render se comprobó también con el contorno de 1,0 tras mover hacia dentro, 0,5 mm, los pads de los bordes) |
+| Borde de los taladros | H1 3,52 · H2 3,58 · H3 2,55 · H4 2,59 | H1 3,02 · H2 3,08 · **H3 2,05 · H4 2,09** | **Mover H3 a (−86,7; −121,9) y H4 a (−60,3; −121,9)**, simétricos respecto a x −73,5: quedan a 2,56 y 2,60. H1 y H2 no cambian. La base lee los taladros de `geometria.json` y se regenera sola. Actualizar `TALADROS_ESPERADOS` en `test_contorno.py` y `TALADROS_XY` en `contorno_suelo.py` |
+| Boca del USB-C | y −128,49, a 0,30 de la pared (sale 0,20 del borde) | Con el script tal cual, la boca retrocede a 0,80 de la pared | **`USB_SALIENTE_BOCA` de 0,20 a 0,70**: la boca vuelve a y −128,49, a **0,30** de la pared (comprobado). El conector de montaje medio sobresale 0,70 del borde. Las patas delanteras de la carcasa siguen 2,1 mm por dentro del borde, y la ranura (fondo a 6,70 del nuevo borde) sigue siendo más larga que el cuerpo de 6,5. Comprobar en la fase 2 con la huella del TYPE-C-CB16-16P |
+| Eje del USB-C, corte de la pared, funda | z 5,505; corte de z 1,905 a 9,255 | **Sin cambios** | — |
+| Agujeros originales del suelo bajo la PCB | 1,07–1,15 por dentro del borde | 0,57–0,65 | Están tapados en la base: **bajar `AGUJERO_BAJO_PCB_MIN` de 1,0 a 0,5** en `test_contorno.py` |
+| Batería | 1,66 a la pared | **Igual**: la pared no se mueve | — |
+| Antena | 4,90 de la batería | Igual. El borde delantero retrocede 0,5 delante de la antena | — |
+| Mecanismo | 16,52 del borde | 16,02 | — |
+| `test_contorno.py` | `HOLGURA_MIN` 0,5 | **`HOLGURA_MIN` 1,0** | También `TALADROS_ESPERADOS` y `AGUJERO_BAJO_PCB_MIN` (filas de arriba) |
+
+¿Más de 1,0 mm? **No lo recomiendo.** Con 1,0 mm, el peor caso de tolerancias (+0,2 de JLCPCB y −0,2 de FDM) deja 0,6 mm de aire, de sobra para que entre sin forzar.
+
+- Con 1,5 mm, H3 y H4 tendrían que moverse otros 0,5 mm y se perderían ≈ 120 mm² más.
+- El USB-C tendría que sobresalir 1,2 mm del borde: sus patas delanteras quedarían a 1,6 mm del canto.
 
 **Alturas (z):**
 
@@ -598,7 +680,7 @@ Pasa sin fallos.
 | 6 | **Batería**: corriente de corte del PCM. Las medidas y la salida lateral de los cables ya están confirmadas | Ficha del vendedor. Con un corte por debajo de 3 A, bajar ITRIP a 0,87 A (6,8 kΩ) y no solapar el motor con el audio fuerte |
 | 7 | **Micro**: dónde estaba el original (el altavoz ya está confirmado: 4 Ω y 3 W) | Medir al abrir el Furby |
 | 8 | **Sensores**: contactos de la bola de inclinación, tipo del sensor de luz y del receptor IR | Fotografiar y medir al abrir el Furby |
-| 9 | **Escuchando siempre o dormido** | Dormido y despertar con un toque (INT del expansor en GPIO21); escuchando siempre solo enchufado |
+| 9 | **Cuánto tarda en dormirse y cada cuánto despierta el temporizador** | Decidido que duerme (sección 11.1). Propuesta: dormir tras 60 s sin interacción; temporizador cada 30 min, sin WiFi |
 | 10 | **USB-C con 1200 en stock** | Pedir con margen. Si se agota, la segunda fuente sube el eje (sección 10) |
 | 11 | **Calzos de la batería**: espuma o pieza impresa | Espuma adhesiva (más simple). Si se quiere poder quitar sin despegar, un marco impreso que se apoye en E1–E3 |
 
