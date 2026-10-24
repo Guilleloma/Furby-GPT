@@ -858,3 +858,22 @@ via("HOME", (-58.6, -101.7))
 pista("HOME", "In2.Cu", 0.2, (-58.6, -101.7), (-56.2, -101.7), (-56.2, -106.2), (-48.3, -106.2), (-48.3, -110.8), (-46.3, -112.8))
 via("HOME", (-46.3, -112.8))
 pista("HOME", "F.Cu", 0.2, (-46.3, -112.8), "R50.1")
+# HOME_PAD: J9.5 solo se alcanza por el canal entre las columnas de J9 (x -43,07; F.Cu lo usa ENC, In3 TUMMY_PAD y B.Cu
+# BACK_PAD): R50.2 baja a una vía y sube por In2 entre las vías de TUMMY y TUMMY_PAD hasta el canal.
+pista("HOME_PAD", "F.Cu", 0.2, "R50.2", (-43.675, -114.0))
+via("HOME_PAD", (-43.675, -114.0))
+pista("HOME_PAD", "In2.Cu", 0.2, (-43.675, -114.0), (-43.675, -107.605), (-43.07, -107.0), (-43.07, -102.16), "J9.5")
+# ENC: en F.Cu sin vías. De U11.4 por debajo de la vía de GND de C39 (y -100,9, al norte de MOT_OUT2), entre J9.10 y
+# J9.11 al canal de J9 (x -43,07) y por la franja entre J9 y JP4 (y -105,95) a JP4.1.
+pista("ENC", "F.Cu", 0.2, "U11.4", (-49.0, -99.55), (-49.0, -100.9), (-43.07, -100.9), (-43.07, -105.95),
+      (-44.45, -105.95), "JP4.1")
+# ENC_IO: vía bajo el módulo al NE del pin 12 (al este de I2S_DOUT y al norte de la fila de VBAT_SNS de In2); por In3 al
+# este en y -75,3 (al norte de los carriles de A2 y a > 1 mm de VBAT_SNS) hasta x -46,5, al este de la vía de V6 y por
+# el único carril libre entre la columna oeste de J9 y las vías de x -46,55 (x -45,6); bajo JP4 cruza la ventana entre
+# las vías de TUMMY y TUMMY_PAD y llega a una vía al este de JP4.2 (B.Cu cierra el canal con BACK_PAD).
+pista("ENC_IO", "F.Cu", 0.2, "U4.12", (-80.6, -76.96), (-79.6, -75.96), (-79.6, -75.3))
+via("ENC_IO", (-79.6, -75.3))
+pista("ENC_IO", "In3.Cu", 0.2, (-79.6, -75.3), (-46.5, -75.3), (-46.5, -80.5), (-45.2, -81.8), (-45.2, -90.2),
+      (-45.6, -90.6), (-45.6, -106.3), (-43.95, -106.3), (-43.95, -109.3), (-41.9, -109.3), (-41.6, -109.0), (-41.6, -108.0))
+via("ENC_IO", (-41.6, -108.0))
+pista("ENC_IO", "F.Cu", 0.2, "JP4.2", (-41.6, -108.0))
