@@ -650,7 +650,7 @@ stub("GND", "C39.2", (0.0, -0.95), 0.3)
 stub("GND", "U11.3", (-1.0, 0.0), 0.3)
 stub("GND", "R14.2", (-1.0, 0.0), 0.3)
 stub("GND", "SW1.2", (1.4, 0.0), 0.3)
-stub("GND", "SW2.2", (0.0, 1.0), 0.3)
+stub("GND", "SW2.2", (1.5, 0.0), 0.3)   # al este: deja libre la fila de 3V3 de R57/R58/R19 (y -66,0)
 pista("GND", "F.Cu", 0.3, (-76.7, -121.194), (-76.7, -120.0))
 via("GND", (-76.7, -120.0))
 stub("GND", "C40.2", (-0.95, 0.0), 0.3)
@@ -696,3 +696,22 @@ stub("3V3", "R47.2", (-0.925, 0.0), 0.4)
 stub("3V3", "R43.2", (-0.925, 0.0), 0.4)
 pista("3V3", "In2.Cu", 0.4, (-97.15, -79.1), (-97.85, -79.8), (-97.85, -81.8), (-97.15, -82.5), (-97.85, -83.2), (-97.85, -84.9), (-92.0, -84.9), (-90.6, -86.3), (-85.5, -86.3))
 via("3V3", (-85.5, -86.3))
+# ---------------------------------------------------------------- LED del frente, encoder, BAT_G y 3V3 locales
+# LED PWR/RUN/PROG: ánodo recto de cada diodo a su resistencia (la entrada final al pad absorbe el desfase
+# de 0,1 mm entre huellas); los 3V3 de R57/R58/R19 por una fila de 0,4 en y -66,0 con una vía a In2 que
+# baja por x -55,0 hasta la fila de 3V3 de In2 (y -79,5). LED_PWR_K sale de D4.1 por el norte de los LED (y -61,7, fuera del
+# área de la antena, x > -61; el área del módulo solo prohíbe vías) y baja por x -52,9 y va por B.Cu hasta una vía junto a JP5.1. ENC_LED_A baja entre las dos columnas de J9. BAT_G de la puerta de Q1 a R12 por fuera
+# del polígono de BAT. TP6 (3V3) con un tramo al tronco de B.Cu; R17.2 al 3V3 de C9/U4.2.
+pista("LED_PWR_A", "F.Cu", 0.2, "D4.2", (-59.062, -64.787), "R57.2")
+pista("LED_RUN_A", "F.Cu", 0.2, "D5.2", (-55.462, -64.787), "R58.2")
+pista("LED_PROG_A", "F.Cu", 0.2, "D3.2", (-52.013, -64.862), "R19.2")
+pista("LED_PWR_K", "F.Cu", 0.2, (-60.85, -63.0), (-60.85, -62.05), (-60.5, -61.7), (-52.9, -61.7), (-52.9, -70.05), "JP5.1")
+pista("3V3", "F.Cu", 0.4, "R57.1", (-60.825, -66.0), (-53.625, -66.0), "R19.1")
+pista("3V3", "F.Cu", 0.4, "R58.1", (-57.225, -66.0))
+via("3V3", (-55.0, -66.0))
+pista("3V3", "In2.Cu", 0.4, (-55.0, -66.0), (-55.0, -79.5))
+pista("3V3", "F.Cu", 0.4, "R17.2", (-83.2, -68.95))
+pista("3V3", "B.Cu", 0.4, "TP6.1", (-85.5, -110.0), (-85.5, -107.3))
+pista("ENC_LED_A", "F.Cu", 0.2, "R51.2", (-43.125, -97.08), "J9.3")
+pista("BAT_G", "F.Cu", 0.5, "Q1.4", (-61.6, -117.01))   # 0,5 dentro del patio de Q1 (regla cuello Q1)
+pista("BAT_G", "F.Cu", 0.2, (-61.6, -117.01), (-60.49, -115.9), "R12.1")
