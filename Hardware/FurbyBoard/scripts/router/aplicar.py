@@ -24,6 +24,36 @@ def punto(p):
     return pcbnew.VECTOR2I(mm(p[0]), mm(p[1]))
 
 
+def rellenos_exteriores(board):
+    """Relleno de GND en F.Cu y B.Cu, ya con el rutado puesto."""
+    import gen_pcb as G
+    c = G.GEO["resultado"]["caja"]
+    todo = G.caja(c[0] - 1, c[2] + 1, c[1] - 1, c[3] + 1)
+    gnd = board.FindNet("GND")
+    for capa in (pcbnew.F_Cu, pcbnew.B_Cu):
+        if not any(z.GetLayer() == capa and not z.GetIsRuleArea() for z in board.Zones()):
+            G.poly_zone(board, [capa], todo, net=gnd)
+
+
+def rotular_tps(board):
+    """Nombre de cada TP en la serigrafía inferior, junto a su pad."""
+    import gen_pcb as G
+    import serigrafia as SG
+    abajo = G.colocador(board, "B")
+    sin_sitio = []
+    for ref, txt in SG.TP_ABAJO.items():
+        fp = board.FindFootprintByReference(ref)
+        if fp.GetLayer() != pcbnew.B_Cu:
+            continue
+        xy = abajo.coloca(ref, G.caja_pads(fp, silk=pcbnew.B_SilkS), G.rotulo(board, "B", txt), "RLUD")
+        if xy:
+            G.rotulo(board, "B", txt, xy)
+        else:
+            sin_sitio.append(ref)
+    if sin_sitio:
+        print("TP sin rótulo (identificados en el TEST-PLAN):", ", ".join(sin_sitio))
+
+
 def main():
     board = pcbnew.LoadBoard(P.PCB)
     redes = {}
@@ -49,6 +79,14 @@ def main():
             via.SetNet(red)
             board.Add(via)
             n_v += 1
+        for ref, pos in datos.get("tps", {}).items():
+            # El TP pasa a la cara inferior, centrado en su vía
+            fp = board.FindFootprintByReference(ref)
+            if fp.GetLayer() != pcbnew.B_Cu:
+                fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
+            fp.SetPosition(punto(pos))
+    rotular_tps(board)
+    rellenos_exteriores(board)
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     pcbnew.SaveBoard(P.PCB, board)
     print("Aplicadas %d pistas y %d vías; planos rellenos" % (n_p, n_v))

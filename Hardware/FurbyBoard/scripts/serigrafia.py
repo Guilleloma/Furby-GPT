@@ -21,15 +21,19 @@ ARRIBA = {
     "J2": "+", "J3": "-",
     "SW1": "RST", "SW2": "BOOT",
     "D4": "PWR", "D5": "RUN", "D3": "TX",
-    "TP1": "VBUS", "TP2": "D+", "TP3": "D-", "TP4": "BAT", "TP5": "VSYS", "TP6": "3V3",
-    "TP7": "6V", "TP8": "IPR",
-    "TP9": "I2S", "TP10": "2V8", "TP11": "1V2", "TP12": "G", "TP13": "G", "TP14": "G",
     "JP1": "IO9", "JP2": "IO46", "JP3": "IO3", "JP4": "IO8", "JP5": "LED",
 }
 
-# Lado preferido de cada rótulo de arriba (por defecto RLUD): la rejilla de TP lleva el rótulo debajo.
-LADO_ARRIBA = {r: "D" for r in ("TP10", "TP8", "TP11", "TP6", "TP9", "TP14",
-                                 "SW1", "SW2", "JP5")}
+# TP: van en la cara inferior, sobre una vía de su red junto a la fuente (router/rutar.py),
+# y su rótulo se pone al aplicar el rutado (router/aplicar.py).
+TP_ABAJO = {
+    "TP1": "VBUS", "TP2": "D+", "TP3": "D-", "TP4": "BAT", "TP5": "VSYS", "TP6": "3V3",
+    "TP7": "6V", "TP8": "IPR",
+    "TP9": "I2S", "TP10": "2V8", "TP11": "1V2", "TP12": "G", "TP13": "G", "TP14": "G",
+}
+
+# Lado preferido de cada rótulo de arriba (por defecto RLUD).
+LADO_ARRIBA = {r: "D" for r in ("SW1", "SW2", "JP5")}
 LADO_ARRIBA.update({r: "U" for r in ("D4", "D5", "D3")})
 # D1 (CHG, rojo) y D2 (PG, verde) se distinguen por el color y no llevan rótulo.
 

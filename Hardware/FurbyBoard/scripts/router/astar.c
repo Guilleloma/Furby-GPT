@@ -94,10 +94,12 @@ int astar(int W, int H, int NL, const uint8_t *libre, const uint8_t *via_ok, con
             if (nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
             int ni = (l * H + ny) * W + nx;
             if (!libre[ni]) continue;
-            if (d >= 4) {   /* en diagonal, las dos celdas rectas también libres */
-                if (!libre[(l * H + y) * W + nx] || !libre[(l * H + ny) * W + x]) continue;
-            }
-            int32_t ng = g[idx] + DC[d] + coste_capa[l];
+            /* En diagonal no hace falta que las dos celdas rectas estén libres: el punto medio
+             * del paso queda a media diagonal (0,035 mm) de las dos celdas y el margen del
+             * rutador (0,09) ya lo cubre. */
+            /* libre[] es también un multiplicador de coste: 1 = libre, >1 = ocupado por una
+             * pista que se puede levantar (rip-up), 0 = prohibido */
+            int32_t ng = g[idx] + DC[d] * libre[ni] + coste_capa[l];
             if (ng < g[ni]) {
                 g[ni] = ng;
                 de[ni] = idx;

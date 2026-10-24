@@ -105,7 +105,17 @@ def main():
         h = borde.Hole(0, i)
         huecos.append([(mm(h.CPoint(k).x), mm(h.CPoint(k).y)) for k in range(h.PointCount())])
     redes = sorted({p["red"] for p in pads if p["red"]})
-    datos = {"pads": pads, "pistas": pistas, "vias": vias, "prohibidas": prohibidas,
+    # Serigrafía de la cara inferior (rótulos y logo): los TP no deben caer encima
+    silk_b = []
+    items = list(board.GetDrawings())
+    for fp in board.GetFootprints():
+        if not fp.GetReference().startswith("TP"):
+            items += list(fp.GraphicalItems())
+    for d in items:
+        if d.GetLayer() == pcbnew.B_SilkS:
+            bb = d.GetBoundingBox()
+            silk_b.append([mm(bb.GetLeft()), mm(bb.GetTop()), mm(bb.GetRight()), mm(bb.GetBottom())])
+    datos = {"pads": pads, "silk_b": silk_b, "pistas": pistas, "vias": vias, "prohibidas": prohibidas,
              "contorno": contorno[0], "huecos": huecos,
              "anchos": {r: ancho_red(r) for r in redes},
              "reglas": {"holgura": P.RULE_CLEARANCE, "borde": P.RULE_EDGE_CLEARANCE,
