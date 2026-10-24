@@ -2294,116 +2294,6 @@
 		)
 		(uuid "fd2ff1d8-7d88-555b-b12b-1c82644aea48")
 	)
-	(label "BOOT"
-		(at 327.66 62.23 90)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "14eb9a28-614e-5732-958c-ca41212d80af")
-	)
-	(label "BOOT"
-		(at 45.72 76.2 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "286c58cc-61d6-56c1-9178-67e2963165ef")
-	)
-	(label "LED_PROG_A"
-		(at 99.06 163.83 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "32ac5730-e1e3-5f91-840c-07ba813fc13f")
-	)
-	(label "EN"
-		(at 238.76 62.23 90)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "4503ea4c-8deb-5abf-b954-4b381e52d527")
-	)
-	(label "EN"
-		(at 185.42 154.94 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "4d305594-fda5-5a1c-b859-de0bfea6fca1")
-	)
-	(label "EN"
-		(at 198.12 62.23 90)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "794d7452-49ca-514f-95f6-da2f62cf1f55")
-	)
-	(label "EN"
-		(at 45.72 71.12 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "a65b3c94-aa16-50b4-8c9b-cdb0eaaa479f")
-	)
-	(label "BOOT"
-		(at 45.72 152.4 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "b29385b2-5cd5-5e0e-a7fc-02635416ea43")
-	)
-	(label "BOOT"
-		(at 226.06 154.94 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "d2ef1a35-dc4b-577c-85b7-d0ab4ee48bd5")
-	)
-	(label "LED_PROG_A"
-		(at 148.59 152.4 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "de32072e-5ed1-54c5-86e6-cf897dbc5298")
-	)
-	(label "EN"
-		(at 276.86 66.04 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "e2993e18-3f9d-5771-84c2-0896a7111ebe")
-	)
 	(global_label "MOT_IN1_IO"
 		(shape passive)
 		(at 81.28 116.84 0)
@@ -2417,6 +2307,29 @@
 		(uuid "0408ed17-4466-58fe-b878-3505ccd427b0")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 81.28 116.84 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "BOOT"
+		(shape passive)
+		(at 45.72 152.4 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "061aae6f-acac-5c43-acdf-fd9ed15e3fe0")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 45.72 152.4 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2519,6 +2432,52 @@
 			)
 		)
 	)
+	(global_label "EN"
+		(shape passive)
+		(at 238.76 62.23 90)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "10ea8ce2-cb7e-5a66-8c43-f2f68198059b")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 238.76 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "BOOT"
+		(shape passive)
+		(at 45.72 76.2 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "16c9e011-cb04-5331-a5fc-09e05334f3be")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 45.72 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
 	(global_label "GND"
 		(shape passive)
 		(at 63.5 124.46 270)
@@ -2555,6 +2514,29 @@
 		(uuid "218e29e6-fef6-584f-a46c-07c8eb3bdfb1")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 81.28 99.06 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "LED_PROG_A"
+		(shape passive)
+		(at 99.06 163.83 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "27e0ef82-1c88-5b95-a157-34ce765b7e15")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 99.06 163.83 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2680,6 +2662,29 @@
 			)
 		)
 	)
+	(global_label "EN"
+		(shape passive)
+		(at 276.86 66.04 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "33b66364-dc6d-5af6-923f-7b84528b7d7a")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 276.86 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
 	(global_label "CAM_VSYNC"
 		(shape passive)
 		(at 45.72 91.44 180)
@@ -2772,6 +2777,29 @@
 			)
 		)
 	)
+	(global_label "EN"
+		(shape passive)
+		(at 185.42 154.94 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "406e9848-eed8-5603-a8ce-56e16bb2ff90")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 185.42 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
 	(global_label "VBAT_SNS"
 		(shape passive)
 		(at 45.72 78.74 180)
@@ -2854,6 +2882,29 @@
 		(uuid "4f3224a2-138c-53b4-9fdb-2e2f921c1dee")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 119.38 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "BOOT"
+		(shape passive)
+		(at 327.66 62.23 90)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "5316f94b-66d2-5a2f-9f86-c72b78272f91")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 327.66 62.23 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3117,6 +3168,29 @@
 			)
 		)
 	)
+	(global_label "BOOT"
+		(shape passive)
+		(at 226.06 154.94 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "8150c342-13d4-59fd-bdf2-3c154a0d0885")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 226.06 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
 	(global_label "CAM_Y3"
 		(shape passive)
 		(at 45.72 99.06 180)
@@ -3222,6 +3296,29 @@
 		(uuid "98d4bf85-333a-51cc-91e4-85f0614e7df0")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 45.72 93.98 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "EN"
+		(shape passive)
+		(at 198.12 62.23 90)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "99b50d46-53a3-5ee2-958e-42944b9d1b9e")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 198.12 62.23 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3370,6 +3467,29 @@
 			)
 		)
 	)
+	(global_label "EN"
+		(shape passive)
+		(at 45.72 71.12 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "d469d56b-d6b1-58ab-a08f-00e3b9876593")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 45.72 71.12 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
 	(global_label "IR_TX"
 		(shape passive)
 		(at 81.28 109.22 0)
@@ -3383,6 +3503,29 @@
 		(uuid "d5a3de2b-6afc-5111-b690-c5e7ed76fec5")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 81.28 109.22 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "LED_PROG_A"
+		(shape passive)
+		(at 148.59 152.4 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "d672a6b2-3f10-5f1a-b648-925d2d24a907")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 148.59 152.4 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)

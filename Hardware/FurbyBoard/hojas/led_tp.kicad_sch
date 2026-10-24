@@ -1329,66 +1329,6 @@
 		)
 		(uuid "fbf00682-dae8-5148-8b5d-1f3b0499d6b5")
 	)
-	(label "LED_PWR_K"
-		(at 132.08 66.04 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "2471ef99-98ed-53f7-a423-e67945c611ff")
-	)
-	(label "LED_PWR_K"
-		(at 85.09 66.04 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "4286a7fe-73b9-5712-b053-7c88f7d70057")
-	)
-	(label "LED_RUN_A"
-		(at 234.95 66.04 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "69a2d217-0c39-5bc2-9c78-adec671e916e")
-	)
-	(label "LED_PWR_A"
-		(at 97.79 66.04 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "885085bf-7f74-511d-9b26-06cce62e6b5f")
-	)
-	(label "LED_RUN_A"
-		(at 185.42 74.93 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "e16b7f18-b56e-5cb6-8226-62b29f614112")
-	)
-	(label "LED_PWR_A"
-		(at 48.26 74.93 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "ec3008aa-6dd4-57da-84fc-600ac95b4553")
-	)
 	(global_label "GND"
 		(shape passive)
 		(at 353.06 68.58 270)
@@ -1527,6 +1467,29 @@
 			)
 		)
 	)
+	(global_label "LED_RUN_A"
+		(shape passive)
+		(at 234.95 66.04 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "43f824bd-bc24-5d5d-8e67-449cc8289a2f")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 234.95 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
 	(global_label "GND"
 		(shape passive)
 		(at 147.32 66.04 0)
@@ -1540,6 +1503,52 @@
 		(uuid "4a28faa2-81e0-5763-ae93-d959073a95b0")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 147.32 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "LED_PWR_A"
+		(shape passive)
+		(at 97.79 66.04 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "4c35dd1a-93ed-51db-98a4-1714aa52718b")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 97.79 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "LED_RUN_A"
+		(shape passive)
+		(at 185.42 74.93 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "66321ab9-2b26-5d60-9dfd-3705d8e8f234")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 185.42 74.93 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1734,6 +1743,52 @@
 			)
 		)
 	)
+	(global_label "LED_PWR_A"
+		(shape passive)
+		(at 48.26 74.93 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "c604230d-9fa9-5ce9-a991-bd3330333d6b")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 48.26 74.93 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "LED_PWR_K"
+		(shape passive)
+		(at 132.08 66.04 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "d45a11f6-8be5-50f9-a8d9-9cbc589b3a46")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 132.08 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
 	(global_label "GND"
 		(shape passive)
 		(at 312.42 68.58 270)
@@ -1770,6 +1825,29 @@
 		(uuid "e5ffe303-e483-58b9-8ec0-c6ca0caebff6")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 271.78 88.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "LED_PWR_K"
+		(shape passive)
+		(at 85.09 66.04 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "fd6699de-84a8-53ab-b2de-8e9e87bf4895")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 85.09 66.04 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)

@@ -290,7 +290,7 @@ def write_footprints():
     fp_fpc(d)
     fp_inductor(d)
     fp_vson(d)
-    for filas, cols in ((1, 2), (1, 5), (1, 6), (1, 10), (2, 2), (2, 3), (2, 5)):
+    for filas, cols in ((1, 7), (1, 10), (2, 3), (2, 4), (2, 6)):
         fp_pads(d, filas, cols)
     fp_bat(d)
     shutil.copy(P.TALADRO_FP_SRC, os.path.join(d, "MountingHole_2.3mm_M2.kicad_mod"))

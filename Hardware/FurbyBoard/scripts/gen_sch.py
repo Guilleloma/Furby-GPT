@@ -125,6 +125,18 @@ def lib_symbol(lib_id):
     return _cache[lib_id]
 
 
+def pin_names(lib_id):
+    """Nombre de cada pin (para las redes «unconnected-(...)» que KiCad crea en los pines sin conectar)."""
+    blk, _ = lib_symbol(lib_id)
+    out = {}
+    for mm in re.finditer(r'\(pin (\w+) (\w+)', blk):
+        tail = blk[mm.start():_close(blk, mm.start()) + 1]
+        name = re.search(r'\(name "([^"]*)"', tail).group(1)
+        num = re.search(r'\(number "([^"]*)"', tail).group(1)
+        out[num] = name
+    return out
+
+
 def bbox(pins):
     xs = [x for v in pins.values() for x, _, _ in v] or [0]
     ys = [y for v in pins.values() for _, y, _ in v] or [0]
@@ -241,7 +253,8 @@ def layout_sheet(sh, parts, globales):
 def build():
     parts = D.parts()
     net_sheets = D.net_sheets()
-    globales = {n for n, hojas in net_sheets.items() if len(hojas) > 1}
+    # Todas globales: así el nombre de red del esquemático coincide con el del PCB.
+    globales = set(net_sheets)
     os.makedirs(P.SHEETS_DIR, exist_ok=True)
     root = Sheet("root", "Raíz", ROOT_UUID, ROOT_UUID)
     sheet_syms = []

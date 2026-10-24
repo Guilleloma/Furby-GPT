@@ -231,7 +231,6 @@ def build():
     JP("JP1", s, "MOT_IN1_IO", "MOT_IN1", "Cortar para liberar GPIO48")
     JP("JP2", s, "MOT_IN2_IO", "MOT_IN2", "Cortar para liberar GPIO46")
     JP("JP3", s, "IPROPI_IO", "IPROPI", "Cortar para liberar GPIO3 (ADC)")
-    pads("J4", s, ["MOT_OUT1", "MOT_OUT2"], "FurbyBoard:Pads_1x02_P2.54mm", "Motor")
     TP("TP11", s, "V6", "5,94 V con EN_6V")
     TP("TP12", s, "IPROPI", "2,25 V/A")
 
@@ -247,7 +246,7 @@ def build():
     C("C26", s, "100n", "VSYS", "GND", "VDD del amplificador")
     R("R31", s, "33", "I2S_BCLK", "MIC_SCK", "Serie hacia el micro (cable)")
     R("R32", s, "33", "I2S_WS", "MIC_WS", "Serie hacia el micro (cable)")
-    pads("J5", s, ["3V3", "GND", "MIC_SCK", "MIC_WS", "I2S_DIN", "GND"], "FurbyBoard:Pads_1x06_P2.54mm",
+    pads("J5", s, ["3V3", "GND", "MIC_SCK", "MIC_WS", "I2S_DIN", "GND"], "FurbyBoard:Pads_2x03_P2.54mm",
          "Micro I2S (3V3, GND, SCK, WS, SD, L/R)")
     TP("TP13", s, "I2S_DOUT", "Datos I2S al amplificador")
 
@@ -327,15 +326,13 @@ def build():
     R("R55", s, "100k", "IR_TX", "GND", "GPIO45 a 0 al arrancar (strapping VDD_SPI)")
     R("R56", s, "1k", "IR_RX", "IR_RX_PAD", "Serie del receptor IR")
     # Pads de cables (agrupados como en la planta)
-    pads("J7", s, ["IR_LED_A", "IR_LED_K", "IR_PWR", "IR_RX_PAD", "GND", "GND"],
-         "FurbyBoard:Pads_2x03_P2.54mm", "IR: emisor ×2, receptor ×3, GND")
-    pads("J8", s, ["TILT_A_PAD", "TILT_B_PAD", "GND", "TONGUE_PAD", "GND"],
-         "FurbyBoard:Pads_1x05_P2.54mm", "Inclinación ×3, lengua ×2")
+    pads("J7", s, ["IR_LED_A", "IR_LED_K", "IR_PWR", "IR_RX_PAD", "3V3", "LIGHT", "GND", "GND"],
+         "FurbyBoard:Pads_2x04_P2.54mm", "Frente: IR (emisor ×2, receptor ×3), luz ×2, GND")
+    pads("J8", s, ["TILT_A_PAD", "TILT_B_PAD", "GND", "TONGUE_PAD", "GND", "SPK_P", "SPK_N"],
+         "FurbyBoard:Pads_1x07_P2.54mm", "Inclinación ×3, lengua ×2, altavoz ×2")
     pads("J9", s, ["HOME_PAD", "GND", "ENC_LED_A", "ENC_LED_K", "ENC_PT", "GND", "TUMMY_PAD", "GND",
-                   "BACK_PAD", "GND"], "FurbyBoard:Pads_2x05_P2.54mm",
-         "Leva ×2, encoder ×4, barriga ×2, espalda ×2")
-    pads("J10", s, ["3V3", "LIGHT", "SPK_P", "SPK_N"], "FurbyBoard:Pads_2x02_P2.54mm",
-         "Luz ×2, altavoz ×2")
+                   "BACK_PAD", "GND", "MOT_OUT1", "MOT_OUT2"], "FurbyBoard:Pads_2x06_P2.54mm",
+         "Leva ×2, encoder ×4, barriga ×2, espalda ×2, motor ×2")
 
     # ---------------------------------------------------------------- LED y TP
     s = "led_tp"
