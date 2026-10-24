@@ -23,7 +23,7 @@ def netclass(name, track, clearance=P.RULE_CLEARANCE, diff_w=0.2, diff_gap=0.25,
             "pcb_color": "rgba(0, 0, 0, 0.000)", "schematic_color": "rgba(0, 0, 0, 0.000)"}
 
 
-POWER_NETS = ["VBUS_IN", "VBUS", "VSYS", "BAT", "BAT_PAD", "3V3", "V6", "BST_SW", "BB_L1", "BB_L2",
+POWER_NETS = ["VBUS_IN", "VBUS", "VSYS", "BAT", "BAT_PAD", "V6", "BST_SW", "BB_L1", "BB_L2",
               "SPK_P", "SPK_N", "IR_LED_A", "IR_LED_K"]
 MOTOR_NETS = ["MOT_OUT1", "MOT_OUT2"]
 
@@ -48,10 +48,12 @@ def project():
     classes = [netclass("Default", P.TRACK_SIGNAL, prio=2147483647),
                netclass("Potencia", P.TRACK_POWER, prio=1),
                netclass("Motor", P.TRACK_MOTOR, prio=0),
-               netclass("USB", P.USB_DIFF_W, diff_w=P.USB_DIFF_W, diff_gap=P.USB_DIFF_GAP, prio=2)]
+               netclass("USB", P.USB_DIFF_W, diff_w=P.USB_DIFF_W, diff_gap=P.USB_DIFF_GAP, prio=2),
+               netclass("3V3", P.TRACK_3V3, prio=3)]
     patterns = ([{"netclass": "Potencia", "pattern": n} for n in POWER_NETS + ["GND"]]
                 + [{"netclass": "Motor", "pattern": n} for n in MOTOR_NETS]
-                + [{"netclass": "USB", "pattern": n} for n in ("USB_DP", "USB_DN")])
+                + [{"netclass": "USB", "pattern": n} for n in ("USB_DP", "USB_DN")]
+                + [{"netclass": "3V3", "pattern": "3V3"}])
     sheets = [[gen_sch.ROOT_UUID, "Root"]] + [[gen_sch.sheet_uuid(n), t] for n, t in D.SHEETS]
     return {
         "board": {

@@ -1968,16 +1968,6 @@
 	)
 	(wire
 		(pts
-			(xy 393.7 25.4) (xy 393.7 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "03fddeb2-3b8a-5d1a-b7e2-d5c97d4f0964")
-	)
-	(wire
-		(pts
 			(xy 127 214.63) (xy 127 217.17)
 		)
 		(stroke
@@ -2338,7 +2328,7 @@
 	)
 	(wire
 		(pts
-			(xy 327.66 205.74) (xy 327.66 208.28)
+			(xy 381 25.4) (xy 381 27.94)
 		)
 		(stroke
 			(width 0)
@@ -2488,7 +2478,7 @@
 	)
 	(wire
 		(pts
-			(xy 368.3 205.74) (xy 368.3 208.28)
+			(xy 393.7 25.4) (xy 393.7 27.94)
 		)
 		(stroke
 			(width 0)
@@ -2645,16 +2635,6 @@
 			(type default)
 		)
 		(uuid "d398b9e6-0224-5d7d-8586-801ec5d5c6d3")
-	)
-	(wire
-		(pts
-			(xy 381 25.4) (xy 381 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d9da97a6-a28a-5cb9-9c57-6e83a3c96813")
 	)
 	(wire
 		(pts
@@ -2849,29 +2829,6 @@
 		(uuid "00260e15-a225-5683-a37c-d18ad3dbf879")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 335.28 163.83 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-	)
-	(global_label "GND"
-		(shape passive)
-		(at 393.7 27.94 270)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "014d459f-be5e-5379-b268-a0ff89463e47")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 393.7 27.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4538,29 +4495,6 @@
 			)
 		)
 	)
-	(global_label "VBUS"
-		(shape passive)
-		(at 381 27.94 270)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "d8adeff0-5a6c-5859-aee6-cf2736574d93")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 381 27.94 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-	)
 	(global_label "GND"
 		(shape passive)
 		(at 347.98 74.93 270)
@@ -4653,9 +4587,9 @@
 			)
 		)
 	)
-	(global_label "CHG"
+	(global_label "VBUS"
 		(shape passive)
-		(at 327.66 208.28 270)
+		(at 381 27.94 270)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4665,7 +4599,7 @@
 		)
 		(uuid "ea4b2a78-2677-537d-b8c4-97373b7e6aba")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 327.66 208.28 0)
+			(at 381 27.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4791,9 +4725,9 @@
 			)
 		)
 	)
-	(global_label "PGOOD"
+	(global_label "GND"
 		(shape passive)
-		(at 368.3 208.28 270)
+		(at 393.7 27.94 270)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4803,7 +4737,7 @@
 		)
 		(uuid "f6a62c80-7e37-535a-a1ce-3bfb001bdb18")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 368.3 208.28 0)
+			(at 393.7 27.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6032,123 +5966,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:TestPoint")
-		(at 327.66 205.74 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "4c0d0589-1d4d-541b-91ce-094db897ebac")
-		(property "Reference" "TP7"
-			(at 329.16 204.74 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "CHG"
-			(at 329.16 206.74 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_D1.5mm"
-			(at 327.66 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Datasheet" ""
-			(at 327.66 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Description" "0 V cargando"
-			(at 327.66 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "LCSC" ""
-			(at 327.66 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "JLC_Class" ""
-			(at 327.66 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "MPN" ""
-			(at 327.66 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(pin "1"
-			(uuid "e3e7b693-f034-5ba1-a0fb-6d0de3fe396c")
-		)
-		(instances
-			(project "FurbyBoard"
-				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b/f3e50cc9-b269-5cfc-8a97-7683b547d39e"
-					(reference "TP7")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:C")
 		(at 167.64 210.82 0)
 		(unit 1)
@@ -6980,123 +6797,6 @@
 			(project "FurbyBoard"
 				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b/f3e50cc9-b269-5cfc-8a97-7683b547d39e"
 					(reference "R16")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:TestPoint")
-		(at 368.3 205.74 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "9fcccd53-9191-5d83-b74a-8f0a50f32b16")
-		(property "Reference" "TP8"
-			(at 369.8 204.74 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "PGOOD"
-			(at 369.8 206.74 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_D1.5mm"
-			(at 368.3 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Datasheet" ""
-			(at 368.3 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Description" "0 V con USB válido"
-			(at 368.3 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "LCSC" ""
-			(at 368.3 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "JLC_Class" ""
-			(at 368.3 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "MPN" ""
-			(at 368.3 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(pin "1"
-			(uuid "2b44ce2f-9031-5672-b83a-bc928466f9a5")
-		)
-		(instances
-			(project "FurbyBoard"
-				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b/f3e50cc9-b269-5cfc-8a97-7683b547d39e"
-					(reference "TP8")
 					(unit 1)
 				)
 			)

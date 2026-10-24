@@ -161,8 +161,6 @@ def build():
     TP("TP4", s, "BAT", "VBAT 3,0–4,2 V (tras el P-MOSFET)")
     TP("TP5", s, "VSYS", "4,4 V con USB; VBAT sin USB")
     TP("TP6", s, "3V3", "3,30 V")
-    TP("TP7", s, "CHG", "0 V cargando")
-    TP("TP8", s, "PGOOD", "0 V con USB válido")
 
     # ------------------------------------------------------------------ MCU
     s = "mcu"
@@ -191,8 +189,6 @@ def build():
     R("R19", s, "1.5k", "3V3", "LED_PROG_A", "LED PROG ≈ 1 mA")
     part("D3", s, "Device:LED", "Rojo", "LED_SMD:LED_0603_1608Metric", {"1": "U0TX", "2": "LED_PROG_A"},
          "C2286", "base", "KT-0603R", "LED PROG en U0TXD (log del ROM)")
-    TP("TP9", s, "EN", "3,3 V; 0 V con RESET")
-    TP("TP10", s, "BOOT", "3,3 V; 0 V con BOOT")
 
     # ---------------------------------------------------------------- motor
     s = "motor"
@@ -231,8 +227,8 @@ def build():
     JP("JP1", s, "MOT_IN1_IO", "MOT_IN1", "Cortar para liberar GPIO48")
     JP("JP2", s, "MOT_IN2_IO", "MOT_IN2", "Cortar para liberar GPIO46")
     JP("JP3", s, "IPROPI_IO", "IPROPI", "Cortar para liberar GPIO3 (ADC)")
-    TP("TP11", s, "V6", "5,94 V con EN_6V")
-    TP("TP12", s, "IPROPI", "2,25 V/A")
+    TP("TP7", s, "V6", "5,94 V con EN_6V")
+    TP("TP8", s, "IPROPI", "2,25 V/A")
 
     # ---------------------------------------------------------------- audio
     s = "audio"
@@ -248,7 +244,7 @@ def build():
     R("R32", s, "33", "I2S_WS", "MIC_WS", "Serie hacia el micro (cable)")
     pads("J5", s, ["3V3", "GND", "MIC_SCK", "MIC_WS", "I2S_DIN", "GND"], "FurbyBoard:Pads_2x03_P2.54mm",
          "Micro I2S (3V3, GND, SCK, WS, SD, L/R)")
-    TP("TP13", s, "I2S_DOUT", "Datos I2S al amplificador")
+    TP("TP9", s, "I2S_DOUT", "Datos I2S al amplificador")
 
     # --------------------------------------------------------------- cámara
     s = "camara"
@@ -276,8 +272,8 @@ def build():
     R("R34", s, "10k", "CAM_PWDN", "3V3", "Cámara en reposo al arrancar")
     R("R35", s, "10k", "CAM_RST", "3V3", "RESETB con RC")
     C("C31", s, "100n", "CAM_RST", "GND", "RESETB con RC")
-    TP("TP14", s, "CAM_2V8", "2,80 V con la cámara encendida")
-    TP("TP15", s, "CAM_DVDD", "1,20 V (o 1,50 V) con la cámara encendida")
+    TP("TP10", s, "CAM_2V8", "2,80 V con la cámara encendida")
+    TP("TP11", s, "CAM_DVDD", "1,20 V (o 1,50 V) con la cámara encendida")
 
     # ------------------------------------------------------------- sensores
     s = "sensores"
@@ -345,7 +341,7 @@ def build():
          "C2297", "base", "KT-0805G", "LED RUN: latido del firmware (P16 del expansor)")
     pads("J11", s, ["GND", "3V3", "VSYS", "VBUS", "I2C_SDA", "I2C_SCL", "EXP_P07", "GND", "U0TX", "U0RX"],
          "FurbyBoard:Pads_1x10_P2.54mm", "J_EXP: header de expansión sin montar")
-    for i, ref in enumerate(("TP16", "TP17", "TP18", "TP19")):
+    for i, ref in enumerate(("TP12", "TP13", "TP14")):
         TP(ref, s, "GND", "GND")
     return list(_parts)
 
