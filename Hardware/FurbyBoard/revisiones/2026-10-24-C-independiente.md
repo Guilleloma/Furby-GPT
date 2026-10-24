@@ -183,3 +183,59 @@ Vuelta al encargo 2 (colocación) con R1–R9; la planta no cambia. Tras corregi
 
 ## Siguiente paso
 Vuelta 2 (última, `revision-de-diseno.md` §6.1): intercambiar C12 y R21 (R16), opcionalmente R17/R20, y repetir `comprobar-flujo`, `revisar-rutado` y la medida pin–condensador de U5. Después, revisión independiente breve y rutado.
+
+---
+
+# Vuelta 2 — revisión breve de la colocación
+
+- Fecha: 2026-10-24 · Commit revisado: `4e16b1c` sobre `5837471` · Revisor: el mismo revisor independiente (T0, Fable 5.1)
+- Material: diff de `scripts/layout.py` (8 piezas movidas, todas del bloque del elevador salvo R50), `TEST-PLAN.md` (8.3, RT1), `NOTAS.md`, sección «Vuelta 2» del autor; herramientas vueltas a ejecutar; placa extraída con pcbnew y comparada pieza a pieza con la vuelta 1 (`96d64e1`) sin usar el script del autor; 3 PNG leídos.
+
+## Resultado de la vuelta 2
+**PASA** — 0 críticos, 0 importantes; quedan 4 mejoras abiertas (R17 parcial, R19, R20 parcial, R10/R12 de v1.1) que no bloquean. La colocación queda aprobada para el rutado (encargo 4).
+
+## Herramientas (vuelta 2)
+| Herramienta | Resultado |
+|-------------|-----------|
+| `kicad-cli sch erc --severity-all` | **0** |
+| `kicad-cli pcb drc --schematic-parity --severity-all` (sin refill) | **0** infracciones, **0** de paridad, 362 sin conectar |
+| `pcb-toolkit comprobar-flujo` | **PASS**, 0 errores, 2 avisos conocidos (C10 1,90; C32 1,08) |
+| `pcb-toolkit revisar-rutado` | **PASS**, 0 errores (14 TP a ≤ 5 mm) |
+| `scripts/comprobar_colocacion.py` | OK (64 piezas bajo la batería, máx. 2,10 mm) |
+| Patios contra el contorno (pcbnew) | Ninguno de componente fuera; R23 0,39 mm, R50 0,41 (antes 0,24 y 0,13); C14 > 0,5 |
+| Comparación con la vuelta 1 (pcbnew) | Huellas movidas: R22, R21, C14, C12, R50, R24, R23, R20. Contorno, zonas, áreas de reglas (mismos polígonos) y serigrafía iguales |
+| Medición propia de desacoplos (todas las parejas pieza–patilla de CI de la misma red, borde a borde, contra `96d64e1`) | Cambios > 0,05 mm: C12 BST_VCC 3,86 → **0,64**; R22 FB 0,90 → 0,62; R21 FB 0,62 → 3,82 (intercambio pedido en R16: R22 fija el nodo en el pin); R23 ILIM 3,04 → 2,84; R24 COMP 3,99 → 3,93. **Ningún otro desacoplo cambia**; ninguno de los que estaban a ≤ 1,1 mm empeora salvo R21 (previsto) |
+| kicad-happy | No ejecutado (no instalado) |
+| PNG | `ratsnest_zona-U5`, `-C12`, `-C14` |
+
+## Comprobación de las afirmaciones del autor
+| Afirmación | Medida propia | Estado |
+|------------|---------------|--------|
+| C12 a 0,64 mm de VCC | 0,64 mm (U5:2 ↔ C12) | **Confirmado** (R16 resuelto) |
+| R21 en la segunda columna | R21 en (−57; −116,15), cuerpo x −58,5…−55,5 | Confirmado |
+| R22 a 0,63 mm de FB | 0,62 mm | Confirmado |
+| R24/C14 con el nodo RC unido | BST_RC R24 ↔ C14 0,65 mm (antes 3,97); C14 bajo R24, fuera de la zona caliente de L2 y del keepout de H4 | Confirmado (R17 resuelto en el nodo RC; R24–COMP sigue a 3,93 mm por falta de sitio: queda como mejora, con C15 a 1,06 mm en el pin) |
+| Margen al borde de R50, R23 y C14 | Patios a 0,41 / 0,39 / > 0,5 mm; pads a ≥ 0,3 (DRC) | Confirmado (R20 mejorado; sin sitio para más en R23 por C16) |
+| RT1 en el TEST-PLAN | 8.3: V_TS ≈ 0,75 V a 25 °C, hot ≈ 0,31 V (≈ 50–51 °C), cold ≈ 2,1 V (0 °C), qué hacer si falla | Confirmado (R21 resuelto; coincide con los umbrales del datasheet de la vuelta 1) |
+| Sin regresión de desacoplos | Medido con mi propia extracción: solo cambia el bloque del elevador, como arriba | Confirmado |
+
+## PNG leídos (vuelta 2)
+- `ratsnest_zona-U5`: columna oeste C12 (VCC), R22 (FB), C15 (COMP) frente a sus pines; C18 horizontal bajo VOUT/GND; C16 al este con VSYS hacia el pin 9; C13 sobre BOOT; L2 contra SW. Pasa.
+- `ratsnest_zona-C12`: C12 a la altura del pin VCC, a 0,64 mm; R22 debajo frente a FB. Pasa.
+- `ratsnest_zona-C14`: R24 con C14 justo debajo (nodo RC vertical de 0,65 mm), fuera de la zona caliente (borde rojo arriba) y del keepout de H4 (gris a la izquierda); borde de la placa a > 1 mm. Pasa.
+
+## Para el encargo de rutado (vigilar)
+1. **Par USB (clase C):** D+ se une en F.Cu en J1; D− cruza por B.Cu con vías 0,45/0,2 (solo la clase USB) y vías de GND de retorno a ≤ 1 mm; par acoplado 0,28/0,15 desde U1 por el pasillo norte-sur (x −77…−69, libre de x −77 a −71,7 por la columna R13…R11) y el canal hasta los pines 13/14; sin ramales, ≤ 2 cambios de capa (aviso aceptado en D−), 3W con todo lo demás; cruza las salidas de los pines 15–17 a la altura de y −83: esas (MOT_IN*, IPROPI_IO) bajan a In2 con vía de retorno.
+2. **DVP (clase B):** 12 líneas en F.Cu por el pasillo de la cámara (y −74…−81) de río, en orden de pads, con GND continuo en In1; ninguna cruza la zona de L2 ni la de U6; BOOT y los LED/botones del frente derecho cruzan el pasillo solo por In2.
+3. **Lazos calientes:** U5: SW mínimo (solo el pad de L2 y el pad 11), C18 en F.Cu sin vías dentro del lazo, ≥ 2 vías de GND junto al pad GND de C18 y de C16; U3: ≥ 2 vías de GND pegadas a los pads de GND de C6 y C7 y al pin 8 (PGND entre L1/L2); C8 en paralelo; U2: pad expuesto con vías térmicas, VSYS/BAT por polígono (2,9 A: 0,8 mm + relleno de In2 y ≥ 5 vías en los cambios de capa); U6: MOT_OUT a 0,5 mm; U7: SPK_P/N en par corto a 0,4 mm.
+4. **Clase D:** BQ_TS en In2/B.Cu desde U2:1 hasta RT1 cruzando el pasillo del USB con vía de retorno, lejos de L1/L2; IPROPI/MOT_VREF por el oeste de U6; BST_FB/COMP/RC y BB_FB sin pasar bajo las bobinas; VBAT_SNS y LIGHT en In2 bajo el módulo (referencia In1 a 1,065 mm: pistas finas, sin cruzar cortes); toma Kelvin de V6 para R21 desde el pad de C18 (2,5 mm) y de 3V3 para R15 desde C7.
+5. **In2 (relleno de VSYS):** las señales lentas bajo el módulo (EN, BOOT, LED_RUN, pines 35–39) lo cortan: comprobar al final la continuidad del relleno hasta U7 (−96; −89,6) y R54 (−92,2; −72,9) por el oeste del módulo; si se estrangula, pista de VSYS de 0,6 mm en F.Cu por el borde izquierdo.
+6. **Canal x −86,5…−82,5:** I2S (4 líneas) y el par USB en F.Cu; I2C/INT y HOME/ENC_IO solo por In2 con vía bajo C10/C9; C10/C9 ocupan el lado este del canal entre y −64,5 y −70.
+7. **Antena:** nada de cobre ni vías en x −85…−61, y > −62 en las 4 capas (área de reglas); cosido de GND denso en el lado del módulo (≤ 3 mm) y en el borde (≤ 5 mm).
+8. **Serigrafía (R19):** completar la leyenda de J9 (EN+, ESP, G) moviendo TP11 1,5 mm al oeste y, si cabe, «IO8» de JP4 arriba; todo rótulo a ≥ 0,15 mm de vías y pads.
+9. **Mecanismo (R9):** el agujero Ø11,3 sigue siendo un supuesto con 2 mm de anillo libre; si Guillermo lo mide antes del rutado, mejor; nada de vías ni pistas a < 1 mm del borde del agujero por si hay que agrandarlo.
+10. **Puerta D antes de cada commit:** `revisar-rutado --ancho` con todas las redes de potencia (ya en `pcb-toolkit.toml`), DRC con paridad 0/0 sin refill y contraste con refill sobre copia, PNG de las zonas tocadas; sin autorrutador propio; una sola ejecución acotada de Freerouting por colocación (no está instalado: lo lento se ruta explícito o Maestro pide la instalación).
+
+## Revisión final como revisor senior (vuelta 2)
+- TP lejos, bus por un convertidor, piezas giradas en el CPL: ninguno aplica o se repite en esta colocación.
+- Lección nueva para el Cerebro (ya en la vuelta 1): tras corregir un bloque, volver a medir todas las parejas pin–condensador del bloque; en esta vuelta se hizo y no hay regresión.
