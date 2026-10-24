@@ -73,11 +73,54 @@ La placa queda **pausada** por decisión de Guillermo hasta que existan las skil
 | 9d867eb | Modelos 3D simplificados (USB-C, FPC, bobinas) |
 | cba8892 | Logo con expresión neutra |
 | 335b384 | Lo crítico pre-rutado y fijado: lazos del TPS61089, del TPS63802 y del puente H, potencia, bajadas de GND y vías térmicas bajo los pads expuestos |
-| d28aea4 | Una ejecución de Freerouting 1.9.0 (-mp 20) importada y limpiada. **Último estado del PCB** |
+| d28aea4 | Una ejecución de Freerouting 1.9.0 (-mp 20) importada y limpiada |
+| 249bbbf, 9d42d8b (y el commit de este traspaso) | Remate por rejilla de lo pendiente: de 30 a 15 pads sin unir. **Último estado del PCB**. Detalle en «Remate R5» |
+
+### Remate R5 (2026-10-24, límite de 60 min alcanzado sin llegar a 0)
+
+**Resultado** (DRC sin `--refill-zones`, con paridad, en `FurbyBoard.kicad_pcb`):
+
+| | d28aea4 | Tras R5 |
+|---|---|---|
+| Pads sin unir | 30 | **15** |
+| Pistas de In2 a < 0,3 mm del borde | 7 | 0 |
+| Puntas colgando | 23 | 0 |
+| Vías colgando | 2 | 2 (IR_RX: medio camino de una conexión pendiente) |
+| Ángulos agudos / fuera de 0-45-90° (`limpiar.py`) | 10 / 1 | 0 / 0 |
+| Paridad con el esquema | 0 | 0 |
+| `pcb-toolkit revisar-rutado` | FAIL, 583 errores, 591 avisos | FAIL, **318 errores**, 607 avisos |
+
+**Faltan 15 pads**, mapa en `render/rutado-pendiente.png`:
+
+- **Elevador U5**: BST_VCC (U5.2–C12), BST_COMP (U5.4), VSYS (U5.9 y un tramo B–F junto a C17).
+- **USB-C J1**: CC1 (R1–A5), CC2 (B5–R2) y **USB_DN**. Lo de USB_DN viene de antes: el cuello de B7 y el de A7 nunca se unen, porque el pad A6 de DP queda entre ellos. Hace falta cruzar por B.Cu con dos vías, y con vías de 0,6 no caben entre el cuello de DP en F y su tramo en B. Requiere la opción A (vías de 0,45/0,2) o rehacer el cruce del par. Es **crítico**: sin esto no hay USB por una de las dos orientaciones del conector.
+- **Amplificador U7**: AMP_SD (U7.4–U10.16), I2S_BCLK (U7.16).
+- **Puente H U6**: MOT_IN1 (U6.3), MOT_OUT2 (U6.8).
+- **Cámara J6**: CAM_Y7 (U4.23–J6.16), CAM_Y8 (J6.14).
+- **Otros**: IR_RX (R56–U4), GND (vía–U4.40).
+
+**Qué se hizo**:
+
+1. El cuello de DP en J1 pasa de oblicuo a 45° + vertical (`rutas_fijas.py`), sin mover la vía, así que el tramo acoplado del par queda igual.
+2. Las pistas de In2 junto al borde, los tramos de los ángulos agudos y las puntas colgando se quitan (`router/rematar_prep.py`), y lo que queda suelto pasa a la lista de pendientes.
+3. El rutador por rejilla une **solo los pares que da el DRC de KiCad** (`rutar.py --remate`): todo lo demás es obstáculo fijo y el post-proceso es el mismo (0/45/90°, entradas centradas). Además, las vías se mantienen a 0,6 mm o más de los pads que aún tienen que salir, y si un par no sale se levanta lo rutado en el remate junto a sus pads y se reruta (dos intentos).
+4. Con eso los pines de U5, U2, U7 y U6 seguían encerrados, así que **se limpió el cobre alrededor** de esos cuatro integrados (1,2 mm) y se volvió a rutar. Se excluyeron de la limpieza BST_SW, el par USB y las vías de GND bloqueadas. Después se hicieron vueltas de levantar el cobre no fijo que encerraba los pads que fallaban (`router/rematar_levantar.py`, sin tocar redes de potencia).
+5. **TP13 (GND) se movió** de (−53,6; −109,7) a (−53,4; −105,7) junto con su vía, porque tapaba la salida de U5.2-U5.4. También se quitó una vía de GND que estaba bloqueada en (−53,6; −110,7).
+
+**Avisos para la revisión independiente**:
+
+- **Rehechos por rejilla en R5**: el lazo de entrada y control del TPS61089, el cargador y el VSYS de U7 (tramos de 0,6 cortos con «bolas», en `render/remate-zona-amplificador.png`). **Revisar a mano** los lazos contra el datasheet.
+- `revisar-rutado` marca:
+  - 45 vías en pad. Unas 30 están previstas: 14 TP sobre vía y 16 vías térmicas. **El resto son nuevas** y hay que sacarlas.
+  - 150 segmentos cortos, 61 solapes y 30 escaleras. Bajan respecto a d28aea4 (149, 86 y 11), salvo las escaleras, que **suben**: son de la rejilla.
+  - 26 ángulos agudos de 45° en uniones en T. `limpiar.py` no los ve: solo mide ángulos entre tramos consecutivos.
+  - Informe completo: `pcb-toolkit revisar-rutado FurbyBoard.kicad_pcb --json -`.
+- `TEST-PLAN.md` sigue desfasado: TP renumerados y en la cara inferior, GPIO reasignados y TP13 movido.
+- `exportar_dsn.py` sigue sin la franja de borde en In2. No afecta mientras no se use Freerouting.
 
 ### Diagnóstico
 
-- Faltan **30 pads (≈ 25 conexiones)**, repartidas: USB-C (CC2) y cargador (PGOOD, CHG, VBUS); puente H (MOT_IN1/2, MOT_OUT1) y J9 (TUMMY, HOME); amplificador (SPK_P, I2S_DOUT, I2S_BCLK); expansor (LED_RUN_K, TILT_B); IR_RX; y 3 GND (J6 y módulo). Mapa: `render/rutado-pendiente.png`.
+- (Antes de R5) Faltaban **30 pads (≈ 25 conexiones)**, repartidas: USB-C (CC2) y cargador (PGOOD, CHG, VBUS); puente H (MOT_IN1/2, MOT_OUT1) y J9 (TUMMY, HOME); amplificador (SPK_P, I2S_DOUT, I2S_BCLK); expansor (LED_RUN_K, TILT_B); IR_RX; y 3 GND (J6 y módulo). Mapa: `render/rutado-pendiente.png`.
 - DRC de d28aea4, sin contar lo no rutado: 7 pistas de In2 a menos de 0,3 mm del borde (la franja prohibida del DSN solo cubría F.Cu y B.Cu) y 23 puntas colgando. 10 ángulos agudos y un tramo fuera de 45° (el estrechamiento del par USB en J1, `rutas_fijas.py`).
 - **Puntos calientes:** el agujero del mecanismo parte la mitad derecha; media placa queda bajo la batería (piezas de ≤ 2,1 mm); el expansor y su acondicionamiento quedan lejos del módulo y de los pads de cable a los que van (J8, J9), así que hay muchos cruces largos; la zona del USB-C y el cargador está densa.
 - **Causas:** colocación de la mitad izquierda (expansor y sensores) y recursos de rutado: con vías de 0,6/0,3 y señal a 0,2/0,15 las tres capas de señal se llenan.
@@ -110,6 +153,8 @@ La placa queda **pausada** por decisión de Guillermo hasta que existan las skil
 | `router/prerrutado.json` | Redes y anchos del pre-rutado de potencia | — |
 | `router/vias_termicas.py` | Vías bajo los pads expuestos de U2, U7, U6 y U4 | KiCad |
 | `router/limpiar.py` | Limpieza tras importar el SES: une colineales, quita repetidos y puntas, informa de ángulos | KiCad |
+| `router/rematar_prep.py` | Remate: cuello de DP, quita In2 junto al borde, agudos y puntas; lista de pares pendientes del DRC | KiCad |
+| `router/rematar_levantar.py` | Remate: levanta el cobre que encierra los pads que fallan, o todo el de una caja (`--caja`) | KiCad |
 | `ensanchar_potencia.py`, `vias_extra.py` | Ensanchar pistas de potencia y añadir vías a los planos donde el DRC lo permita. **Escritos, no probados** | KiCad |
 | `render_montaje.py` | Render de la placa sobre la base simplificada con la batería (Blender) | KiCad + Blender |
 | `jlc_post.py`, `make_fab.sh` | BOM y CPL de JLCPCB y ficheros de fabricación | sistema |
