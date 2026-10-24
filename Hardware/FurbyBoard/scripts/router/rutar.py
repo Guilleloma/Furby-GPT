@@ -35,11 +35,11 @@ import numpy as np
 from matplotlib.path import Path
 
 G = 0.05            # paso de la rejilla, mm
-MARGEN = 0.08       # cubre la discretización de la pista y la del cobre ajeno (2 × media diagonal)
+MARGEN = 0.09       # cubre la discretización de la pista y la del cobre ajeno (2 × media diagonal)
 CAPAS = ["F", "I", "B"]
 ANCHO_SALIDA = 0.2  # ancho con el que una red ancha sale de sus pads finos
 ZONA_SALIDA = 0.8   # mm alrededor de sus pads donde se permite ese ancho
-COSTE_VIA = 120     # en décimas de celda (10 = una celda recta)
+COSTE_VIA = 400     # en décimas de celda (10 = una celda recta): una vía «cuesta» 2 mm de pista
 COSTE_CAPA = [0, 2, 1]  # pequeña preferencia: F, luego B, luego In2
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
@@ -262,31 +262,115 @@ class Rejilla:
             return None
         return [tuple(out[3 * k:3 * k + 3]) for k in range(n)][::-1]
 
-    def camino_a_cobre(self, camino, n, w, estrecho, via_final=False):
-        """Convierte celdas en tramos (fusionando los colineales) y vías; los pinta."""
+    # ------------------------------------------------------------ post-proceso
+    @staticmethod
+    def _linea_octil(a, b, diag_primero):
+        """Celdas de a a b en dos tramos (recto y a 45°). Devuelve (celdas, esquina)."""
+        dj, di = int(b[0]) - int(a[0]), int(b[1]) - int(a[1])
+        sj, si = (dj > 0) - (dj < 0), (di > 0) - (di < 0)
+        nd = min(abs(dj), abs(di))
+        nr = max(abs(dj), abs(di)) - nd
+        recto = (sj, 0) if abs(dj) > abs(di) else (0, si)
+        pasos = [(sj, si)] * nd + [recto] * nr if diag_primero else [recto] * nr + [(sj, si)] * nd
+        celdas, j, i = [], int(a[0]), int(a[1])
+        esquina = None
+        for k, (pj, pi) in enumerate(pasos):
+            celdas.append(((j, i), (j + pj, i + pi)))
+            j, i = j + pj, i + pi
+            if k + 1 < len(pasos) and pasos[k + 1] != (pj, pi):
+                esquina = (j, i)
+        return celdas, esquina
+
+    @staticmethod
+    def _libre_linea(m, celdas):
+        for (j0, i0), (j1, i1) in celdas:
+            if not m[j1, i1]:
+                return False
+            if j0 != j1 and i0 != i1 and not (m[j0, i1] and m[j1, i0]):
+                return False
+        return True
+
+    def _simplifica(self, nodos, m):
+        """Une los nodos con el mínimo de tramos rectos o a 45° que quepan en la máscara m."""
+        out = [nodos[0]]
+        i, n = 0, len(nodos) - 1
+        while i < n:
+            j = n
+            while True:
+                hecho = None
+                for diag in (True, False):
+                    celdas, esquina = self._linea_octil(nodos[i], nodos[j], diag)
+                    if self._libre_linea(m, celdas):
+                        hecho = esquina
+                        break
+                else:
+                    if j > i + 1:
+                        j = i + max(1, (j - i) // 2)
+                        continue
+                    hecho = None
+                break
+            if hecho is not None:
+                out.append(hecho)
+            out.append(nodos[j])
+            i = j
+        return out
+
+    def _tramos_capa(self, l, celdas, w, libre_full, lib_ok):
+        """Tramos de una capa: se separan los de ancho completo y los estrechos y cada parte
+        se simplifica a rectas y 45°."""
+        clase = [bool(libre_full[l, j, i]) for j, i in celdas]
+        partes, ini = [], 0
+        for k in range(1, len(celdas) + 1):
+            if k == len(celdas) or clase[k] != clase[ini]:
+                # la frontera se comparte para que los tramos queden unidos
+                partes.append((celdas[ini:k + 1] if k < len(celdas) else celdas[ini:k], clase[ini]))
+                ini = k
+        tramos = []
+        for parte, completo in partes:
+            if len(parte) < 2:
+                continue
+            ancho = w if completo else min(w, ANCHO_SALIDA)
+            if completo:
+                m = libre_full[l]
+            else:
+                # atajos solo por celdas libres; las del camino original (p. ej. dentro del pad
+                # propio) se conservan tal cual
+                m = (lib_ok[l] & self._libre_actual[l]).copy()
+                for j, i in parte:
+                    m[j, i] = True
+            vert = self._simplifica(parte, m)
+            for a, b in zip(vert, vert[1:]):
+                if a != b:
+                    tramos.append((l, self.xy(*a), self.xy(*b), ancho))
+        return tramos
+
+    def camino_a_cobre(self, camino, n, w, libre_full, lib_ok, via_final=False, centros=None):
+        """Celdas -> tramos rectos o a 45° con el mínimo de vértices, y vías; los pinta.
+
+        centros: {(capa, j, i) de pad -> celda del centro del pad}, para entrar centrado."""
         tramos, vias = [], []
         if via_final:
             l, j, i = camino[-1]
             vias.append(self.xy(j, i))
-        i = 0
-        while i < len(camino) - 1:
-            a, b = camino[i], camino[i + 1]
+        runs, actual = [], [camino[0]]
+        for a, b in zip(camino, camino[1:]):
             if a[0] != b[0]:
                 vias.append(self.xy(a[1], a[2]))
-                i += 1
-                continue
-            ancho = ANCHO_SALIDA if (estrecho[a] or estrecho[b]) else w
-            d = (b[1] - a[1], b[2] - a[2])
-            k = i + 1
-            while k + 1 < len(camino):
-                c = camino[k + 1]
-                if c[0] != a[0] or (c[1] - camino[k][1], c[2] - camino[k][2]) != d:
-                    break
-                if (ANCHO_SALIDA if (estrecho[camino[k]] or estrecho[c]) else w) != ancho:
-                    break
-                k += 1
-            tramos.append((a[0], self.xy(a[1], a[2]), self.xy(camino[k][1], camino[k][2]), ancho))
-            i = k
+                runs.append(actual)
+                actual = [b]
+            else:
+                actual.append(b)
+        runs.append(actual)
+        for k, run in enumerate(runs):
+            l = run[0][0]
+            celdas = [(j, i) for _, j, i in run]
+            if centros:
+                if k == 0 and run[0] in centros and centros[run[0]] != celdas[0]:
+                    celdas = [centros[run[0]]] + celdas
+                if k == len(runs) - 1 and run[-1] in centros and centros[run[-1]] != celdas[-1]:
+                    celdas = celdas + [centros[run[-1]]]
+            if len(celdas) >= 2:
+                tramos += self._tramos_capa(l, celdas, w, libre_full, lib_ok)
         for l, pa, pb, ancho in tramos:
             self.pinta_segmento(l, pa, pb, ancho, n)
             self.pistas_nuevas.append({"red": self.redes[n], "capa": CAPAS[l], "w": ancho, "a": pa, "b": pb})
@@ -297,6 +381,18 @@ class Rejilla:
         if vias:
             self.d_agujeros = self.edt(self.agujeros)
         return len(tramos), len(vias)
+
+    def _centros(self, pads):
+        """Para cada celda de un pad de la red, la celda de su centro (para entrar centrado)."""
+        out = {}
+        for p, celdas in pads:
+            cj, ci = self.celda(*p["pos"])
+            for l, m in celdas:
+                if not m[cj, ci]:
+                    continue
+                for j, i in zip(*np.nonzero(m)):
+                    out[(l, j, i)] = (cj, ci)
+        return out
 
     def pads_de(self, red):
         return [(p, c) for p, c in self.pad_celdas if p["red"] == red]
@@ -325,6 +421,7 @@ class Rejilla:
                 for l, m in p0[1]:
                     arbol[l] |= m
         fallos = 0
+        centros = self._centros(pads)
         while pend:
             objetivo = np.zeros_like(arbol)
             for p, celdas in pend:
@@ -347,7 +444,8 @@ class Rejilla:
                 fallos += 1
                 break
             antes = self.lab == n
-            self.camino_a_cobre(camino, n, w, estrecho)
+            self._libre_actual = libre
+            self.camino_a_cobre(camino, n, w, libre & ~estrecho, lib_o, centros=centros)
             arbol |= (self.lab == n) & ~antes          # solo el cobre recién pintado
             fin = camino[-1]
             for k, (p, celdas) in enumerate(pend):
@@ -356,8 +454,6 @@ class Rejilla:
                         arbol[l] |= m
                     pend.pop(k)
                     break
-            for l, j, i in camino:
-                arbol[l, j, i] = True
             libre, estrecho, via_ok = self.mascaras(n, w, pads_red)
         return fallos == 0
 
@@ -394,7 +490,9 @@ class Rejilla:
                 ok = False
                 p["sin_via"] = True
                 continue
-            self.camino_a_cobre(camino, n, max(w, 0.3), estrecho, via_final=True)
+            self._libre_actual = libre
+            self.camino_a_cobre(camino, n, max(w, 0.3), libre & ~estrecho, lib_o, via_final=True,
+                                centros=self._centros([(p, celdas)]))
             libre, estrecho, via_ok = self.mascaras(n, w, [])
         return ok
 

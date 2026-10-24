@@ -89,6 +89,14 @@ def main():
         capas = [c for lay, c in CAPAS.items() if z.GetLayerSet().Contains(lay)]
         prohibidas.append({"capas": capas, "pistas": z.GetDoNotAllowTracks(), "vias": z.GetDoNotAllowVias(),
                            "poly": poligonos(z.Outline())})
+    # Sin pistas en F.Cu bajo el cuerpo del módulo (entre sus filas de pads, con 1,2 mm de
+    # margen para que sus pistas salgan hacia fuera). In2 y B.Cu quedan bajo el GND de In1.
+    u4 = board.FindFootprintByReference("U4")
+    xs = [mm(p.GetPosition().x) for p in u4.Pads() if p.GetNumber() in ("1", "14", "27", "40")]
+    ys = [mm(p.GetPosition().y) for p in u4.Pads() if p.GetNumber() in ("1", "15", "26", "40")]
+    x0, x1, y0, y1 = min(xs) + 1.2, max(xs) - 1.2, min(ys) - 0.5, max(ys) - 1.2
+    prohibidas.append({"capas": ["F"], "pistas": True, "vias": False,
+                       "poly": [[(x0, y0), (x1, y0), (x1, y1), (x0, y1)]]})
     borde = pcbnew.SHAPE_POLY_SET()
     board.GetBoardPolygonOutlines(borde, True)
     contorno = poligonos(borde)
