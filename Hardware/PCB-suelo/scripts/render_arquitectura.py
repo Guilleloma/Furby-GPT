@@ -4,8 +4,9 @@
 Dibuja dos figuras:
 
 - render/planta-arquitectura.png: colocación por bloques sobre el contorno real
-  de la PCB (geometria.json). La batería va en una bandeja elevada; debajo,
-  parte del ESP32-S3-WROOM-1 y los bloques bajos que no calientan. Fuera de la
+  de la PCB (geometria.json). La batería va directamente sobre la PCB, apoyada
+  en calzos de espuma adhesiva; debajo quedan parte del ESP32-S3-WROOM-1 y los
+  bloques bajos que no calientan. Fuera de la
   batería van la antena del módulo, los bloques de potencia, el conector de la
   cámara, los pads de los cables del Furby, el header de expansión, los puntos
   de test, los LED y los botones.
@@ -17,7 +18,7 @@ Antes de dibujar comprueba la colocación:
   mecanismo, de las cabezas de los tornillos y del USB-C, y sin solapes;
 - en la zona sin cobre de la antena solo está el módulo;
 - la batería queda dentro de la pared interior, lejos del agujero del
-  mecanismo y de la antena, y solo tapa lo marcado como «bajo la bandeja»;
+  mecanismo y de la antena, y solo tapa lo marcado como «bajo la batería»;
 - los puntos de test, el header, los botones y los LED quedan fuera de la
   batería, accesibles con ella montada.
 
@@ -58,22 +59,21 @@ MARGEN_BATERIA_AGUJERO_MM = 1.5  # batería al agujero Ø11,3 del mecanismo, com
 MARGEN_BATERIA_ANTENA_MM = 4.0   # batería a la antena del módulo, en planta, como mínimo
 
 BATERIA = {"centro": (-84.5, -91.8), "ancho": 33.0, "largo": 50.0, "giro": -4.0}
-BATERIA_Z = (10.1, 17.7)        # cara inferior y superior sobre la bandeja
+BATERIA_Z = (9.6, 17.2)         # sobre 1,0 de espuma encima del blindaje del WROOM-1 (z 8,6)
 
 # ESP32-S3-WROOM-1: 18 × 25,5 × 3,1. La antena (≈ 6,5 del extremo) mira al borde delantero.
 MODULO = {"x": (-82.0, -64.0), "y": (-81.0, -55.5), "antena_largo": 6.5}
 ANTENA_SIN_COBRE = {"x": (-85.0, -61.0), "y": (-63.5, -50.0)}
 
-# Bloques de la cara superior: (nombre, x0, x1, y0, y1, color, texto, bajo la bandeja)
+# Bloques de la cara superior: (nombre, x0, x1, y0, y1, color, texto, bajo la batería)
 BLOQUES = [
     ("botones", -62.5, -53.5, -73.0, -64.5, "#566573", "BOOT · RESET\nLED PWR, PROG, RUN\nTP EN, IO0, GND", False),
     ("fpc", -63.5, -48.0, -79.5, -74.0, "#117a65", "FPC cámara 24p 0,5", False),
     ("ldo_cam", -62.0, -54.0, -86.0, -80.5, "#117a65", "LDO cámara\n2,8 V · 1,2/1,5 V", False),
     ("elevador", -52.0, -41.5, -94.5, -84.0, "#c0392b", "Elevador 6 V\nTPS61089\nL 1 µH", False),
     ("puente_h", -52.0, -46.0, -102.5, -96.0, "#8e44ad", "DRV8231A\nTP IPROPI", False),
-    ("carga", -66.5, -56.5, -114.5, -104.5, "#e07b39", "BQ24073 + PTC\nLED CHG, PG\nTP CHG, PGOOD", False),
+    ("carga", -66.5, -56.5, -114.5, -104.5, "#e07b39", "BQ24073 + PTC\nP-MOSFET polaridad\nLED CHG, PG\nTP CHG, PGOOD", False),
     ("3v3", -55.5, -47.5, -112.5, -104.5, "#e07b39", "3,3 V\nTPS63802\nL 0,47 µH", False),
-    ("jst", -56.0, -48.0, -119.5, -113.3, "#9e6b3d", "JST-PH\nbatería", False),
     ("esd", -67.5, -63.5, -118.5, -115.3, "#7f8c8d", "ESD\nTP D±", False),
     ("expansor", -96.0, -83.0, -110.0, -90.0, "#1e8449",
      "Expansor TCA9535\n+ acondicionamiento\n(pull-ups, RC,\nSchmitt, VBAT)", True),
@@ -101,9 +101,14 @@ PUNTOS_TEST = [
     ("I2S DOUT", -83.3, -125.0), ("GND", -81.0, -125.0),
 ]
 
-# Apoyos de la bandeja de la batería: dos atornillados (H1 y H3, M2 largo) y dos apoyados
-APOYOS = [(-97.0, -68.5, "H1"), (-86.8, -122.4, "H3"), (-70.5, -100.0, "A1"), (-99.0, -103.0, "A2")]
+# Calzos de espuma adhesiva de 4,1 mm bajo la batería, sobre círculos sin componentes. El cuarto
+# apoyo es el blindaje del WROOM-1, con 1,0 mm de espuma.
+APOYOS = [(-70.5, -100.0, "E1"), (-99.0, -103.0, "E2"), (-88.0, -113.0, "E3")]
 APOYO_D = 4.0
+
+# Pads de la batería, soldada sin conector: BAT+ cuadrado de 3 × 3 y BAT− redondo de Ø2,6
+BAT_POS = (-54.5, -116.4, 3.0)
+BAT_NEG = (-49.0, -116.4, 2.6)
 
 SERIGRAFIA = ("FurbyBoard v1.0", (-73.0, -54.0))
 
@@ -166,6 +171,11 @@ def circulos_tp():
     return {f"TP {n} ({x}; {y})": Point(x, y).buffer(TP_D / 2) for n, x, y in PUNTOS_TEST}
 
 
+def rect_bat_pos():
+    x, y, lado = BAT_POS
+    return box(x - lado / 2, y - lado / 2, x + lado / 2, y + lado / 2)
+
+
 def coma(valor, decimales=2):
     return f"{valor:.{decimales}f}".replace(".", ",")
 
@@ -182,11 +192,14 @@ def comprobar(geo, pcb):
     zona_usb = box(usb["x_paredes"][0] - 1.0, usb["y_borde"] - 1.0, usb["x_paredes"][1] + 1.0, usb["y_fondo"] + 1.0)
     sin_cobre = rect_sin_cobre()
 
-    bajo_bandeja = {n for n, *_, b in BLOQUES if b}
+    bajo_bateria = {n for n, *_, b in BLOQUES if b}
     cara_superior = {"modulo": rect_modulo()}
     cara_superior.update({n: box(x0, y0, x1, y1) for n, x0, x1, y0, y1, *_ in BLOQUES})
     cara_superior.update(rects_pads())
     cara_superior.update(circulos_tp())
+    cara_superior["BAT+"] = rect_bat_pos()
+    cara_superior["BAT-"] = Point(BAT_NEG[:2]).buffer(BAT_NEG[2] / 2)
+    cara_superior.update({f"calzo {n}": Point(x, y).buffer(APOYO_D / 2) for x, y, n in APOYOS})
     for nombre, forma in cara_superior.items():
         if not dentro.contains(forma):
             fallos.append(f"{nombre}: se sale de la PCB (margen {MARGEN_BORDE_MM})")
@@ -216,10 +229,10 @@ def comprobar(geo, pcb):
     if bateria.distance(rect_antena()) < MARGEN_BATERIA_ANTENA_MM:
         fallos.append(f"batería: a {bateria.distance(rect_antena()):.2f} de la antena")
     for nombre, forma in cara_superior.items():
-        if nombre in bajo_bandeja or nombre == "modulo":
+        if nombre in bajo_bateria or nombre == "modulo" or nombre.startswith("calzo"):
             continue
         if bateria.intersects(forma):
-            fallos.append(f"batería: tapa {nombre}, que tiene que quedar accesible o fuera de la bandeja")
+            fallos.append(f"batería: tapa {nombre}, que tiene que quedar accesible o fuera de la batería")
     return fallos
 
 
@@ -312,13 +325,18 @@ def render_planta(geo, pcb, m):
     ax.add_patch(rect_a_parche(bateria, fc="#5dade2", ec="#1b4f72", lw=1.6, alpha=0.25, hatch="\\\\"))
     ax.add_patch(rect_a_parche(bateria, fc="none", ec="#1b4f72", lw=1.6))
     cx, cy = BATERIA["centro"]
-    ax.text(cx - 1, cy + 5, f"BATERÍA LiPo 1S 1400 mAh\n7,6 × 33 × 50, sobre bandeja\n"
+    ax.text(cx - 1, cy + 5, f"BATERÍA LiPo 1S 1400 mAh\n7,6 × 33 × 50, sobre calzos\n"
             f"z {coma(BATERIA_Z[0], 1)} a {coma(BATERIA_Z[1], 1)}", ha="center", va="center", fontsize=8,
             color="#1b4f72", fontweight="bold", bbox={"fc": "white", "ec": "#1b4f72", "alpha": 0.85})
     for x, y, nombre in APOYOS:
         ax.add_patch(Circle((x, y), APOYO_D / 2, fc="none", ec="#1b4f72", lw=1.4))
-        ax.text(x + 2.3, y - 2.6, nombre if nombre.startswith("A") else f"{nombre}\n(bandeja)", fontsize=6,
-                color="#1b4f72")
+        ax.text(x + 2.3, y - 2.6, nombre, fontsize=6, color="#1b4f72")
+    ax.add_patch(rect_a_parche(rect_bat_pos(), fc="#c0392b", ec="#641e16", lw=1.2))
+    ax.add_patch(Circle(BAT_NEG[:2], BAT_NEG[2] / 2, fc="#17202a", ec="#000", lw=1.2))
+    ax.text(BAT_POS[0], BAT_POS[1] - 2.4, "BAT+", ha="center", va="top", fontsize=8, fontweight="bold", color="#922b21")
+    ax.text(BAT_NEG[0], BAT_NEG[1] - 2.4, "BAT−", ha="center", va="top", fontsize=8, fontweight="bold", color="#17202a")
+    ax.add_patch(FancyArrowPatch((-71.0, -117.0), (-56.5, -116.4), arrowstyle="-|>", mutation_scale=12, color="#922b21",
+                                 lw=1.6, connectionstyle="arc3,rad=0.25"))
 
     ax.text(-73.5, -49.5, "DELANTE (cara del Furby)", ha="center", fontsize=9, fontweight="bold")
     ax.text(-73.5, -135.0, "DETRÁS (lóbulo)", ha="center", fontsize=9, fontweight="bold")
@@ -332,22 +350,26 @@ def render_planta(geo, pcb, m):
         "Propuesta de colocación (bloques aproximados, no huellas)\n\n"
         "Batería: único sitio donde cabe, lado izquierdo girada −4°,\n"
         f"  a {coma(m['bateria_pared'])} de la pared y a {coma(m['bateria_agujero'])} del agujero del mecanismo.\n"
-        "  Va en una bandeja impresa sobre el módulo y los bloques bajos.\n\n"
+        "  Va directamente sobre la PCB: espuma de 1,0 sobre el blindaje del\n"
+        "  WROOM-1 y calzos de espuma de 4,1 en E1, E2 y E3. Sin bandeja.\n\n"
         "ESP32-S3-WROOM-1 con la antena en el borde delantero:\n"
         f"  antena a {coma(m['antena_bateria'])} de la huella de la batería (en planta),\n"
         "  y la batería 4,6 más arriba. Sin cobre bajo la antena (punteado).\n"
         f"  {m['modulo_fuera_bateria'] * 100:.0f} % del módulo queda fuera de la batería.\n"
         "  La huella admite también el WROOM-1U (antena externa).\n\n"
-        "Bajo la bandeja (trazo discontinuo): expansor, acondicionamiento\n"
+        "Bajo la batería (trazo discontinuo): expansor, acondicionamiento\n"
         "  y amplificador; todo de menos de 1,2 mm y sin calor apreciable.\n\n"
         "Accesibles con la batería montada: TP, header J_EXP, BOOT, RESET,\n"
         "  LED, conector de la cámara y pads de los cables del Furby.\n\n"
         "Alturas (z, cara superior de la PCB en 5,505):\n"
-        "  WROOM-1: hasta 8,6 · bandeja: 9,3 a 10,1\n"
+        "  WROOM-1: hasta 8,6 · espuma: 8,6 a 9,6\n"
         f"  Batería: {coma(BATERIA_Z[0], 1)} a {coma(BATERIA_Z[1], 1)} · pared de la base: 22,0\n"
-        "  JST-PH SMD ≈ 11,0 y FPC 2,0: fuera de la bandeja\n\n"
+        "  FPC: hasta 7,5 · bobinas: hasta 7,5 (fuera de la batería)\n\n"
         "Serigrafía: «FurbyBoard v1.0» (1,0 de alto) delante; nombre,\n"
         "  versión, fecha y número de GPIO de cada pad en la cara inferior.\n\n"
+        "Batería soldada a pads: BAT+ cuadrado y BAT− redondo, con P-MOSFET\n"
+        "  contra la polaridad inversa. Flecha roja: los cables de la batería;\n"
+        "  el lado de los cables va hacia detrás y a la derecha.\n\n"
         "Amarillo: antena · Rosa: TP · Rayado: pin 1 del header"
     )
     fig.text(0.63, 0.92, "FurbyBoard v1.0 · planta\n(coordenadas del STL, vista desde arriba)", fontsize=13,
@@ -381,7 +403,7 @@ def render_bloques():
     caja(ax, 0.3, 7.2, 2.2, 1.1, "USB-C 16 pines\nRd 5,1k en CC", "#7f8c8d")
     caja(ax, 0.3, 5.6, 2.2, 1.0, "PTC 1,5 A\nUSBLC6 (ESD)", "#7f8c8d")
     caja(ax, 3.1, 5.3, 2.5, 1.5, "BQ24073\ncarga + power path\nICHG 0,49 A\nIIN 0,5 o 1,34 A", "#e07b39")
-    caja(ax, 3.1, 3.2, 2.5, 1.2, "LiPo 1S 1400 mAh\ncon PCM · JST-PH", "#5dade2")
+    caja(ax, 3.1, 3.2, 2.5, 1.2, "LiPo 1S 1400 mAh\ncon PCM · pads BAT±\nP-MOSFET polaridad", "#5dade2")
     caja(ax, 3.1, 7.2, 2.5, 0.8, "TPS63802\nbuck-boost 3,3 V", "#e07b39")
     caja(ax, 6.3, 4.0, 3.0, 4.3, "ESP32-S3-WROOM-1\nN16R8\n\n16 MB flash\n8 MB PSRAM octal\n\nUSB nativo\nGPIO19/20\n\n"
          "LED PROG en U0TXD", mcu)
