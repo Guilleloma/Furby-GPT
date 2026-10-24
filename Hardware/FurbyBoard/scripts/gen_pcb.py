@@ -248,6 +248,11 @@ def silk(board):
     cx = (lx[0] + lx[1]) / 2
     text(board, B, "FurbyBoard", cx, -87.2, 1.6, 0.2, mirror=True)
     text(board, B, "%s · %s" % (P.BOARD_REV, P.BOARD_DATE), cx, -89.5, 1.2, 0.15, mirror=True)
+    # Recuadro en blanco para numerar la placa a rotulador (TEST-PLAN.md)
+    x0, x1, y0, y1 = cx - 3.0, cx + 5.0, -96.4, -92.4
+    for a, b in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
+        shape(board, B, pcbnew.SHAPE_T_SEGMENT, a=a, b=b, width=0.15)
+    text(board, B, "PLACA", cx - 5.6, (y0 + y1) / 2, 0.8, 0.15, mirror=True)
 
 
 def contorno_muestreado(paso=0.5):
