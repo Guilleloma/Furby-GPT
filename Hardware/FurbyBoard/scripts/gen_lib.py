@@ -178,10 +178,16 @@ class Fp:
         self.lines.append('\t(fp_text user "%s" (at %s %s 0) (layer "%s") (effects (font (size %s %s) (thickness %s))))'
                           % (txt, f(x), f(y), layer, f(size), f(size), f(size * 0.15)))
 
+    def model(self, ruta):
+        self.lines.append('\t(model "%s" (offset (xyz 0 0 0)) (scale (xyz 1 1 1)) (rotate (xyz 0 0 0)))' % ruta)
+
     def save(self, d):
         with open(os.path.join(d, self.name + ".kicad_mod"), "w") as fh:
             fh.write("\n".join(self.lines + [")"]) + "\n")
 
+
+# Modelos simplificados de scripts/gen_modelos3d.py (FreeCAD)
+MODELO_PROPIO = "${KIPRJMOD}/lib/FurbyBoard.3dshapes/%s.step"
 
 USB_PADS = [("A1", -3.35), ("B12", -3.05), ("A4", -2.55), ("B9", -2.25), ("B8", -1.75), ("A5", -1.25),
             ("B7", -0.75), ("A6", -0.25), ("A7", 0.25), ("B6", 0.75), ("A8", 1.25), ("B5", 1.75),
@@ -207,6 +213,7 @@ def fp_usb(d):
     fp.line("Dwgs.User", -6.5, -USB_SALIENTE, 6.5, -USB_SALIENTE, 0.05)
     fp.text("Dwgs.User", "borde PCB", 0, -USB_SALIENTE - 0.4, 0.4)
     fp.rect("F.CrtYd", -6.5, -8.15, 6.5, 0.25, 0.05)
+    fp.model(MODELO_PROPIO % fp.name)
     fp.save(d)
 
 
@@ -226,6 +233,7 @@ def fp_fpc(d):
     fp.circle("F.SilkS", -6.6, -1.9, 0.15, 0.3)
     fp.text("F.Fab", "flex por aquí", 0, 3.6, 0.6)
     fp.rect("F.CrtYd", -8.75, -2.25, 8.75, 4.9, 0.05)
+    fp.model(MODELO_PROPIO % fp.name)
     fp.save(d)
 
 
@@ -238,6 +246,7 @@ def fp_inductor(d):
     fp.line("F.SilkS", -0.6, -2.1, 0.6, -2.1)
     fp.line("F.SilkS", -0.6, 2.1, 0.6, 2.1)
     fp.rect("F.CrtYd", -2.65, -2.25, 2.65, 2.25, 0.05)
+    fp.model(MODELO_PROPIO % fp.name)
     fp.save(d)
 
 
@@ -252,6 +261,8 @@ def fp_vson(d):
     fp.rect("F.Fab", -1.0, -1.5, 1.0, 1.5, 0.1)
     fp.circle("F.SilkS", -1.35, -1.45, 0.1, 0.2)
     fp.rect("F.CrtYd", -1.45, -1.75, 1.6, 1.75, 0.05)
+    # Mismo cuerpo de 2 x 3 x 0,8 con 10 pines que el WSON-10 de KiCad
+    fp.model("${KICAD10_3DMODEL_DIR}/Package_SON.3dshapes/WSON-10-1EP_2x3mm_P0.5mm_EP0.84x2.4mm.step")
     fp.save(d)
 
 
