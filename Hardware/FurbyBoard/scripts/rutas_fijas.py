@@ -715,3 +715,25 @@ pista("3V3", "B.Cu", 0.4, "TP6.1", (-85.5, -110.0), (-85.5, -107.3))
 pista("ENC_LED_A", "F.Cu", 0.2, "R51.2", (-43.125, -97.08), "J9.3")
 pista("BAT_G", "F.Cu", 0.5, "Q1.4", (-61.6, -117.01))   # 0,5 dentro del patio de Q1 (regla cuello Q1)
 pista("BAT_G", "F.Cu", 0.2, (-61.6, -117.01), (-60.49, -115.9), "R12.1")
+# ---------------------------------------------------------------- señales del cargador desde U10 (P06, P07, P10, P11, P12)
+# U10 quedaba encerrado en 4 capas (NOTAS, «Diagnóstico del rutado»): las cinco salen a vías bajo el cuerpo
+# de U10 y viajan por In3. EN_6V, BQ_EN1 y BQ_EN2 van por el pasillo NE: este bajo U10, bajada en
+# x -84,25…-83,35 (a > 1 mm de las columnas del I2S), cruce a 90° de la columna de VBAT_SNS y diagonal
+# paralela a la de VBAT_SNS por su lado NE (a 1,2 mm), al sur del agujero del mecanismo y bajada por
+# x -61,0/-60,55/-60,1 entre la vía de BQ_ILIM y los LED del cargador.
+pista("EN_6V", "F.Cu", 0.2, "U10.15", (-88.4, -83.275))
+via("EN_6V", (-88.4, -83.275))
+pista("EN_6V", "In3.Cu", 0.2, (-88.4, -83.275), (-83.35, -83.275), (-83.35, -91.6), (-79.75, -91.6),
+      (-69.25, -102.1), (-60.1, -102.1), (-60.1, -115.3), (-61.22, -115.3))
+pista("BQ_EN1", "F.Cu", 0.2, "U10.13", (-88.4, -84.575))
+via("BQ_EN1", (-88.4, -84.575))
+pista("BQ_EN1", "In3.Cu", 0.2, (-88.4, -84.575), (-84.25, -84.575), (-84.25, -92.5), (-80.15, -92.5),
+      (-69.65, -103.0), (-61.0, -103.0), (-61.0, -111.0), (-62.1, -111.0))
+via("BQ_EN1", (-62.1, -111.0))
+pista("BQ_EN1", "F.Cu", 0.25, "U2.6", (-62.35, -110.75), (-62.1, -111.0), "R6.1")
+pista("BQ_EN2", "F.Cu", 0.2, "U10.14", (-89.2, -83.925))
+via("BQ_EN2", (-89.2, -83.925))
+pista("BQ_EN2", "In3.Cu", 0.2, (-89.2, -83.925), (-83.8, -83.925), (-83.8, -92.05), (-79.95, -92.05),
+      (-69.45, -102.55), (-60.55, -102.55), (-60.55, -112.6), (-62.75, -112.6))
+via("BQ_EN2", (-62.75, -112.6))
+pista("BQ_EN2", "F.Cu", 0.25, "U2.5", (-62.75, -111.25), (-62.75, -112.6), "R7.1")
