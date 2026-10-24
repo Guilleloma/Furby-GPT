@@ -10,7 +10,7 @@ suelo. El contorno sale del suelo interior (polilínea facetada del STL):
    todos esos vértices por fuera, así que nunca se acerca a la pared.
 3. Cada vértice convexo se cambia por un arco tangente (fillet) que no se
    separa más de --desviacion del vértice; cada vértice cóncavo, por un arco de
-   radio igual a la holgura, que es el radio de la fresa de JLCPCB (0,5 mm) y
+   radio igual a la holgura (1,0 mm, mayor que la fresa de 0,5 de JLCPCB), que
    mantiene la holgura exacta en las esquinas de los hombros del lóbulo.
 4. Se abre la ranura del USB-C de montaje medio en el borde trasero, centrada
    en el lóbulo.
@@ -53,7 +53,7 @@ CAPA_SUELO = "SueloInterior"
 CAPA_PARED = "ParedExterior"
 CAPA_AGUJEROS_BASE = "Agujeros"
 
-HOLGURA_MM = 0.5            # PCB a pared, por lado
+HOLGURA_MM = 1.0            # PCB a pared, por lado (la posición la fijan los 4 tornillos)
 SIMPLIFICACION_MM = 0.12    # cuerda máxima hacia dentro al quitar facetas
 DESVIACION_MM = 0.2         # separación máxima de cada fillet convexo a su vértice
 CONCAVO_MIN_GRADOS = 3.0    # quiebros cóncavos menores son ruido de facetas: sin arco
@@ -65,7 +65,8 @@ EXCLUSION_MECANISMO_MM = 2.0   # anillo libre alrededor del agujero
 
 TALADRO_M2_D = 2.3
 BORDE_TALADRO_MIN_MM = 2.0     # borde del agujero a borde de PCB
-TALADROS_XY = [(-97.0, -68.5), (-50.0, -68.5), (-86.8, -122.4), (-60.2, -122.4)]
+# H3 y H4 entran 0,5 mm respecto a la v1 para quedar a ≥ 2,5 del borde con la holgura de 1,0
+TALADROS_XY = [(-97.0, -68.5), (-50.0, -68.5), (-86.7, -121.9), (-60.3, -121.9)]
 
 # Muescas en los 4 agujeros originales del suelo (capa Agujeros), solo con
 # --muescas. Sirven si algún día una torreta del cuerpo baja hasta el suelo a
@@ -76,17 +77,21 @@ MUESCA_HOLGURA_MM = 0.5
 MUESCA_R = TORRETA_D / 2 + MUESCA_HOLGURA_MM
 MUESCA_REDONDEO_MM = 0.5       # esquinas convexas entre el borde y la muesca
 
-# USB-C de montaje medio HRO TYPE-C-31-M-28A (LCSC C2848622), PCB de 1,6 mm.
-# Medidas del dibujo del fabricante (layout recomendado y alzado).
+# USB-C de 16 pines de montaje medio HRO TYPE-C-31-M-13C (LCSC C2848620), PCB de 1,6 mm.
+# Medidas del dibujo del fabricante (layout recomendado y alzado): en su layout la
+# boca queda a ras del borde, la ranura mide 9,24 de ancho y 6,55 de fondo, y el
+# cuerpo, 6,42 de largo y 3,16 de alto, con 1,60 por encima de la cara superior.
+# Con la holgura de 1,0 la boca sale 0,70 del borde para seguir a 0,30 de la pared,
+# así que la ranura es 0,70 más corta.
 USB_X = -73.5
 USB_RANURA_ANCHO = 9.24        # cuerpo de 8,94 + 0,15 por lado
-USB_RANURA_FONDO = 6.70        # del borde de la PCB al final de la ranura
+USB_SALIENTE_BOCA = 0.70       # la boca sobresale del borde de la PCB
+USB_RANURA_FONDO = 6.55 - USB_SALIENTE_BOCA   # del borde de la PCB al final de la ranura
 USB_ALIVIO_R = 0.5             # alivio en las esquinas del fondo (fresa de 0,5 de radio)
-USB_SALIENTE_BOCA = 0.20       # la boca sobresale del borde de la PCB
-USB_LARGO = 6.80
+USB_LARGO = 6.42
 USB_ANCHO_CUERPO = 8.94
 USB_CARCASA = (8.34 + 0.6, 3.16)   # carcasa metálica por fuera, ancho × alto
-USB_CENTRO_SOBRE_CARA_SUP = 0.0    # el eje de la boca queda a ras de la cara superior
+USB_CENTRO_SOBRE_CARA_SUP = 1.60 - 3.16 / 2   # 0,02: eje prácticamente a ras de la cara superior
 
 # Alturas (z del STL)
 SUELO_Z = 1.905
@@ -832,7 +837,7 @@ def main():
     parser.add_argument("--suelo", type=Path, required=True,
                         help="DXF con la polilínea del suelo interior (capa SueloInterior)")
     parser.add_argument("--capa", default=CAPA_SUELO)
-    parser.add_argument("--holgura", type=float, default=HOLGURA_MM, help="PCB a pared, mm (0,5)")
+    parser.add_argument("--holgura", type=float, default=HOLGURA_MM, help="PCB a pared, mm (1,0)")
     parser.add_argument("--simplificacion", type=float, default=SIMPLIFICACION_MM)
     parser.add_argument("--desviacion", type=float, default=DESVIACION_MM)
     parser.add_argument("--mecanismo", type=float, nargs=2, default=MECANISMO_XY, metavar=("X", "Y"),

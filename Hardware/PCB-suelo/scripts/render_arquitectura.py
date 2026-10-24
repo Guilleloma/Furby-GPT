@@ -51,7 +51,7 @@ GEOMETRIA = DIR / "geometria.json"
 RENDER_PLANTA = DIR / "render" / "planta-arquitectura.png"
 RENDER_BLOQUES = DIR / "render" / "bloques.png"
 
-HOLGURA_PARED_MM = 0.5          # la pared interior está a 0,5 del borde de la PCB
+HOLGURA_PARED_MM = 1.0          # la pared interior está a 1,0 del borde de la PCB
 CABEZA_TORNILLO_D_MM = 5.0      # zona libre alrededor de cada taladro (cabeza M2 Ø4 + margen)
 MARGEN_BORDE_MM = 0.3           # bloque a borde de PCB
 MARGEN_EXCLUSION_MM = 0.5       # bloque a la exclusión Ø15,3 del mecanismo

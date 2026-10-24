@@ -35,16 +35,16 @@ from shapely.geometry import LinearRing, Point, Polygon
 DXF_PCB = Path(__file__).resolve().parent.parent / "contorno-pcb.dxf"
 JSON_GEOMETRIA = DXF_PCB.parent / "geometria.json"
 
-TALADROS_ESPERADOS = [(-97.0, -68.5), (-50.0, -68.5), (-86.8, -122.4), (-60.2, -122.4)]
+TALADROS_ESPERADOS = [(-97.0, -68.5), (-50.0, -68.5), (-86.7, -121.9), (-60.3, -121.9)]
 TALADRO_D = 2.3
 AGUJEROS_BASE_ESPERADOS = [(-105.51, -78.23), (-41.33, -78.15), (-105.77, -106.80), (-41.23, -106.83)]
 AGUJERO_BASE_D = 2.134
 MUESCA_R = 3.0
-# Sin muescas, el borde de la PCB pasa a 1,07-1,15 mm por fuera de cada centro.
-# Cualquier muesca que deje libre siquiera el agujero (R 1,07) lo descubre.
-AGUJERO_BAJO_PCB_MIN = 1.0
+# Sin muescas y con holgura de 1,0, el borde de la PCB pasa a 0,57-0,65 mm por fuera de
+# cada centro. Los agujeros están tapados en la base, así que basta con que queden debajo.
+AGUJERO_BAJO_PCB_MIN = 0.5
 BORDE_TALADRO_MIN = 2.5
-HOLGURA_MIN = 0.5
+HOLGURA_MIN = 1.0
 TOL_POSICION = 0.01
 TOL_EXTREMOS = 1e-4
 PASO_MM = 0.01
