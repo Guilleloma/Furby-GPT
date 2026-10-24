@@ -26,6 +26,15 @@ Convenciones:
 | 2026-10-24 | **Logo «Furby» en pixel art** en la serigrafía de la **cara inferior**, junto al nombre (sección 12.2) |
 | 2026-10-24 | Corriente del motor: se medirá en el bobinado. Hasta entonces, la estimación y un **ITRIP ajustable** con el divisor de VREF |
 
+> **Fase 2 (proyecto KiCad en `Hardware/FurbyBoard/`).** Lo que cambia respecto a este documento, por orden de importancia. Donde no coincidan, mandan el esquema, el PCB y `Hardware/FurbyBoard/TEST-PLAN.md`:
+>
+> - **4 capas** (JLC04161H-7628): señal, plano de GND, plano de VSYS y señal. La tabla de costes de la sección 13 suponía 2 capas.
+> - **USB-C HRO TYPE-C-31-M-13C (C2848620)** en vez del TYPE-C-CB16-16P (C42418806, sin huella en LCSC). Misma ranura de 9,24 y mismo eje; el borde lleva dos orejetas para las patas delanteras (`interfaz-base.md`).
+> - **Pads de cable reagrupados por zona:** el motor va en J9 con la leva, el encoder, la barriga y la espalda; la luz en J7 con el IR; el altavoz en J8 con la inclinación y la lengua; el micro en J5 (2 × 3). Desaparecen J4 y J10.
+> - **14 TP** en vez de 19, todos fuera de la batería y rotulados: EN e IO0 se miden en los pads de SW1 y SW2, y CHG y PGOOD en los LED D1 y D2.
+> - **Calzos de la batería** en E1 (−75; −105,8), E2 (−99,5; −113) y E3 (−90,5; −112,5), libres de componentes (`scripts/comprobar_colocacion.py`).
+> - Bajo la batería también van U3 (buck-boost de 3,3 V), los LDO de la cámara y el Schmitt del encoder: la pieza más alta es L1 (2,1 mm) para un hueco de 4,1.
+
 ## Cambios respecto a la v1
 
 | v1 (ESP32-S3 Zero) | v2 (FurbyBoard) | Por qué |

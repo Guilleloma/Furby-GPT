@@ -1,0 +1,259 @@
+# FurbyBoard v1.0: plan de pruebas de hardware
+
+Bring-up paso a paso para cuando llegue la placa montada de JLCPCB. Los designadores, valores y TP son los del esquema y el PCB de `Hardware/FurbyBoard/` (generados por `scripts/design.py`). Sustituye al borrador de la fase 1 (`Hardware/PCB-suelo/TEST-PLAN.md`).
+
+**Reglas:**
+
+- Se hace en orden, y no se pasa de un paso con un FAIL sin entenderlo.
+- Se anota el valor medido junto al esperado, en una copia de estas tablas por placa. La placa se numera a rotulador en el recuadro «PLACA» de la serigrafía de la cara inferior.
+- La batería no se suelda hasta el paso 8, después de probar la protección contra la inversión (8.1) y de medir su polaridad (8.2).
+
+## Dónde está cada punto de medida
+
+Todos los TP, LED, botones y puentes quedan fuera de la batería: se miden con ella montada. Coordenadas del STL de la base, en mm (delante = y mayor).
+
+| TP | Red | Rótulo | Dónde | Esperado |
+|----|-----|--------|-------|----------|
+| TP1 | VBUS | VBUS | Debajo del agujero del mecanismo | 5,00 V con USB |
+| TP2 | USB_DP | D+ | Lóbulo, a la izquierda del USB-C | — (osciloscopio) |
+| TP3 | USB_DN | D- | Lóbulo, a la izquierda del USB-C | — (osciloscopio) |
+| TP4 | BAT | BAT | Columna junto al cargador | VBAT 3,0–4,2 V |
+| TP5 | VSYS | VSYS | Columna junto al cargador | 4,40 V con USB; VBAT − 0,05 sin USB |
+| TP6 | 3V3 | 3V3 | Rejilla de TP (derecha) | 3,30 V |
+| TP7 | V6 | 6V | Junto al FPC de la cámara | 5,94 V con EN_6V = 1 |
+| TP8 | IPROPI | IPR | Rejilla de TP | 2,25 V por amperio de motor |
+| TP9 | I2S_DOUT | I2S | Rejilla de TP | Datos I2S al amplificador |
+| TP10 | CAM_2V8 | 2V8 | Rejilla de TP | 2,80 V con la cámara encendida |
+| TP11 | CAM_DVDD | 1V2 | Rejilla de TP | 1,20 V (1,50 V con ME6211C15) |
+| TP12, TP13, TP14 | GND | G | Lóbulo izquierdo, junto al puente H y en la rejilla | 0 V (pinza del osciloscopio) |
+
+Otras medidas sin TP propio:
+
+| Red | Dónde se mide |
+|-----|---------------|
+| EN | Pad de SW1 (RST) que no va a GND, o R17 |
+| GPIO0 (BOOT) | Pad de SW2 (BOOT) que no va a GND, o R18 |
+| CHG | Cátodo de D1 (LED rojo junto al cargador) |
+| PGOOD | Cátodo de D2 (LED verde junto al cargador) |
+| U0TX / U0RX | J_EXP (J11) pines 9 y 10 (cara inferior: «IO43 TX», «IO44 RX») |
+| VBAT_SNS | C5 (100 nF del divisor de VBAT) |
+
+## Equipo
+
+| Equipo | Para qué |
+|--------|----------|
+| Polímetro con continuidad y escala de µA | Cortos, tensiones y consumo en reposo |
+| Fuente de laboratorio de 0–6 V con límite de corriente | Primer arranque por la entrada de batería y simulación de la batería |
+| Medidor USB-C en línea (tensión y corriente) y cargador de 5 V / 2 A | Primer arranque por USB y corriente de entrada |
+| Osciloscopio de ≥ 50 MHz | Rizado, PWM del motor, I2S, clase D, D+/D− |
+| Resistencias de potencia: 10 Ω / 5 W y 4,7 Ω / 10 W | Carga del elevador de 6 V |
+| Termómetro de contacto o cámara térmica | Temperaturas |
+| PC con `esptool` y ESP-IDF o Arduino; cable USB-C de datos | Enumeración, flasheo y firmwares de prueba |
+| Altavoz del Furby (4 Ω, 3 W), motor del Furby o motor DC de prueba | Audio y motor |
+| Dos cables con pinzas o puntas para soldar provisionalmente a J2 (BAT+) y J3 (BAT−) | Pruebas con la fuente en la entrada de batería |
+| Módulo de cámara OV2640 (o el elegido) y su flex | Cámara |
+| Otro ESP32 de referencia | Comparar el RSSI del WiFi |
+| Batería LiPo 1S de 1400 mAh con PCM | Pasos 8 a 17 |
+
+## 1. Inspección visual (sin alimentar)
+
+| Comprobar | PASS | Si falla |
+|-----------|------|----------|
+| Pin 1 de U1 (USBLC6), U2 (BQ24073), U3 (TPS63802), U4 (WROOM-1), U5 (TPS61089), U6 (DRV8231A), U7 (MAX98357A), U8 y U9 (ME6211), U10 (TCA9535), U11 (74LVC1G17), Q1 (SI7615ADN), Q2 y Q3 (AO3400A) | Coincide con el punto o el chaflán de la serigrafía | Reclamar a JLCPCB o resoldar. Revisar `GIRO` en `scripts/jlc_post.py` para el siguiente pedido |
+| Polaridad de los LED D1–D5 | Cátodo hacia el pad 1 de la huella (marca de la serigrafía) | Ídem |
+| Puentes de estaño en los QFN, el TSSOP, el USB-C y el FPC | Ninguno (lupa ×10) | Retirar con malla y flux |
+| USB-C (J1) asentado en la ranura, con las cuatro patas de la carcasa soldadas | Sin holgura | Resoldar las patas |
+| Pads de la batería | J2 cuadrado con «+», J3 redondo con «-» | Defecto de serigrafía: marcar a mano antes de seguir |
+| Puentes JP1–JP5 | Cerrados de fábrica (puente de cobre entre los dos medios pads) | Cerrarlos con estaño |
+| Zona de la antena | Sin cobre ni componentes delante del módulo (x −85 a −61) | Defecto de diseño: anotarlo |
+
+## 2. Cortos y continuidad (sin alimentar)
+
+Polímetro en ohmios, punta negra en GND (TP12–TP14).
+
+| Carril | Esperado | PASS | Si falla |
+|--------|----------|------|----------|
+| VBUS (TP1)–GND | > 10 kΩ | No es un corto (< 10 Ω) | Revisar F1, U1 (USBLC6) y la entrada de U2 |
+| BAT (TP4)–GND | ≈ 940 kΩ (R13 + R14, 470k + 470k) en paralelo con U2 | > 50 kΩ | Revisar el divisor y U2 |
+| J2 (BAT+)–GND | > 100 kΩ (Q1 cortado sin alimentar) | No es un corto | Revisar Q1 |
+| VSYS (TP5)–GND | > 1 kΩ | > 100 Ω | Revisar U3, U5 y U7 |
+| 3V3 (TP6)–GND | Del orden de kΩ (módulo sin alimentar) | > 100 Ω | Levantar L1 y medir otra vez para aislar U3 |
+| 6V (TP7)–GND | > 10 kΩ | > 1 kΩ | Revisar U6 y C18–C22 |
+| 2V8 (TP10) y 1V2 (TP11)–GND | > 10 kΩ | > 1 kΩ | Revisar U8, U9 y C28–C29 |
+| VBUS–VSYS, VSYS–3V3, 3V3–6V | Sin continuidad directa | > 100 Ω | Puente entre carriles: buscarlo con la lupa |
+| D+ y D− de J1 (TP2, TP3) a los pads 14 (D+) y 13 (D−) del módulo | < 1 Ω | Continuidad | Revisar soldaduras |
+
+## 3. Primer arranque por la entrada de batería (fuente limitada)
+
+Fuente de laboratorio en **J2 (BAT+) y J3 (BAT−)**, con pinzas o cables soldados provisionalmente: **3,70 V, límite de 150 mA**. Sin USB, sin cámara, sin motor ni altavoz.
+
+| Medida | Esperado | PASS / FAIL | Si falla |
+|--------|----------|-------------|----------|
+| Corriente al encender | Pico < 150 mA y luego 30–60 mA (el módulo arranca en blanco o con la prueba de fábrica) | PASS: < 100 mA estable. FAIL: la fuente limita | Apagar. Medir VSYS y 3V3 con la fuente limitada a 50 mA y buscar el carril que cae |
+| VSYS (TP5) | 3,65 V ± 0,05 (VBAT − ≈ 50 mV) | ± 0,1 | U2 sin soldar o en cortocircuito |
+| Caída en Q1 (J2 − TP4) | < 5 mV a 50 mA | < 10 mV | Q1 sin conducir: puerta a GND por R12 (10 kΩ) |
+| 3V3 (TP6) | 3,30 V ± 0,10 | ± 0,10 | U3: divisor R15/R16 (510k/91k) y L1 |
+| LED PWR (D4) | Encendido | | Polaridad de D4, R57 o JP5 abierto |
+| LED TX (D3) | Parpadea al arrancar y al pulsar RST | | D3, R19 y GPIO43 |
+| J11 pin 9 (IO43 TX) a 115 200 baudios | Log del ROM: `ESP-ROM:esp32s3…` | | EN en SW1 a 3,3 V y C11 (RC de EN con R17) |
+
+Luego, la fuente a **3,0 V**: 3V3 tiene que seguir en 3,30 ± 0,10 (U3 elevando). A **4,2 V**: igual.
+
+## 4. Primer arranque por USB
+
+Medidor USB-C en línea, con un cargador de 5 V. Se quita la fuente del paso 3: sin batería.
+
+| Medida | Esperado | Si falla |
+|--------|----------|----------|
+| Corriente de entrada | < 150 mA | Desenchufar y volver al paso 2 |
+| VBUS (TP1) | 5,0 V ± 0,25 | Cable, F1, R1/R2 (5,1 kΩ en CC1/CC2) |
+| VSYS (TP5) | 4,40 V ± 0,10 (OUT regulado de U2) | U2: R5 (ILIM 1,2 kΩ), EN1 (R6 a VSYS) y EN2 (R7 a GND): USB500 sin firmware |
+| LED PG (D2, verde junto al cargador) | Encendido | PGOOD o D2/R11 |
+| LED CHG (D1, rojo) | Apagado o parpadeando (sin batería, U2 detecta que falta) | Normal sin batería |
+
+## 5. Enumeración USB y primer flasheo
+
+| Paso | PASS | Si falla |
+|------|------|----------|
+| `lsusb` (macOS: `system_profiler SPUSBDataType`) | Aparece «USB JTAG/serial debug unit» (VID 303A) | D+ y D− (¿cruzados?), U1 y el cable de datos. Probar con BOOT (SW2) pulsado al enchufar |
+| `esptool.py chip_id` y `flash_id` | ESP32-S3, 16 MB de flash; PSRAM de 8 MB en el log de arranque | Modo descarga a mano: mantener BOOT, pulsar y soltar RST, soltar BOOT |
+| Flashear el firmware de prueba (`furbyboard-test`) | Se graba y arranca | Ver el log por J11 pin 9 |
+| LED RUN (D5) | Parpadea a 1 Hz (latido del firmware de prueba, P16 de U10) | I2C a U10 (escaneo: 0x20), R36/R37 |
+
+## 6. LED
+
+| LED | Prueba | PASS |
+|-----|--------|------|
+| D4 PWR (verde, fila de arriba) | 3V3 presente | Encendido; se apaga al cortar JP5 «LED» (no cortarlo hasta acabar las pruebas) |
+| D3 TX (rojo, fila de arriba) | Reset y entrada en modo descarga | Parpadea en cada reset y al entrar en descarga |
+| D5 RUN (verde, fila de arriba) | Firmware de prueba | Parpadea; apagado durante el flasheo |
+| D1 CHG (rojo, junto al cargador) | Batería descargada y USB | Encendido mientras carga |
+| D2 PG (verde, junto al cargador) | Con USB | Encendido |
+
+## 7. Medida de cada carril (con el firmware de prueba)
+
+| TP | Condición | Esperado | Tolerancia | Rizado (osciloscopio, 20 MHz de banda) |
+|----|-----------|----------|------------|----------------------------------------|
+| TP1 VBUS | USB | 5,00 V | ± 0,25 | — |
+| TP5 VSYS | USB / sin USB | 4,40 V / VBAT − 0,05 | ± 0,10 | < 100 mVpp |
+| TP6 3V3 | WiFi transmitiendo | 3,30 V | ± 0,10; caídas < 150 mV en los picos de TX | < 50 mVpp |
+| TP7 6V | EN_6V = 1, sin carga | 5,94 V | ± 0,15 | < 100 mVpp |
+| TP10 2V8 | Cámara encendida (CAM_EN, P15 = 1) | 2,80 V | ± 0,06 | < 30 mVpp |
+| TP11 1V2 | Cámara encendida | 1,20 V (1,50 V con U9 = ME6211C15) | ± 0,05 | < 30 mVpp |
+| EN (pad de SW1) | En marcha | 3,3 V | ± 0,1 | — |
+
+## 8. Batería, carga y power path
+
+### 8.1 Prueba de la protección contra la polaridad inversa (antes de soldar la batería)
+
+| Paso | PASS | Si falla |
+|------|------|----------|
+| Fuente a **4,2 V con límite de 100 mA**, conectada **al revés**: + a J3 (BAT−) y − a J2 (BAT+). Sin USB | Corriente < 1 mA. TP4, TP5 y TP6 entre 0 y +0,1 V, **nunca negativos**. Nada se calienta | Cortar la fuente. Revisar la orientación de Q1 (pin 1) y R12 |
+| Igual, pero con el **USB enchufado** (5 V con medidor) | Corriente por la fuente invertida de 4 a 11 mA (detección de cortocircuito de U2). TP4 entre +0,4 y +1,6 V, positivo. D1 apagado o parpadeando. Q1 < 40 °C a los 2 min | Con más de 60 mA: U2 ha entrado en precarga. Si la VGS(th) de Q1 está en el límite, sigue siendo seguro (≈ 0,3 W). Anotarlo para la v1.1 |
+| Quitar la fuente, conectarla bien (3,7 V) y repetir el paso 3 | Todo funciona igual que antes de la prueba | Revisar U2 y el divisor R13/R14 |
+
+### 8.2 Polaridad de la batería y soldadura
+
+| Paso | PASS | Si falla |
+|------|------|----------|
+| Medir con el polímetro en continua entre los dos cables de la batería, con la punta roja en el cable que se piensa soldar a BAT+ | +3,0 a +4,2 V. Si sale negativo, ese cable es el −. Marcar el + con cinta | Si sale 0 V: la protección de la batería está cortada. Despertarla con una fuente limitada a 4,2 V / 100 mA |
+| Soldar el cable + al pad **cuadrado J2 («+»)** y el − al **redondo J3 («-»)**. Volver a medir entre J2 y TP12 | +3,0 a +4,2 V | Desoldar y corregir. La protección evita daños (8.1), pero la placa no funcionará |
+
+### 8.3 Carga y power path
+
+Con la batería real, ya soldada (8.2).
+
+| Prueba | Procedimiento | PASS | Si falla |
+|--------|---------------|------|----------|
+| Corriente de carga | Batería a ≈ 3,6 V, USB, firmware en reposo. Polímetro en serie con la batería | 0,44–0,54 A en corriente constante (R4 = 1,8 kΩ: 890 / 1800 = 0,494 A) | R4 y la temperatura de U2 (por encima de 125 °C regula a la baja) |
+| Fin de carga | Dejar cargar | D1 se apaga con VBAT = 4,20 V ± 0,02 y < 50 mA (10 % de ICHG) | Temporizador (TMR sin conectar: 5 h por defecto) o TS (R3, 10 kΩ a GND) |
+| Conmutación sin reinicio | Firmware que imprime el tiempo desde el arranque y el motivo de reset. Enchufar y desenchufar el USB 20 veces, con WiFi activo | El tiempo no se reinicia; ningún reset por brown-out | C3, C6 y C7–C9. Medir VSYS en el osciloscopio durante el cambio (caída < 300 mV) |
+| Modo suplemento | USB de 500 mA (puerto de ordenador) y motor en marcha | El sistema no se reinicia y la batería aporta la diferencia | Si salta «VO(SC2)»: subir a ILIM (EN1 = 0, EN2 = 1: 1,34 A con R5) con un cargador bueno, o bajar ITRIP |
+| USB500 al arrancar | Sin firmware (BOOT pulsado) | Corriente de entrada ≤ 0,5 A | R6 (pull-up de EN1) y R7 (pull-down de EN2) |
+
+## 9. Medida de la batería por ADC
+
+| Procedimiento | PASS | Si falla |
+|---------------|------|----------|
+| Con la batería soldada, en tres momentos de la carga (≈ 3,5, ≈ 3,9 y 4,2 V, con el USB quitado un momento para medir en reposo). Comparar la lectura del ADC (GPIO1, divisor R13/R14 × 2, calibración de eFuse) con el polímetro en TP4 | Error ≤ 2 % (≤ 80 mV) | R13/R14 (470k), C5 (100 nF) o la atenuación del ADC (12 dB) |
+
+## 10. Elevador de 6 V
+
+| Prueba | PASS | Si falla |
+|--------|------|----------|
+| En vacío (EN_6V = 1, P12 de U10) | TP7 = 5,94 V ± 0,15 | Divisor de realimentación R21/R22 (390k/100k) |
+| Con 10 Ω entre TP7 y GND (≈ 0,6 A) | ≥ 5,80 V, rizado < 150 mVpp | L2, C18–C21, R20 (fSW) |
+| Con 4,7 Ω (≈ 1,26 A), 10 s | ≥ 5,70 V; U5 < 80 °C; corriente de la batería ≈ 2,3 A a 3,7 V | R23 (ILIM 270 kΩ) o protección de la batería |
+| Con EN_6V = 0 | ≈ VSYS − 0,4 V (diodo del FET alto de U5); U6 en reposo | Normal en este elevador |
+
+## 11. Motor
+
+Con el motor del Furby y el mecanismo montado, o con un motor de prueba de la misma clase. El motor va a J9 «M1» y «M2» (cara inferior).
+
+| Prueba | Procedimiento | PASS | Si falla |
+|--------|---------------|------|----------|
+| Bobinado (antes de conectarlo) | Medir la resistencia entre los cables del motor en 5 posiciones del eje; quedarse con la menor (R) | Anotar R. I de bloqueo ≈ 6 V / R. Si pasa de 1,0 A, ITRIP la limita | No hay datos publicados del motor: esta medida manda sobre la estimación (0,6–1,2 A) |
+| Arranque seguro | Encender sin firmware (BOOT pulsado) | El motor no se mueve | R29/R30 (pull-downs de IN1 e IN2) |
+| Dos sentidos | PWM a 20 kHz, 70 %, decaimiento lento, en cada sentido | Gira en los dos; M1 y M2 conmutan a 20 kHz | GPIO48 y GPIO46, JP1 y JP2 |
+| Corriente en marcha | TP8 (IPROPI) / 2,25 V por A | Anotar el valor (se esperan 0,1–0,3 A) | — |
+| Bloqueo | Frenar el eje con cuidado 200 ms | TP8 ≈ 2,25 V (≈ 1,0 A, regulado con ITRIP); el ESP no se reinicia y el PCM no corta | Bajar ITRIP subiendo R26 (4,7 kΩ → 6,8 kΩ: VREF 1,96 V, 0,87 A). Para subirla, R26 = 3,3 kΩ (1,10 A) |
+| Inversiones | Bucle de 5 min alternando cada 0,4 s, con freno de 20–30 ms y rampa | Sin reinicios; U6 < 80 °C | Alargar el freno o la rampa, o bajar ITRIP |
+| Posición | Ir al final de carrera (GPIO47, J9 «LEVA») y contar pulsos del encoder (GPIO14) en un ciclo completo | Mismo número de pulsos (± 1) en 10 ciclos | U11 (Schmitt), R52 (pull-up del fototransistor, 10 kΩ, ajustable de 4,7 a 47 kΩ), LED del encoder (Q2 y R51 con EN_6V) |
+
+## 12. Sensores del Furby
+
+Pads en la cara inferior: barriga «BAR» y espalda «ESP» en J9, lengua «LNG» e inclinación «TLA»/«TLB» en J8.
+
+| Sensor | Procedimiento | PASS |
+|--------|---------------|------|
+| Barriga, espalda, lengua, inclinación A y B | Puentear cada pad a su «G» con unas pinzas y leer U10 | Cambia el bit correcto (P00–P04) y salta la INT en GPIO21. Despierta del sueño profundo |
+| Leva | Puentear «LEVA» a «G» en J9 | GPIO47 a 0 |
+| Encoder | Girar el mecanismo a mano con el elevador encendido | Pulsos limpios en GPIO14 (osciloscopio en JP4: flancos < 1 µs tras U11) |
+| Luz | Tapar el sensor e iluminarlo con una linterna | La lectura del ADC (GPIO2, LDR en J7 «3V3»/«LDR» con R53 de 470 kΩ) cambia más de 1 V |
+| IR | Mando de TV hacia el receptor (J7, GPIO42) y emisión por RMT (GPIO45, Q3) hacia un receptor conocido | Se decodifican tramas en los dos sentidos |
+
+Si falla, se revisa por este orden: la soldadura del cable, el pull-up (R39/R41/R43 de 47 kΩ; R45/R47 de 220 kΩ en la inclinación), la serie de 1 kΩ (R40–R48), el condensador (C33–C37) y la dirección de U10.
+
+## 13. Audio
+
+| Prueba | Procedimiento | PASS | Si falla |
+|--------|---------------|------|----------|
+| Micro | Grabar 10 s a 16 kHz (J5 «SD», GPIO41) y escuchar el fichero | Voz clara; ruido de fondo < −60 dBFS en silencio | L/R del micro (J5 pin 6 a GND), R31/R32 (33 Ω en SCK y WS), longitud del cable (≤ 15 cm) |
+| Altavoz | Tono de 1 kHz a −12 dBFS con el altavoz del Furby (4 Ω) en J8 «SP+»/«SP-» | Sin distorsión audible; AMP_SD (P13) a 1 | AMP_SD, GAIN, TP9 (I2S DOUT) |
+| Potencia máxima | Tono a −6 dBFS (límite del firmware) con la batería a 3,7 V; medir la corriente de VSYS | ≤ 0,45 A de pico, sin reinicios ni distorsión fea | GAIN_SLOT (6 dB) y el limitador |
+| Full duplex | Reproducir y grabar a la vez | El micro graba mientras suena, sin cortes | Configuración de I2S0 |
+| Motor y audio | Motor en marcha mientras se graba | Sin zumbido del PWM (20 kHz, fuera de banda) | Masa del elevador y del puente H, C18–C22 |
+
+## 14. Cámara
+
+| Prueba | PASS | Si falla |
+|--------|------|----------|
+| Encender la cámara (CAM_EN, P15 = 1; CAM_PWDN, P14 = 0) y escanear el I2C | Responden la cámara (0x30 el OV2640; 0x3C el OV3660/OV5640) y U10 (0x20) | Pinout del FPC J6 (lado del contacto), TP10, TP11, CAM_RST (R35/C31) |
+| Foto JPEG SVGA con el preset ESP32-S3-EYE | Imagen correcta | XCLK (bajar a 10 MHz) y PCLK |
+| Con el flex final hasta la cara | 50 fotos seguidas sin error | Acortar el flex, bajar XCLK o la resolución |
+
+## 15. WiFi
+
+| Prueba | PASS | Si falla |
+|--------|------|----------|
+| RSSI con la placa dentro de la base, la batería montada y el Furby cerrado, frente a un ESP32 de referencia en el mismo sitio | Diferencia ≤ 6 dB | Revisar la zona sin cobre. Si la diferencia pasa de 10 dB: WROOM-1U con antena externa (misma huella) |
+| Rendimiento (iperf o subida de audio por TLS) | ≥ 5 Mbit/s a 3 m del router | Ídem |
+
+## 16. Consumo
+
+| Modo | Esperado | PASS | Si falla |
+|------|----------|------|----------|
+| Dormido (sueño profundo, cámara, elevador, ampli e IR apagados, leva aparcada, JP5 cortado), polímetro en µA en serie con la batería | ≈ 80 µA (60–110) | ≤ 150 µA | Ir quitando consumidores: D4 (JP5), inclinación cerrada (220 kΩ), LDR, micro, U10, módulo |
+| Despertar | Dormido, tocar barriga, espalda y lengua, inclinar, enchufar el USB y esperar al temporizador | Despierta en cada caso (INT de U10 en GPIO21 y temporizador) y vuelve a dormirse tras N s | Leer y borrar la INT de U10 antes de dormir; configuración de ext0 |
+| Escuchando la palabra de activación | 85–120 mA | ≤ 130 mA | Frecuencia de CPU, modem sleep |
+| Pico (motor bloqueado + TX + cámara + audio limitado a −6 dBFS) | ≈ 2,6 A a 3,7 V; ≈ 2,9 A a 3,3 V | Sin reinicio y sin corte del PCM | Bajar ITRIP o no solapar el motor con la foto |
+
+## 17. Temperatura
+
+| Prueba | PASS |
+|--------|------|
+| 30 min cargando a 0,49 A con el sistema activo, dentro de la base cerrada | U2 < 85 °C; aire junto a U4 < 55 °C (máximo +65 °C para la variante R8) |
+| 10 min de conversación con el motor invirtiendo cada 1 s | U6 y U5 < 80 °C; batería < 45 °C |
+| 10 min con WiFi transmitiendo y la cámara encendida | U3 (bajo la batería) < 70 °C; batería < 45 °C |
+
+Si se pasa: bajar ICHG (R4 de 2,2 kΩ → 0,40 A), añadir vías térmicas o separar más el cargador del módulo en la v1.1.

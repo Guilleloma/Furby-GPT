@@ -1,5 +1,7 @@
 # FurbyBoard v1.0: plan de pruebas de hardware (borrador)
 
+> **Sustituido por [`Hardware/FurbyBoard/TEST-PLAN.md`](../FurbyBoard/TEST-PLAN.md)**, con los designadores y TP reales del esquema y el PCB. Este borrador de la fase 1 se conserva como histórico.
+
 Bring-up paso a paso para cuando llegue la placa montada de JLCPCB. Es un **borrador de la fase 1**: los valores salen de `ARQUITECTURA.md`. En la fase 2, con el esquema y el layout, se completan los designadores, la posición de cada TP y las resistencias que falten.
 
 **Reglas:**
