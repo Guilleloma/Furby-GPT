@@ -111,3 +111,7 @@
 (rule "cuello J1"
 	(condition "A.Layer == 'F.Cu' && A.intersectsCourtyard('J1')")
 	(constraint track_width (min 0.2mm)))
+
+(rule "cuello J6"
+	(condition "A.Layer == 'F.Cu' && A.intersectsCourtyard('J6')")
+	(constraint track_width (min 0.15mm)))

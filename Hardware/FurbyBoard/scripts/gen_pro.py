@@ -30,11 +30,12 @@ MOTOR_NETS = ["MOT_OUT1", "MOT_OUT2"]
 
 # Ancho mínimo de pista por red de potencia (tabla de raíles de NOTAS.md). Va al DRC como
 # regla del .kicad_dru y a pcb-toolkit.toml como [rutado.anchos_minimos]: doble barrera.
-# Dentro del patio de los CI con pines de 0,5 mm de paso (y en los pads de 0,3 del USB-C)
+# Dentro del patio de los CI con pines de 0,5 mm de paso (y en los pads de 0,3 del USB-C y
+# del conector de la cámara, J6, cuyo pin 11 es 3V3: ahí el bus DVP de 0,15 pasa entre pads)
 # se admite un cuello de ≤ 1 mm (layout-pcb.md, sección 5.1); el ancho del cuello es
 # la última regla, que es la que manda en KiCad.
 ANCHOS_MINIMOS = P.ANCHOS_MINIMOS
-CUELLOS = {"U2": 0.25, "U3": 0.25, "U5": 0.25, "U6": 0.25, "U7": 0.25, "Q1": 0.5, "J1": 0.2}
+CUELLOS = {"U2": 0.25, "U3": 0.25, "U5": 0.25, "U6": 0.25, "U7": 0.25, "Q1": 0.5, "J1": 0.2, "J6": 0.15}
 
 
 def project():
