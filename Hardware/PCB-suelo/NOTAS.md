@@ -16,6 +16,10 @@ Sustituye al planteamiento de `Hardware/PCB/`: el contorno del colaborador (`Fur
 | `render/lateral-lobulo.png` | Corte por x = −73,5: suelo, separador, PCB, USB-C, funda del cable y corte de la pared |
 | `scripts/contorno_suelo.py` | Calcula el contorno y escribe el DXF, `geometria.json` y los renders |
 | `scripts/generar_kicad.py` | Crea el proyecto KiCad (se ejecuta con el Python de KiCad) |
+| `ARQUITECTURA.md` | Propuesta de la electrónica v1 (fase 1): bloques, componentes, potencia, pines, colocación y dudas abiertas |
+| `render/planta-arquitectura.png` | Colocación por bloques sobre el contorno: batería en bandeja, ESP32-S3 Zero, carga, elevador, puente H, audio y pads |
+| `render/bloques.png` | Diagrama de bloques de la electrónica v1 |
+| `scripts/render_arquitectura.py` | Comprueba la colocación de la propuesta y dibuja los dos renders anteriores |
 
 El STL y el DXF del suelo de la base son de un tercero y no están en el repositorio. Aquí solo está el contorno de la PCB derivado de ellos.
 
