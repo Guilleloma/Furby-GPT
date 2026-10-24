@@ -6777,7 +6777,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "Cortar para liberar GPIO48"
+		(property "Description" "Cortar para liberar GPIO9"
 			(at 53.34 200.66 0)
 			(hide yes)
 			(show_name no)

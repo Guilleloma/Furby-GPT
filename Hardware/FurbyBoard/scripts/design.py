@@ -164,14 +164,17 @@ def build():
 
     # ------------------------------------------------------------------ MCU
     s = "mcu"
+    # GPIO reasignados en el rutado (2026-10-24): la cámara usa los pines del lado del FPC
+    # (fila inferior derecha y columna derecha), el I2S y los sensores, los de la izquierda.
+    # Sin tocar strapping (IO0, IO3, IO45, IO46) ni el USB (IO19/IO20).
     io = {
-        "1": "GND", "2": "3V3", "3": "EN", "4": "I2C_SDA", "5": "I2C_SCL", "6": "CAM_VSYNC",
-        "7": "CAM_HREF", "8": "CAM_XCLK", "9": "CAM_Y9", "10": "CAM_Y8", "11": "CAM_Y7",
-        "12": "CAM_Y4", "13": "USB_DN", "14": "USB_DP", "15": "IPROPI_IO", "16": "MOT_IN2_IO",
-        "17": "CAM_Y3", "18": "CAM_Y5", "19": "CAM_Y2", "20": "CAM_Y6", "21": "CAM_PCLK",
-        "22": "ENC_IO", "23": "EXP_INT", "24": "HOME", "25": "MOT_IN1_IO", "26": "IR_TX",
-        "27": "BOOT", "28": "", "29": "", "30": "", "31": "I2S_BCLK", "32": "I2S_WS",
-        "33": "I2S_DOUT", "34": "I2S_DIN", "35": "IR_RX", "36": "U0RX", "37": "U0TX",
+        "1": "GND", "2": "3V3", "3": "EN", "4": "I2C_SDA", "5": "I2C_SCL", "6": "I2S_BCLK",
+        "7": "I2S_WS", "8": "I2S_DOUT", "9": "I2S_DIN", "10": "HOME", "11": "EXP_INT",
+        "12": "ENC_IO", "13": "USB_DN", "14": "USB_DP", "15": "IPROPI_IO", "16": "MOT_IN2_IO",
+        "17": "MOT_IN1_IO", "18": "CAM_VSYNC", "19": "CAM_HREF", "20": "CAM_Y9", "21": "CAM_XCLK",
+        "22": "CAM_Y8", "23": "CAM_Y7", "24": "CAM_PCLK", "25": "CAM_Y6", "26": "IR_TX",
+        "27": "BOOT", "28": "", "29": "", "30": "", "31": "CAM_Y2", "32": "CAM_Y5",
+        "33": "CAM_Y3", "34": "CAM_Y4", "35": "IR_RX", "36": "U0RX", "37": "U0TX",
         "38": "LIGHT", "39": "VBAT_SNS", "40": "GND", "41": "GND",
     }
     part("U4", s, "RF_Module:ESP32-S3-WROOM-1", "ESP32-S3-WROOM-1-N16R8", "RF_Module:ESP32-S3-WROOM-1",
@@ -224,7 +227,7 @@ def build():
     R("R28", s, "1.5k", "IPROPI", "GND", "RIPROPI: 2,25 V por amperio")
     R("R29", s, "100k", "MOT_IN1", "GND", "Motor parado al arrancar")
     R("R30", s, "100k", "MOT_IN2", "GND", "Motor parado al arrancar")
-    JP("JP1", s, "MOT_IN1_IO", "MOT_IN1", "Cortar para liberar GPIO48")
+    JP("JP1", s, "MOT_IN1_IO", "MOT_IN1", "Cortar para liberar GPIO9")
     JP("JP2", s, "MOT_IN2_IO", "MOT_IN2", "Cortar para liberar GPIO46")
     JP("JP3", s, "IPROPI_IO", "IPROPI", "Cortar para liberar GPIO3 (ADC)")
     TP("TP7", s, "V6", "5,94 V con EN_6V")
@@ -310,7 +313,7 @@ def build():
          {"1": "", "2": "ENC_PT", "3": "GND", "4": "ENC", "5": "3V3"}, "C7836", "ext",
          "TI SN74LVC1G17DBVR", "Schmitt del encoder")
     C("C39", s, "100n", "3V3", "GND", "Desacoplo del Schmitt")
-    JP("JP4", s, "ENC", "ENC_IO", "Cortar para liberar GPIO14")
+    JP("JP4", s, "ENC", "ENC_IO", "Cortar para liberar GPIO8")
     # Luz: LDR entre 3V3 y LIGHT, 470k a GND
     R("R53", s, "470k", "LIGHT", "GND", "LDR con luz ≈ 7 µA")
     C("C40", s, "100n", "LIGHT", "GND", "Filtro del ADC")

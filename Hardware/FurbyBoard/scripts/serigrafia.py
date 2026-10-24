@@ -24,7 +24,7 @@ ARRIBA = {
     "TP1": "VBUS", "TP2": "D+", "TP3": "D-", "TP4": "BAT", "TP5": "VSYS", "TP6": "3V3",
     "TP7": "6V", "TP8": "IPR",
     "TP9": "I2S", "TP10": "2V8", "TP11": "1V2", "TP12": "G", "TP13": "G", "TP14": "G",
-    "JP1": "IO48", "JP2": "IO46", "JP3": "IO3", "JP4": "IO14", "JP5": "LED",
+    "JP1": "IO9", "JP2": "IO46", "JP3": "IO3", "JP4": "IO8", "JP5": "LED",
 }
 
 # Lado preferido de cada rótulo de arriba (por defecto RLUD): la rejilla de TP lleva el rótulo debajo.
@@ -35,7 +35,7 @@ LADO_ARRIBA.update({r: "U" for r in ("D4", "D5", "D3")})
 
 # Los puentes se cortan desde arriba, pero no siempre cabe su rótulo: en la cara inferior,
 # en el mismo sitio, va siempre qué GPIO libera cada uno.
-PUENTES_ABAJO = {"JP1": "IO48", "JP2": "IO46", "JP3": "IO3", "JP4": "IO14", "JP5": "LED"}
+PUENTES_ABAJO = {"JP1": "IO9", "JP2": "IO46", "JP3": "IO3", "JP4": "IO8", "JP5": "LED"}
 
 # Pads de cable (cara inferior, donde se sueldan): referencia -> {pad: texto}
 PADS = {

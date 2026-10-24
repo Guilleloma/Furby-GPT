@@ -12,7 +12,7 @@ Se ejecuta con el Python de KiCad:
   existe scripts/rutado.ses (Freerouting sobre el DSN de exportar_dsn.py), se
   importa; si no, el PCB queda colocado y sin rutar.
 - Serigrafía: nombre y versión, logo y rótulos colocados solos (scripts/serigrafia.py).
-- Planos: GND en In1 (L2) y VSYS en In2 (L3), enteros; relleno de GND en F.Cu y B.Cu tras el rutado.
+- Planos: GND en In1 (L2) entero; In2 (L3) es capa de señal con relleno de VSYS; relleno de GND en F.Cu y B.Cu tras el rutado.
 - Áreas de reglas: sin cobre bajo la antena (todas las capas) y sin vías ni pads
   pasantes bajo el logo de la cara inferior.
 """
@@ -223,8 +223,8 @@ def caja(x0, x1, y0, y1):
 
 
 def zones(board, netmap, exteriores):
-    """Planos: GND en In1 y VSYS en In2, siempre. Rellenos de GND en F.Cu y B.Cu solo
-    con el rutado hecho (antes taparían el paso al autorrutado)."""
+    """Plano de GND en In1 y relleno de VSYS en lo que dejen libre las señales de In2.
+    Rellenos de GND en F.Cu y B.Cu solo con el rutado hecho."""
     cu = [pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu]
     c = GEO["resultado"]["caja"]
     todo = caja(c[0] - 1, c[2] + 1, c[1] - 1, c[3] + 1)
@@ -435,9 +435,9 @@ def main():
     board = pcbnew.LoadBoard(P.PCB)
     setup_board(board)
     netmap = {n: board.FindNet(n) for n in D.nets()}
-    # In1 (GND) e In2 (VSYS) son planos: tipo «power» para que el autorrutado no trace pistas en ellos
+    # In1 es el plano de GND (no se ruta). In2 es capa de señal con relleno de VSYS en lo libre.
     board.SetLayerType(pcbnew.In1_Cu, pcbnew.LT_POWER)
-    board.SetLayerType(pcbnew.In2_Cu, pcbnew.LT_POWER)
+    board.SetLayerType(pcbnew.In2_Cu, pcbnew.LT_SIGNAL)
     rutas_fijas(board, netmap)
     rutado = "--sin-rutado" not in sys.argv and import_ses(board)
     zones(board, netmap, exteriores=rutado)

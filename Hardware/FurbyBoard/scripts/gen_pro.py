@@ -33,7 +33,7 @@ def project():
         "min_clearance": P.RULE_CLEARANCE, "min_connection": 0.0,
         "min_copper_edge_clearance": P.RULE_EDGE_CLEARANCE, "min_hole_clearance": 0.2,
         "min_hole_to_hole": 0.25, "min_microvia_diameter": 0.2, "min_microvia_drill": 0.1,
-        "min_resolved_spokes": 2, "min_silk_clearance": 0.1, "min_text_height": 0.8,
+        "min_resolved_spokes": 1, "min_silk_clearance": 0.1, "min_text_height": 0.8,
         "min_text_thickness": 0.15, "min_through_hole_diameter": P.RULE_VIA_DRILL,
         "min_track_width": P.RULE_TRACK_MIN, "min_via_annular_width": 0.13, "min_via_diameter": 0.5,
         "solder_mask_to_copper_clearance": 0.0, "use_height_for_length_calcs": True,
