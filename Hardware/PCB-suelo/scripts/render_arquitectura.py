@@ -68,7 +68,7 @@ ANTENA_SIN_COBRE = {"x": (-85.0, -61.0), "y": (-63.5, -50.0)}
 # Bloques de la cara superior: (nombre, x0, x1, y0, y1, color, texto, bajo la batería)
 BLOQUES = [
     ("botones", -62.5, -53.5, -73.0, -64.5, "#566573", "BOOT · RESET\nLED PWR, PROG, RUN\nTP EN, IO0, GND", False),
-    ("fpc", -63.5, -48.0, -79.5, -74.0, "#117a65", "FPC cámara 24p 0,5", False),
+    ("fpc", -63.6, -48.6, -79.5, -74.0, "#117a65", "FPC cámara 24p 0,5", False),
     ("ldo_cam", -62.0, -54.0, -86.0, -80.5, "#117a65", "LDO cámara\n2,8 V · 1,2/1,5 V", False),
     ("elevador", -52.0, -41.5, -94.5, -84.0, "#c0392b", "Elevador 6 V\nTPS61089\nL 1 µH", False),
     ("puente_h", -52.0, -46.0, -102.5, -96.0, "#8e44ad", "DRV8231A\nTP IPROPI", False),
@@ -86,9 +86,9 @@ PAD_D = 1.7
 PADS = [
     ("micro", -60.0, -60.5, 3, 2, "#1e8449", "Micro I2S ×6", "derecha"),
     ("frente_izq", -92.5, -61.5, 3, 2, "#1e8449", "IR: emisor ×2,\nreceptor ×3, GND", "izquierda"),
-    ("izquierda", -102.2, -71.0, 1, 5, "#1e8449", "Inclinación ×3\nlengua ×2", "izquierda"),
-    ("header", -105.0, -84.0, 1, 10, "#b7950b", "J_EXP 1×10 (sin montar):\nGND, 3V3, VSYS, VBUS,\nSDA, SCL, EXP P07, P17,\nU0TX, U0RX", "izquierda"),
-    ("derecha", -46.6, -72.3, 2, 5, "#1e8449", "Leva ×2, encoder ×4,\nbarriga ×2, espalda ×2", "derecha"),
+    ("izquierda", -101.7, -71.5, 1, 5, "#1e8449", "Inclinación ×3\nlengua ×2", "izquierda"),
+    ("header", -104.5, -84.0, 1, 10, "#b7950b", "J_EXP 1×10 (sin montar):\nGND, 3V3, VSYS, VBUS,\nSDA, SCL, EXP P07, GND,\nU0TX, U0RX", "izquierda"),
+    ("derecha", -47.1, -72.6, 2, 5, "#1e8449", "Leva ×2, encoder ×4,\nbarriga ×2, espalda ×2", "derecha"),
     ("motor", -43.6, -97.0, 1, 2, "#8e44ad", "Motor", "derecha"),
     ("lobulo", -82.8, -120.0, 2, 2, "#2471a3", "", "izquierda"),
 ]
@@ -370,6 +370,8 @@ def render_planta(geo, pcb, m):
         "Batería soldada a pads: BAT+ cuadrado y BAT− redondo, con P-MOSFET\n"
         "  contra la polaridad inversa. Flecha roja: los cables de la batería;\n"
         "  el lado de los cables va hacia detrás y a la derecha.\n\n"
+        "Las posiciones también caben con la holgura PCB-pared de 1,0\n"
+        "  que se aplicará en la fase 2 (comprobado con ese contorno).\n\n"
         "Amarillo: antena · Rosa: TP · Rayado: pin 1 del header"
     )
     fig.text(0.63, 0.92, "FurbyBoard v1.0 · planta\n(coordenadas del STL, vista desde arriba)", fontsize=13,
