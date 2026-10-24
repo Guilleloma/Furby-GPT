@@ -92,6 +92,13 @@ USB_LARGO = 6.42
 USB_ANCHO_CUERPO = 8.94
 USB_CARCASA = (8.34 + 0.6, 3.16)   # carcasa metálica por fuera, ancho × alto
 USB_CENTRO_SOBRE_CARA_SUP = 1.60 - 3.16 / 2   # 0,02: eje prácticamente a ras de la cara superior
+# Las patas delanteras de la carcasa (pads de 1,2 × 2,4 en x ±5,62) empiezan 0,90 detrás de la
+# boca, 0,20 dentro del borde de la PCB. Como el fondo del lóbulo es curvo, a la altura de las
+# patas el borde con holgura de 1,0 queda 0,2-0,3 más adentro y cortaría su anillo de cobre.
+# Por eso el borde se prolonga en dos orejetas rectas, a la cota del borde en el eje, hasta
+# 0,53 más allá del pad; ahí la pared queda a algo más de 0,5 (la boca ya está a 0,30).
+USB_OREJETA_SEMIANCHO = 6.75
+USB_OREJETA_HOLGURA_MIN = 0.45
 
 # Alturas (z del STL)
 SUELO_Z = 1.905
@@ -364,32 +371,40 @@ def abrir_ranura_usb(primitivas, x_centro):
     ranura: paredes rectas, alivios semicirculares en las esquinas del fondo y
     fondo recto. Devuelve el contorno nuevo y la referencia del conector."""
     xi, xd = x_centro - USB_RANURA_ANCHO / 2, x_centro + USB_RANURA_ANCHO / 2
+    xoi, xod = x_centro - USB_OREJETA_SEMIANCHO, x_centro + USB_OREJETA_SEMIANCHO
     y_limite = min(p[1] for p in muestrear(primitivas)) + 3.0
-    ki, punto_i = cortar_vertical(primitivas, xi, y_limite)
-    kd, punto_d = cortar_vertical(primitivas, xd, y_limite)
+    ki, punto_i = cortar_vertical(primitivas, xoi, y_limite)
+    kd, punto_d = cortar_vertical(primitivas, xod, y_limite)
     k_centro, borde = cortar_vertical(primitivas, x_centro, y_limite)
     if not ki <= k_centro <= kd:
         raise ValueError("Orden inesperado de primitivas en el borde trasero")
     y_borde = borde[1]
     y_fondo = y_borde + USB_RANURA_FONDO
     r = USB_ALIVIO_R
+    _, lado_i = cortar_vertical(primitivas, xi, y_limite)
+    _, lado_d = cortar_vertical(primitivas, xd, y_limite)
     ranura = [
-        linea(punto_i, (xi, y_fondo)),
+        linea(punto_i, (xoi, y_borde)),
+        linea((xoi, y_borde), (xi, y_borde)),
+        linea((xi, y_borde), (xi, y_fondo)),
         arco((xi + r, y_fondo), r, math.pi, -math.pi),
         linea((xi + 2 * r, y_fondo), (xd - 2 * r, y_fondo)),
         arco((xd - r, y_fondo), r, math.pi, -math.pi),
-        linea((xd, y_fondo), punto_d),
+        linea((xd, y_fondo), (xd, y_borde)),
+        linea((xd, y_borde), (xod, y_borde)),
+        linea((xod, y_borde), punto_d),
     ]
     antes, _ = partir(primitivas[ki], punto_i)
     _, despues = partir(primitivas[kd], punto_d)
     nuevo = primitivas[:ki] + [antes] + ranura + [despues] + primitivas[kd + 1:]
     nuevo = [p for p in nuevo if longitud_primitiva(p) > 1e-6]
-    # y_borde es el borde en el eje del conector (origen de la huella); a los
-    # lados de la ranura el borde real queda algo más adentro porque el fondo
-    # del lóbulo es curvo.
+    # y_borde es el borde en el eje del conector (origen de la huella); las orejetas lo
+    # mantienen recto hasta x_orejetas. y_borde_lados es dónde caería el borde curvo sin
+    # orejetas en las paredes de la ranura.
     referencia = {"x": x_centro, "y_borde": float(y_borde), "y_fondo": float(y_fondo),
                   "y_boca": float(y_borde - USB_SALIENTE_BOCA), "x_paredes": [xi, xd],
-                  "y_borde_lados": [float(punto_i[1]), float(punto_d[1])]}
+                  "x_orejetas": [xoi, xod],
+                  "y_borde_lados": [float(lado_i[1]), float(lado_d[1])]}
     return nuevo, referencia
 
 
@@ -511,18 +526,24 @@ def validar(suelo, primitivas, holgura, taladros, mecanismo, usb, agujeros_base,
     if not pared.contains(placa):
         raise ValueError("El contorno sale del suelo")
     distancias = shapely.distance(shapely.points(muestras), pared.exterior)
-    if distancias.min() < holgura - 1e-6:
-        raise ValueError(f"El contorno se acerca a {distancias.min():.4f} mm de la pared")
+    xoi, xod = usb["x_orejetas"]
+    en_orejetas = ((muestras[:, 0] > xoi - 0.01) & (muestras[:, 0] < xod + 0.01)
+                   & (muestras[:, 1] < usb["y_borde"] + 1.0))
+    if distancias[~en_orejetas].min() < holgura - 1e-6:
+        raise ValueError(f"El contorno se acerca a {distancias[~en_orejetas].min():.4f} mm de la pared")
+    if distancias[en_orejetas].min() < USB_OREJETA_HOLGURA_MIN - 1e-6:
+        raise ValueError(f"Las orejetas del USB-C quedan a {distancias[en_orejetas].min():.4f} mm de la pared")
 
     # La holgura máxima solo tiene sentido fuera de la ranura del USB-C y de las muescas.
     xi, xd = usb["x_paredes"]
     fuera_ranura = ~((muestras[:, 0] > xi - 0.01) & (muestras[:, 0] < xd + 0.01)
-                     & (muestras[:, 1] > usb["y_borde"] - 0.5))
+                     & (muestras[:, 1] > usb["y_borde"] - 0.5)) & ~en_orejetas
     for centro in muescas:
         fuera_ranura &= np.linalg.norm(muestras - np.asarray(centro), axis=1) > muesca_r + 2 * redondeo + 0.1
     borde = LineString(np.vstack([muestras, muestras[:1]]))
     resultado = {
-        "holgura_min": float(distancias.min()),
+        "holgura_min": float(distancias[~en_orejetas].min()),
+        "holgura_orejetas_usb": float(distancias[en_orejetas].min()),
         "holgura_max": float(distancias[fuera_ranura].max()),
         "area": placa.area, "perimetro": placa.length,
         "caja": [float(v) for v in placa.bounds],
@@ -905,7 +926,8 @@ def main():
     print(f"Suelo: {len(suelo)} vértices útiles; encogido: {len(encogido)}; simplificado: {len(simplificado)}")
     print(f"Primitivas: {len(arcos)} arcos, {len(primitivas) - len(arcos)} rectas; "
           f"radios {radios[0]:.2f} a {radios[-1]:.1f} mm")
-    print(f"Holgura a la pared: mín {resultado['holgura_min']:.4f}, máx {resultado['holgura_max']:.3f} mm")
+    print(f"Holgura a la pared: mín {resultado['holgura_min']:.4f}, máx {resultado['holgura_max']:.3f} mm; "
+          f"orejetas del USB-C {resultado['holgura_orejetas_usb']:.3f} mm")
     print(f"Caja PCB: x {resultado['caja'][0]:.3f}…{resultado['caja'][2]:.3f}, "
           f"y {resultado['caja'][1]:.3f}…{resultado['caja'][3]:.3f}; área {resultado['area']:.1f} mm²")
     print(f"USB-C: borde PCB y={usb['y_borde']:.3f}, boca y={usb['y_boca']:.3f} "

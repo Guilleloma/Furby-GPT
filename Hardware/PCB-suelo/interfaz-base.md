@@ -6,7 +6,7 @@ Fichero de referencia: `contorno-pcb.dxf` (mismas coordenadas, sin transformar).
 
 | Capa del DXF | Qué es |
 |--------------|--------|
-| `Contorno` | Borde de la PCB, con la ranura del USB-C y sin muescas. 57 arcos y 32 rectas, cerrado |
+| `Contorno` | Borde de la PCB, con la ranura del USB-C, sus dos orejetas y sin muescas. 54 arcos y 36 rectas, cerrado |
 | `Taladros` | 4 taladros M2 Ø2,3 |
 | `Mecanismo` | Agujero de Ø11,3 del mecanismo |
 | `ExclusionMecanismo` | Zona de exclusión de Ø15,3 alrededor del mecanismo |
@@ -22,10 +22,12 @@ La capa `Muescas` ya no existe: solo sale si se regenera con `--muescas` (secci�
 | Grosor | **1,6** (FR-4, tolerancia de fábrica ±10 %) |
 | Cara inferior | z **3,905** |
 | Cara superior | z **5,505** |
-| Caja | x −107,92 … −39,08 (68,85) · y −127,59 … −53,21 (74,39) |
-| Holgura a la pared interior | **1,00 mín.** y 1,20 máx. por lado (fuera de la ranura del USB-C). La posición la fijan los 4 tornillos, no el borde |
+| Caja | x −107,92 … −39,08 (68,85) · y −127,79 … −53,21 (74,59) |
+| Holgura a la pared interior | **1,00 mín.** y 1,20 máx. por lado (fuera de la ranura del USB-C). En las orejetas del USB-C, **0,47 mín.** La posición la fijan los 4 tornillos, no el borde |
 
 El contorno es el suelo interior encogido 1,0 mm (antes 0,5: con 0,5 había riesgo de tener que forzarla). La pared interior **no puede moverse más de 0,5 hacia dentro** en la base modificada sin volver a ajustar la holgura. Si se engrosa la pared, que sea hacia fuera.
+
+**Orejetas del USB-C (FurbyBoard):** las patas delanteras de la carcasa del conector (pads de 1,2 × 2,4 en x −79,12 y −67,88) empiezan 0,20 dentro del borde de la PCB. Como el fondo del lóbulo es curvo, el borde con holgura de 1,0 pasaba por encima de esos pads. El borde sigue recto a la cota del eje (y −127,794) entre x −80,25 y −66,75, dos orejetas de 2,1 mm a cada lado de la ranura que salen 0,2-0,45 mm hacia la pared. Ahí la pared queda a **0,47 mm**: entre x −81 y −66 la pared del lóbulo no puede moverse hacia dentro.
 
 ## 2. Separadores
 
@@ -111,7 +113,7 @@ La escribe `scripts/contorno_suelo.py` y la leen `generar_kicad.py` y el script 
 | `mecanismo` | `centro`, `diametro` (11,3) y `exclusion_diametro` (15,3) |
 | `funda` | Funda del cable: `ancho`, `alto` y `supuesto: true` |
 | `taladros`, `taladro_diametro` | Centros de H1 a H4 y su diámetro (2,3) |
-| `usb` | Posición del USB-C y de la ranura: `x`, `y_borde`, `y_boca`, `y_fondo`, `x_paredes`, `boca_a_pared`, `y_pared_int`, `ranura_ancho`, `ranura_fondo` |
+| `usb` | Posición del USB-C y de la ranura: `x`, `y_borde`, `y_boca`, `y_fondo`, `x_paredes`, `x_orejetas`, `boca_a_pared`, `y_pared_int`, `ranura_ancho`, `ranura_fondo` |
 | `muescas` | **`null`**: la PCB no tiene muescas. Solo con `--muescas` es un objeto `{"centros": [[x, y] × 4], "radio", "redondeo", "torreta_diametro"}` |
 | `alturas` | Cotas z del montaje: PCB, eje del USB-C, carcasa, funda y corte de la pared |
 | `resultado` | Lo que mide el script: holgura, área, caja, distancias de taladros y mecanismo al borde, y `agujeros_base` (centro de cada agujero original y su distancia al borde de la PCB, positiva si queda debajo). Con `--muescas`, también `muescas` |
