@@ -59,7 +59,7 @@ ANTENA_SIN_COBRE = {"x": (-89.0, -67.0), "y": (-63.5, -54.5)}
 # Bloques de la cara superior: (nombre, x0, x1, y0, y1, color, texto)
 BLOQUES = [
     ("carga", -66.5, -55.0, -114.5, -104.5, "#e07b39",
-     "Carga y power path\nBQ24073 + LM66100\nPTC, RISET, RILIM"),
+     "Carga y power path\nBQ24072 + LM66100\nPTC, RISET, RILIM"),
     ("jst", -52.5, -44.5, -113.5, -105.5, "#9e6b3d", "JST-PH\nbatería"),
     ("boost", -52.0, -41.5, -94.5, -84.0, "#c0392b", "Elevador 6 V\nTPS61089\nL 1 µH 4×4"),
     ("driver", -52.0, -46.0, -102.5, -96.0, "#8e44ad", "Puente H\nDRV8231A"),
@@ -338,7 +338,7 @@ def render_bloques():
 
     caja(ax, 0.3, 6.5, 2.0, 1.0, "USB-C trasero\n(solo carga)\nRd 5,1k en CC", "#7f8c8d")
     caja(ax, 0.3, 4.9, 2.0, 0.8, "PTC 1,5 A", "#7f8c8d")
-    caja(ax, 2.9, 4.6, 2.5, 1.4, "BQ24073\ncarga con power path\nICHG 0,49 A\nIIN 0,5 A o 1,34 A", "#e07b39")
+    caja(ax, 2.9, 4.6, 2.5, 1.4, "BQ24072\ncarga con power path\nICHG 0,49 A\nIIN 0,5 A o 1,34 A", "#e07b39")
     caja(ax, 2.9, 6.6, 2.5, 0.9, "LM66100\ndiodo ideal", "#e07b39")
     caja(ax, 2.9, 2.6, 2.5, 1.2, "LiPo 1S 1400 mAh\ncon protección (PCM)\nJST-PH", "#5dade2")
     caja(ax, 0.3, 2.6, 2.0, 1.2, "TPS61089\nelevador 6 V\nVIN = VSYS", pot)
