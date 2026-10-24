@@ -252,8 +252,9 @@ pista("BQ_ILIM", "F.Cu", 0.25, (-61.6, -109.5), (-61.6, -108.725), "R5.1")
 stub("GND", "R5.2", (0.0, 0.975), 0.3)
 pista("GND", "F.Cu", 0.25, "U2.4", (-64.25, -112.95), (-63.6, -113.6))
 via("GND", (-63.6, -113.6))
-pista("GND", "F.Cu", 0.25, "U2.8", (-62.6, -109.75))
-via("GND", (-62.6, -109.75))
+# U2.8 sube a su vía en diagonal: deja sitio a la vía de PGOOD al este de U2.7
+pista("GND", "F.Cu", 0.25, "U2.8", (-63.2, -109.388), (-63.2, -108.95))
+via("GND", (-63.2, -108.95))
 pista("GND", "F.Cu", 0.25, "U2.15", (-67.7, -110.75))
 via("GND", (-67.7, -110.75))
 for _xy in ((-65.4, -110.9), (-64.6, -110.9), (-65.4, -110.1), (-64.6, -110.1)):
@@ -737,3 +738,32 @@ pista("BQ_EN2", "In3.Cu", 0.2, (-89.2, -83.925), (-83.8, -83.925), (-83.8, -92.0
       (-69.45, -102.55), (-60.55, -102.55), (-60.55, -112.6), (-62.75, -112.6))
 via("BQ_EN2", (-62.75, -112.6))
 pista("BQ_EN2", "F.Cu", 0.25, "U2.5", (-62.75, -111.25), (-62.75, -112.6), "R7.1")
+# CHG y PGOOD salen del lado oeste de U10 por el pasillo SO de In3: bajada bajo U10, este en y -90,05/-89,6,
+# bajada por x -87,0/-86,55 y este en y -105,6/-105,15, al sur de la vía de VBAT_SNS. CHG llega a una vía en
+# la salida de U2.9 (C17 cierra el norte); un tramo de B.Cu entre las vías de GND de C17 y R5 la une a otra vía
+# al oeste de D1.1, de la que bajan D1.1 y el carril x -61,225 entre R5 y la columna de LED hasta R9.1.
+pista("CHG", "F.Cu", 0.2, "U10.11", (-91.2, -83.925))
+via("CHG", (-91.2, -83.925))
+pista("CHG", "In3.Cu", 0.2, (-91.2, -83.925), (-91.2, -90.05), (-87.0, -90.05), (-87.0, -105.6),
+      (-64.25, -105.6), (-64.25, -106.0))
+via("CHG", (-64.25, -106.0))
+pista("CHG", "F.Cu", 0.25, "U2.9", (-64.25, -106.0))
+pista("CHG", "B.Cu", 0.2, (-64.25, -106.0), (-62.25, -104.0))
+via("CHG", (-62.25, -104.0))
+pista("CHG", "F.Cu", 0.2, (-62.25, -104.0), (-61.225, -104.0))
+pista("CHG", "F.Cu", 0.2, (-61.225, -104.0), "D1.1")
+pista("CHG", "F.Cu", 0.2, (-61.225, -104.0), (-61.225, -107.8), "R9.1")
+# PGOOD: U2.7 a R8.1 por debajo (y -110,25) con una vía al norte del tramo (-62,6, -109,7), donde llega In3 por
+# x -62,6; D2.1 cuelga de una vía entre los cuatro pads de D1/D2, unida a la anterior por B.Cu (en In3 cruzaría
+# las bajadas de BQ_EN1/BQ_EN2/EN_6V).
+pista("PGOOD", "F.Cu", 0.2, "U10.10", (-90.4, -83.275))
+via("PGOOD", (-90.4, -83.275))
+pista("PGOOD", "In3.Cu", 0.2, (-90.4, -83.275), (-90.4, -89.6), (-86.55, -89.6), (-86.55, -105.15),
+      (-62.6, -105.15), (-62.6, -109.7))
+via("PGOOD", (-62.6, -109.7))
+pista("PGOOD", "F.Cu", 0.25, "U2.7", (-62.6, -110.25))
+pista("PGOOD", "F.Cu", 0.2, (-62.6, -110.25), (-61.275, -110.25), "R8.1")
+pista("PGOOD", "F.Cu", 0.2, (-62.6, -110.25), (-62.6, -109.7))
+pista("PGOOD", "B.Cu", 0.2, (-62.6, -109.7), (-62.0, -110.3), (-60.9, -110.3), (-60.9, -106.462), (-59.4, -104.962))
+via("PGOOD", (-59.4, -104.962))
+pista("PGOOD", "F.Cu", 0.2, (-59.4, -104.962), "D2.1")
