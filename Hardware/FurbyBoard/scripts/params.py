@@ -56,7 +56,7 @@ TRACK_SIGNAL = 0.2
 # subida (IPC-2152), por encima del ITRIP de 1,0 A del motor.
 TRACK_POWER = 0.4
 TRACK_MOTOR = 0.4
-TRACK_3V3 = 0.3
+TRACK_3V3 = 0.4
 TRACK_POWER_MAX = 0.8
 
 # Ancho mínimo por red de potencia (mm), de la tabla de raíles de NOTAS.md (IPC-2221, 1 oz

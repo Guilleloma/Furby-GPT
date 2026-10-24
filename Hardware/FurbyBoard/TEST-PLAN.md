@@ -14,18 +14,18 @@ Todos los TP, LED, botones y puentes quedan fuera de la batería: se miden con e
 
 | TP | Red | Rótulo | Dónde | Esperado |
 |----|-----|--------|-------|----------|
-| TP1 | VBUS | VBUS | Debajo del agujero del mecanismo | 5,00 V con USB |
-| TP2 | USB_DP | D+ | Lóbulo, a la izquierda del USB-C | — (osciloscopio) |
-| TP3 | USB_DN | D- | Lóbulo, a la izquierda del USB-C | — (osciloscopio) |
-| TP4 | BAT | BAT | Columna junto al cargador | VBAT 3,0–4,2 V |
-| TP5 | VSYS | VSYS | Columna junto al cargador | 4,40 V con USB; VBAT − 0,05 sin USB |
-| TP6 | 3V3 | 3V3 | Rejilla de TP (derecha) | 3,30 V |
-| TP7 | V6 | 6V | Junto al FPC de la cámara | 5,94 V con EN_6V = 1 |
-| TP8 | IPROPI | IPR | Rejilla de TP | 2,25 V por amperio de motor |
-| TP9 | I2S_DOUT | I2S | Rejilla de TP | Datos I2S al amplificador |
-| TP10 | CAM_2V8 | 2V8 | Rejilla de TP | 2,80 V con la cámara encendida |
-| TP11 | CAM_DVDD | 1V2 | Rejilla de TP | 1,20 V (1,50 V con ME6211C15) |
-| TP12, TP13, TP14 | GND | G | Lóbulo izquierdo, junto al puente H y en la rejilla | 0 V (pinza del osciloscopio) |
+| TP1 | VBUS | VBUS | Cara inferior, bajo el cargador (detrás de U2, hacia el USB-C) | 5,00 V con USB |
+| TP2 | USB_DP | D+ | Cara inferior, bajo el canal del par USB, a la izquierda del módulo | — (osciloscopio) |
+| TP3 | USB_DN | D- | Cara inferior, bajo U1 (ESD), junto al USB-C | — (osciloscopio) |
+| TP4 | BAT | BAT | Cara inferior, bajo el polígono de BAT, entre J2 y Q1 | VBAT 3,0–4,2 V |
+| TP5 | VSYS | VSYS | Cara inferior, junto al cargador (lado del motor) | 4,40 V con USB; VBAT − 0,05 sin USB |
+| TP6 | 3V3 | 3V3 | Cara inferior, bajo el buck-boost (zona trasera izquierda) | 3,30 V |
+| TP7 | V6 | 6V | Cara inferior, esquina trasera derecha, bajo el elevador | 5,94 V con EN_6V = 1 |
+| TP8 | IPROPI | IPR | Cara inferior, junto al puente H (lado derecho) | 2,25 V por amperio de motor |
+| TP9 | I2S_DOUT | I2S | Cara inferior, junto al amplificador (lado izquierdo) | Datos I2S al amplificador |
+| TP10 | CAM_2V8 | 2V8 | Cara inferior, junto a U8 (LDO de 2,8 V), bajo el FPC | 2,80 V con la cámara encendida |
+| TP11 | CAM_DVDD | 1V2 | Cara inferior, junto a U9 (LDO de 1,2 V), a la izquierda de J9 | 1,20 V (1,50 V con ME6211C15) |
+| TP12, TP13, TP14 | GND | G | Cara inferior: bajo el módulo (TP12), junto al puente H (TP13) y junto al expansor (TP14) | 0 V (pinza del osciloscopio) |
 
 Otras medidas sin TP propio:
 

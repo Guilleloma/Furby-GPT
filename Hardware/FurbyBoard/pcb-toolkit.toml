@@ -5,9 +5,11 @@
 [redes]
 gnd = ["GND"]
 # Clases B (buses rápidos), C (par USB) y D (analógico y sensado): roce = error y vía de retorno.
+# CAM_* se limita al bus DVP (datos, relojes y sincronismos); CAM_EN/PWDN/RST y las alimentaciones
+# CAM_2V8/CAM_DVDD son estáticas y van como señales lentas (decisión del rutado, NOTAS.md).
 # Las realimentaciones de cada convertidor (BB_FB, BST_FB, BST_COMP, BST_RC) también son D para
 # revisar-rutado, pero no van en ningún grupo de comprobar-flujo: viven dentro de su propia zona.
-criticas = ["USB_D*", "CAM_*", "I2S_*", "IPROPI", "IPROPI_IO", "MOT_VREF", "VBAT_SNS", "LIGHT",
+criticas = ["USB_D*", "CAM_Y*", "CAM_PCLK", "CAM_XCLK", "CAM_HREF", "CAM_VSYNC", "I2S_*", "IPROPI", "IPROPI_IO", "MOT_VREF", "VBAT_SNS", "LIGHT",
             "ENC_PT", "BQ_TS", "BB_FB", "BST_FB", "BST_COMP", "BST_RC"]
 arcos_permitidos = []
 # Vías térmicas del pad expuesto de los QFN (datasheet): tapadas por la cara inferior; ver NOTAS.md
