@@ -16,7 +16,7 @@ Convenciones:
 | 2026-10-24 | MCU: **módulo ESP32-S3-WROOM-1 montado por JLCPCB** en la placa. Se descartan el ESP32-S3 Zero, el S3 SuperMini y el C6 SuperMini (sección 2) |
 | 2026-10-24 | **Cámara DVP** con conector FPC de 24 pines a 0,5 mm (OV2640, OV3660 u OV5640) |
 | 2026-10-24 | Los GPIO que no use el Furby quedan **accesibles**, porque la placa servirá también de placa de desarrollo |
-| 2026-10-24 | **LED** de alimentación, carga, programación y estado; **puntos de test** en carriles y señales clave; borrador de plan de pruebas en `TEST-PLAN.md` |
+| 2026-10-24 | **LED** de alimentación, carga, programación y estado; **puntos de test** en carriles y señales clave; borrador del plan de pruebas en [`TEST-PLAN.md`](TEST-PLAN.md) |
 | 2026-10-24 | Nombre: **FurbyBoard**, serigrafiado con la versión y la fecha |
 | 2026-10-24 | **Altura de la batería: confirmado que cabe tumbada sobre la PCB** dentro del Furby. Deja de ser un riesgo |
 
@@ -490,6 +490,7 @@ Pasa sin fallos.
 
 - Cara superior: **«FurbyBoard v1.0»**, 1,0 mm de alto y 0,15 de trazo, en el borde delantero, delante de la antena (la tinta no afecta a la antena y es lo que se ve al abrir la base). También van los nombres de los TP, de los LED y de los botones, y la polaridad del JST (+/−).
 - Cara inferior, que no lleva componentes: «FurbyBoard v1.0 · 2026-10» con 2 mm de alto y el **número de GPIO de cada pad de J_EXP y de los pads de cable**.
+- Un recuadro en blanco para escribir el número de la placa a rotulador (lo usa `TEST-PLAN.md`).
 - Sin nombres de personas.
 
 ## 13. Dudas abiertas
