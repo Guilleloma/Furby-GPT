@@ -408,7 +408,7 @@ def render_bloques():
     caja(ax, 6.3, 4.0, 3.0, 4.3, "ESP32-S3-WROOM-1\nN16R8\n\n16 MB flash\n8 MB PSRAM octal\n\nUSB nativo\nGPIO19/20\n\n"
          "LED PROG en U0TXD", mcu)
     caja(ax, 0.3, 3.2, 2.2, 1.2, "TPS61089\nelevador 6 V", pot)
-    caja(ax, 0.3, 1.2, 2.2, 1.4, "DRV8231A\nIN/IN · ITRIP 1,2 A\nIPROPI a ADC1", mot)
+    caja(ax, 0.3, 1.2, 2.2, 1.4, "DRV8231A\nIN/IN · ITRIP 1,0 A\nIPROPI a ADC1", mot)
     caja(ax, 3.1, 1.2, 2.5, 1.4, "Motor del Furby\nDC bidireccional\nPWM 20 kHz", mot)
     caja(ax, 10.0, 7.3, 2.6, 1.0, "Micro ICS-43434\n(placa con cable)", aud)
     caja(ax, 10.0, 5.8, 2.6, 1.1, "MAX98357A\nVDD = VSYS", aud)
