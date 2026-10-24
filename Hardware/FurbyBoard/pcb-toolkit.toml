@@ -8,7 +8,7 @@ gnd = ["GND"]
 # Las realimentaciones de cada convertidor (BB_FB, BST_FB, BST_COMP, BST_RC) también son D para
 # revisar-rutado, pero no van en ningún grupo de comprobar-flujo: viven dentro de su propia zona.
 criticas = ["USB_D*", "CAM_*", "I2S_*", "IPROPI", "IPROPI_IO", "MOT_VREF", "VBAT_SNS", "LIGHT",
-            "ENC_PT", "BB_FB", "BST_FB", "BST_COMP", "BST_RC"]
+            "ENC_PT", "BQ_TS", "BB_FB", "BST_FB", "BST_COMP", "BST_RC"]
 arcos_permitidos = []
 via_en_pad_permitida = []
 clearance = 0.15

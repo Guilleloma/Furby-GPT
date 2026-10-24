@@ -1348,6 +1348,279 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Device:Thermistor_NTC"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "TH"
+				(at -4.445 0 90)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Thermistor_NTC"
+				(at 3.175 0 90)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 1.27 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 1.27 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Temperature dependent resistor, negative temperature coefficient"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "thermistor NTC resistor sensor RTD"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "R_* RV_*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "Thermistor_NTC_0_1"
+				(arc
+					(start -3.175 2.413)
+					(mid -3.0506 2.3165)
+					(end -3.048 2.159)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start -3.048 2.794)
+					(mid -2.9736 2.9736)
+					(end -2.794 3.048)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start -2.794 3.048)
+					(mid -2.6144 2.9736)
+					(end -2.54 2.794)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start -2.794 2.54)
+					(mid -2.9736 2.6144)
+					(end -3.048 2.794)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start -2.794 1.905)
+					(mid -2.9736 1.9794)
+					(end -3.048 2.159)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start -2.54 2.159)
+					(mid -2.6144 1.9794)
+					(end -2.794 1.905)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start -2.159 2.794)
+					(mid -2.434 2.5608)
+					(end -2.794 2.54)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -2.54 2.159) (xy -2.54 2.794)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -2.54 -3.683) (xy -2.54 -1.397) (xy -2.794 -2.159) (xy -2.286 -2.159) (xy -2.54 -1.397) (xy -2.54 -1.651)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.778 2.54) (xy -1.778 1.524) (xy 1.778 -1.524) (xy 1.778 -2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.778 -1.397) (xy -1.778 -3.683) (xy -2.032 -2.921) (xy -1.524 -2.921) (xy -1.778 -3.683)
+						(xy -1.778 -3.429)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(rectangle
+					(start -1.016 2.54)
+					(end 1.016 -2.54)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "Thermistor_NTC_1_1"
+				(pin passive line
+					(at 0 3.81 270)
+					(length 1.27)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -3.81 90)
+					(length 1.27)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "FurbyBoard:SI7615ADN"
 			(pin_names
 				(offset 0.254)
@@ -5132,7 +5405,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R")
+		(lib_id "Device:Thermistor_NTC")
 		(at 347.98 68.58 0)
 		(unit 1)
 		(body_style 1)
@@ -5141,8 +5414,8 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "1168f025-2eea-5b1b-b1cf-7c26991b86f8")
-		(property "Reference" "R3"
+		(uuid "11d8a2b6-0f26-5b4e-9c04-fcfe98f34e81")
+		(property "Reference" "RT1"
 			(at 349.48 63.77 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5153,7 +5426,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10k"
+		(property "Value" "10k NTC"
 			(at 349.48 65.77 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5188,7 +5461,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "TS sin NTC"
+		(property "Description" "NTC 10 kΩ B3380 0603 en TS (carga 0–45 °C)"
 			(at 347.98 68.58 0)
 			(hide yes)
 			(show_name no)
@@ -5200,7 +5473,7 @@
 				(justify left)
 			)
 		)
-		(property "LCSC" "C25804"
+		(property "LCSC" "C13564"
 			(at 347.98 68.58 0)
 			(hide yes)
 			(show_name no)
@@ -5212,7 +5485,7 @@
 				(justify left)
 			)
 		)
-		(property "JLC_Class" "base"
+		(property "JLC_Class" "ext"
 			(at 347.98 68.58 0)
 			(hide yes)
 			(show_name no)
@@ -5224,7 +5497,7 @@
 				(justify left)
 			)
 		)
-		(property "MPN" "UNI-ROYAL 0603 1%"
+		(property "MPN" "Murata NCP18XH103F03RB"
 			(at 347.98 68.58 0)
 			(hide yes)
 			(show_name no)
@@ -5237,15 +5510,15 @@
 			)
 		)
 		(pin "1"
-			(uuid "36f4f634-fb75-57cb-9aed-6c0b1c832c92")
+			(uuid "1d724d34-c760-5bfc-a270-318e600bd8ba")
 		)
 		(pin "2"
-			(uuid "2e7b38b7-77e6-59f3-95fa-d4fbd3e26bf3")
+			(uuid "2df5ab56-74ab-5af4-bd84-5f98f2cbd4aa")
 		)
 		(instances
 			(project "FurbyBoard"
 				(path "/8b4f1e2a-3c5d-4e6f-9a1b-2c3d4e5f6a7b/f3e50cc9-b269-5cfc-8a97-7683b547d39e"
-					(reference "R3")
+					(reference "RT1")
 					(unit 1)
 				)
 			)

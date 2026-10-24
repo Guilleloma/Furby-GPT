@@ -122,7 +122,11 @@ def build():
     C("C2", s, "1u", "VBUS", "GND", "IN del BQ24073")
     C("C3", s, "10u", "VSYS", "GND", "OUT del BQ24073")
     C("C4", s, "10u", "BAT", "GND", "BAT del BQ24073")
-    R("R3", s, "10k", "BQ_TS", "GND", "TS sin NTC")
+    # NTC de 10 kΩ (103AT, B 3380 K) de TS a VSS, como pide el datasheet del BQ2407x (el pin lleva
+    # su fuente de corriente interna; sin red de polarización). Va en la placa bajo la batería,
+    # lejos del cargador: mide la PCB bajo la celda. Decisión del 2026-10-24 (crítico B7).
+    part("RT1", s, "Device:Thermistor_NTC", "10k NTC", FP_R0603, {"1": "BQ_TS", "2": "GND"},
+         "C13564", "ext", "Murata NCP18XH103F03RB", "NTC 10 kΩ B3380 0603 en TS (carga 0–45 °C)")
     R("R4", s, "1.8k", "BQ_ISET", "GND", "ICHG = 890/1800 = 0,494 A")
     R("R5", s, "1.2k", "BQ_ILIM", "GND", "IIN = 1610/1200 = 1,34 A con EN2=1, EN1=0")
     R("R6", s, "100k", "BQ_EN1", "VSYS", "EN1 a 1 al arrancar (USB500)")
