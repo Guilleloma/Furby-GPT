@@ -234,12 +234,12 @@ via("VBUS", (-68.5, -110.8))
 pista("VBUS", "B.Cu", 0.5, (-68.5, -110.8), (-71.4, -110.8), (-72.2, -111.6), (-72.2, -116.12))
 via("VBUS", (-72.2, -116.12))
 pista("VBUS", "F.Cu", 0.5, (-72.2, -116.12), "R10.1", "R11.1")
-pista("VBUS", "B.Cu", 0.5, (-72.2, -116.12), (-77.0, -116.12), (-78.88, -118.0), (-80.9, -118.0))
-via("VBUS", (-80.9, -118.0))
-pista("VBUS", "F.Cu", 0.5, (-80.9, -118.0), "F1.2")
+pista("VBUS", "B.Cu", 0.5, (-72.2, -116.12), (-77.3, -116.12), (-79.48, -118.3), (-82.5, -118.3))
+via("VBUS", (-82.5, -118.3))
+pista("VBUS", "F.Cu", 0.5, (-82.5, -118.3), "F1.2")
 stub("GND", "C2.2", (0.0, 0.9), 0.3)
 stub("GND", "C1.2", (-1.0, 0.0), 0.3)
-pista("BQ_ISET", "F.Cu", 0.25, "U2.16", (-67.3, -111.25), (-67.3, -114.625), "R4.1")
+pista("BQ_ISET", "F.Cu", 0.25, "U2.16", (-67.3, -111.25), (-67.3, -115.025), "R4.1")
 stub("GND", "R4.2", (0.0, -1.0), 0.3)
 pista("BQ_ILIM", "F.Cu", 0.25, "U2.12", (-66.85, -109.06), (-66.85, -108.325))
 via("BQ_ILIM", (-66.85, -108.325))
@@ -267,32 +267,75 @@ pista("BAT", "F.Cu", 0.8, (-73.9, -106.525), "R13.1")
 stub("GND", "C4.2", (1.0, 0.0), 0.3)
 pista("BQ_TS", "F.Cu", 0.25, "U2.1", (-65.75, -113.5))
 via("BQ_TS", (-65.75, -113.5))
-pista("BQ_TS", "In2.Cu", 0.2, (-65.75, -113.5), (-65.75, -114.8), (-81.0, -114.8), (-82.3, -113.5))
-via("BQ_TS", (-82.3, -113.5))
-pista("BQ_TS", "F.Cu", 0.25, (-82.3, -113.5), "RT1.1")
+pista("BQ_TS", "In2.Cu", 0.2, (-65.75, -113.5), (-65.75, -114.8), (-81.1, -114.8), (-82.4, -113.5))
+via("BQ_TS", (-82.4, -113.5))
+pista("BQ_TS", "F.Cu", 0.25, (-82.4, -113.5), "RT1.1")
 via("GND", (-66.55, -113.9))
 via("GND", (-83.1, -113.8))
-stub("GND", "RT1.2", (0.95, 0.0), 0.3)
-# ---------------------------------------------------------------- USB-C: VBUS_IN, CC1, CC2 y GND del ESD
-# VBUS_IN de A4/B9 sube entre los pines 3/4 de U1 al pin 5 y a una vía (unión por In2 con A9/B4);
-# por B.Cu desde una vía entre los pines 3/4 a F1.1. CC1 por In2 bajo el par a R1; CC2 a R2. El pin 2
-# de U1 a una vía al oeste (el par sale por el oeste a x -78,6 / -79,03).
-pista("VBUS_IN", "F.Cu", 0.3, "J1.B9", (-75.75, -120.21))
-via("VBUS_IN", (-75.75, -120.21))
-pista("VBUS_IN", "F.Cu", 0.5, (-75.75, -120.21), (-75.75, -118.2), "U1.5")
-pista("VBUS_IN", "F.Cu", 0.3, "J1.A9", (-70.95, -120.21))
-via("VBUS_IN", (-70.95, -120.21))
-pista("VBUS_IN", "B.Cu", 0.5, (-70.95, -120.21), (-70.95, -119.0), (-74.54, -119.0), (-75.75, -120.21), (-81.7, -120.21), (-83.9, -122.41))
+stub("GND", "RT1.2", (0.0, 0.95), 0.3)
+# ---------------------------------------------------------------- USB-C: VBUS_IN, CC1, CC2 y GND
+# U1 (USBLC6) es de paso: los pines 6-1 (D+) y 4-3 (D-) se unen por debajo del cuerpo con 0,15,
+# así que VBUS_IN no puede subir por el hueco entre columnas. Entra en el pin 5 y baja a In2 por
+# una vía bajo el cuerpo; A4/B9 (0,3 centrada entre los dos pads) y A9/B4 bajan a In2 con sus
+# propias vías y se juntan en la columna x -75,85; de ahí a F1.1 por la fila y -116,6 y la
+# columna x -83,9 (sin cruzar la fila de BQ_TS). CC1 (A5) y CC2 (B5) por In2 bajo la fila de
+# pads a R1 (oeste de F1; por In2, fila y -120,8) y R2 (oeste de U1; por B.Cu, fila y -120,9,
+# porque en In2 la columna de VBUS_IN y el pad de escudo de J1 no dejan sitio a dos filas).
+# GND de A12/B1 a una vía; A1/B12 por el relleno.
+pista("VBUS_IN", "F.Cu", 0.3, (-75.85, -121.194), (-75.85, -120.2))
+via("VBUS_IN", (-75.85, -120.2))
+pista("VBUS_IN", "F.Cu", 0.5, "U1.5", (-75.85, -118.2))
+via("VBUS_IN", (-75.85, -118.2))
+pista("VBUS_IN", "In2.Cu", 0.5, (-75.85, -120.2), (-75.85, -118.2), (-75.85, -115.9), (-83.9, -115.9), (-83.9, -122.41))
 via("VBUS_IN", (-83.9, -122.41))
 pista("VBUS_IN", "F.Cu", 0.5, (-83.9, -122.41), "F1.1")
-pista("CC1", "F.Cu", 0.2, "J1.A5", (-74.75, -120.2), (-74.1, -120.2), (-74.1, -120.0))
-via("CC1", (-74.1, -120.0))
-pista("CC1", "In2.Cu", 0.2, (-74.1, -120.0), (-74.1, -118.9), (-80.325, -118.9), (-80.85, -119.425))
-via("CC1", (-80.85, -119.425))
-pista("CC1", "F.Cu", 0.2, (-80.85, -119.425), "R1.1")
-pista("CC2", "F.Cu", 0.2, "J1.B5", (-71.75, -120.475), "R2.1")
-stub("GND", "R1.2", (0.0, 0.975), 0.3)
+pista("VBUS_IN", "F.Cu", 0.4, (-71.05, -121.194), (-71.05, -120.21))
+via("VBUS_IN", (-70.95, -120.21))
+pista("VBUS_IN", "In2.Cu", 0.5, (-70.95, -120.21), (-70.95, -117.0), (-75.85, -117.0))
+pista("CC1", "F.Cu", 0.2, "J1.A5", (-74.75, -120.2))
+pista("CC1", "F.Cu", 0.15, (-74.75, -120.2), (-74.99, -119.96))
+via("CC1", (-74.99, -119.96))
+pista("CC1", "In2.Cu", 0.2, (-74.99, -119.96), (-74.99, -120.8), (-78.8, -120.8), (-79.5, -120.1), (-79.5, -118.925), (-81.0, -117.425))
+via("CC1", (-81.0, -117.425))
+pista("CC1", "F.Cu", 0.2, (-81.0, -117.425), "R1.1")
+pista("CC2", "F.Cu", 0.2, "J1.B5", (-71.75, -120.15))
+via("CC2", (-71.75, -120.15))
+pista("CC2", "B.Cu", 0.2, (-71.75, -120.15), (-71.75, -120.9), (-79.6, -120.9), (-80.0, -120.5))
+via("CC2", (-80.0, -120.5))
+pista("CC2", "F.Cu", 0.2, (-80.0, -120.5), "R2.1")
+stub("GND", "R1.2", (0.0, 0.9), 0.3)
+stub("GND", "R2.2", (0.0, 1.0), 0.3)
 stub("GND", "U1.2", (-1.0625, 0.0), 0.3)
+stub("GND", "J1.A12", (0.0, 1.09), 0.3)
+# ---------------------------------------------------------------- par USB (clase C, 0,28/0,15)
+# Campo de pads de J1: 0,2 dentro del patio de J1 y 0,15 hasta U1. D+: A6 sube recta y B6 sube
+# con un quiebro a x -72,45, cruza por encima de la vía de D- y entra en el pin 6 recogiendo a A6
+# en un cruce a 90°; D-: B7 sube al pin 4 y A7 sube entre A6 y B6 hasta una vía de 0,45 y sigue
+# por B.Cu (TP3 sobre esa pista) hasta otra vía en la salida del pin 3. Retornos de GND: vía
+# (-73,1, -117,9) a 0,96 mm de la primera (entre A6 y el quiebro de B6) y la vía del pin 2 a
+# 0,95 mm de la segunda. Con pads a 0,5 mm de paso, la vía de 0,6 solo cabe si B6 se aparta.
+# Paso por U1: pines 6-1 y 4-3 unidos con 0,15 bajo el cuerpo. El par sale por el oeste de U1
+# (x -78,7 / -79,13), sube por el pasillo norte-sur, cruza al canal (x -83,5 / -83,93) y entra en
+# los pines 14 (D+) y 13 (D-). TP2 (D+) sobre una vía de 0,45 a la entrada del pin 14.
+pista("USB_DP", "F.Cu", 0.2, "J1.A6", (-73.75, -120.25))
+pista("USB_DP", "F.Cu", 0.15, (-73.75, -120.25), (-73.75, -117.25))
+pista("USB_DP", "F.Cu", 0.2, "J1.B6", (-72.75, -120.25))
+pista("USB_DP", "F.Cu", 0.15, (-72.75, -120.25), (-72.45, -119.95), (-72.45, -117.25), "U1.6")
+pista("USB_DP", "F.Cu", 0.15, "U1.6", "U1.1")
+pista("USB_DN", "F.Cu", 0.2, "J1.B7", (-74.25, -120.25))
+pista("USB_DN", "F.Cu", 0.15, (-74.25, -120.25), (-74.25, -119.6125), (-74.7125, -119.15), "U1.4")
+pista("USB_DN", "F.Cu", 0.15, "U1.4", "U1.3")
+pista("USB_DN", "F.Cu", 0.2, "J1.A7", (-73.25, -120.25))
+pista("USB_DN", "F.Cu", 0.15, (-73.25, -120.25), (-73.25, -118.85))
+via("USB_DN", (-73.25, -118.85), VIA_USB)
+pista("USB_DN", "B.Cu", 0.2, (-73.25, -118.85), (-76.9, -118.85), (-77.2, -119.15), (-78.1, -119.15))
+via("USB_DN", (-78.1, -119.15), VIA_USB)
+via("GND", (-73.1, -117.9))
+pista("USB_DP", "F.Cu", 0.28, "U1.1", (-78.7, -117.25), (-78.7, -89.0), (-83.5, -84.2), (-83.5, -79.5), "U4.14")
+pista("USB_DN", "F.Cu", 0.28, "U1.3", (-79.13, -119.15), (-79.13, -89.178), (-83.93, -84.378), (-83.93, -78.23), "U4.13")
+via("USB_DP", (-83.0, -79.5), VIA_USB)
+via("GND", (-82.6, -80.4))
+pista("USB_DP", "B.Cu", 0.28, (-83.0, -79.5), (-83.5, -80.0), "TP2.1")
 # ---------------------------------------------------------------- puente H (DRV8231A) y V6 local
 # V6: C21.1 desde una vía del tronco de B.Cu, de ahí al pin 5 (0,5, ancho mayor que el pad); C19.1 con
 # su propia vía; C22.1 y C20.1 por la vertical x -46,6 (con las vías del tronco y del ramal a R51).
@@ -364,3 +407,11 @@ stub("VSYS", "R6.2", (1.2, 0.0), 0.6)
 pista("VSYS", "F.Cu", 0.6, "L2.1", (-53.6, -109.3))
 via("VSYS", (-52.9, -109.3))
 via("VSYS", (-53.6, -109.3))
+# ---------------------------------------------------------------- módulo: EP y GND de los pines 1/40, C9, C10
+for _x in (-75.9, -74.5, -73.1):
+    for _y in (-69.31, -70.71, -72.11):
+        via("GND", (_x, _y))
+stub("GND", "U4.1", (-1.25, 0.0), 0.3)
+stub("GND", "U4.40", (1.25, 0.0), 0.3)
+stub("GND", "C10.2", (0.0, 0.925), 0.3)
+stub("GND", "C9.2", (-1.2, 0.0), 0.4)
