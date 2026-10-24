@@ -1,0 +1,30 @@
+* FurbyBoard: elevador TPS61089 a 5,94 V, etapa de potencia idealizada (peor caso).
+* Modelo de comportamiento declarado: interruptor ideal con PWM a 0,96 MHz y ciclo fijo
+* D = 1 - Vin/Vout; rectificador sincrono como diodo ideal; L -20 % (0,8 uH); Cout efectiva
+* 4 x 22 uF X5R 25 V con DC bias a 6 V (~60 %): 53 uF; carga 1,0 A (ITRIP del motor).
+* Mide la corriente de pico de la bobina (contra ILIM 3,8 A e Isat de la FHD4020S-1R0MT)
+* y el rizado de salida. Ejecutar: ngspice -b elevador_6v.cir
+.param VIN=3.0 VOUT=5.94 FSW=0.96e6 L=0.8e-6 COUT=53e-6 RLOAD=5.94 RESR=0.005
+.param D={1-VIN/VOUT} TON={D/FSW} TP={1/FSW}
+Vin in 0 {VIN}
+L1 in sw {L} ic=2.2
+S1 sw 0 g 0 SWMOD
+Vg g 0 pulse(0 1 0 2n 2n {TON} {TP})
+D1 sw out DIDEAL
+Cout out o2 {COUT} ic=5.9
+Resr o2 0 {RESR}
+Rload out 0 {RLOAD}
+.model SWMOD sw(ron=0.02 roff=1e6 vt=0.5 vh=0.1)
+.model DIDEAL d(is=1e-12 n=0.5 rs=0.01)
+.tran 2n 400u uic
+.control
+run
+meas tran ipk MAX i(L1) from=300u to=400u
+meas tran imin MIN i(L1) from=300u to=400u
+meas tran iavg AVG i(L1) from=300u to=400u
+meas tran vmax MAX v(out) from=300u to=400u
+meas tran vmin MIN v(out) from=300u to=400u
+meas tran vavg AVG v(out) from=300u to=400u
+quit
+.endc
+.end

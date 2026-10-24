@@ -34,6 +34,7 @@ Convenciones:
 > - **14 TP** en vez de 19, todos fuera de la batería y rotulados: EN e IO0 se miden en los pads de SW1 y SW2, y CHG y PGOOD en los LED D1 y D2.
 > - **Calzos de la batería** en E1 (−75; −105,8), E2 (−99,5; −113) y E3 (−90,5; −112,5), libres de componentes (`scripts/comprobar_colocacion.py`).
 > - Bajo la batería también van U3 (buck-boost de 3,3 V), los LDO de la cámara y el Schmitt del encoder: la pieza más alta es L1 (2,1 mm) para un hueco de 4,1.
+> - **Replanteo del 2026-10-24** (`Hardware/FurbyBoard/NOTAS.md`): la asignación de GPIO y de puertos del TCA9535 de la sección 3 cambia (I2S en GPIO7/15/16/17, HOME en GPIO18, EXP_INT en GPIO6, ENC en GPIO8, IR_RX en GPIO42, LIGHT en GPIO2, VBAT en GPIO1, cámara en el orden de los pads de J6); el LED del encoder se alimenta de 6 V por 470 Ω sin transistor; J_EXP es 2 × 5; J9 y J5 cambian de orden; los LDO de la cámara van debajo del FPC y el micro (J5) en el borde izquierdo. Manda `NOTAS.md`.
 
 ## Cambios respecto a la v1
 

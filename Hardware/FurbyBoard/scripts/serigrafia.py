@@ -47,16 +47,16 @@ PADS = {
             "7": "P07", "8": "G", "9": "IO43 TX", "10": "IO44 RX"},
     "J8": {"1": "TLA", "2": "TLB", "3": "G", "4": "LNG", "5": "G", "6": "SP+", "7": "SP-"},
     "J7": {"1": "IR+", "2": "IR-", "3": "RXV", "4": "RX", "5": "3V3", "6": "LDR", "7": "G", "8": "G"},
-    "J9": {"1": "LEVA", "2": "G", "3": "EN+", "4": "EN-", "5": "ENF", "6": "G",
+    "J9": {"1": "ENF", "2": "G", "3": "EN+", "4": "G", "5": "LEVA", "6": "G",
            "7": "BAR", "8": "G", "9": "ESP", "10": "G", "11": "M1", "12": "M2"},
-    "J5": {"1": "3V3", "2": "G", "3": "SCK", "4": "WS", "5": "SD", "6": "G"},
+    "J5": {"1": "SD", "2": "G", "3": "SCK", "4": "WS", "5": "3V3", "6": "G"},
     "J2": {"1": "BAT+"}, "J3": {"1": "BAT-"},
 }
 # Lado preferido del rótulo de cada pad. Los grupos de dos filas o columnas que no tienen
 # sitio alrededor (J9 y J5 pegados al borde derecho, J7 pegado al delantero) llevan al lado
 # una leyenda con la misma disposición que los pads: (lado, separación entre columnas).
-LADO_PADS = {"J11": "R", "J8": "R", "J2": "D", "J3": "D"}
-LEYENDA = {"J9": ("L", 3.6), "J5": ("L", 3.0), "J7": ("R", 3.0)}
+LADO_PADS = {"J8": "R", "J2": "D", "J3": "D"}
+LEYENDA = {"J9": ("L", 3.6), "J5": ("R", 3.0), "J7": ("R", 3.0), "J11": ("R", 3.0)}
 TITULOS = {"J9": "J9", "J7": "J7", "J8": "J8", "J11": "J_EXP"}
 
 

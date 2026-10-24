@@ -1,0 +1,77 @@
+# Configuración de pcb-toolkit para la FurbyBoard v1.0 (plantilla: ejemplos/pcb-toolkit.toml del
+# repo de pcb-toolkit). Solo lo que cambia respecto a la plantilla; el porqué, en NOTAS.md
+# («Clases de red y zonas calientes»). Ninguna regla en off ni umbral más laxo que la plantilla.
+
+[redes]
+gnd = ["GND"]
+# Clases B (buses rápidos), C (par USB) y D (analógico y sensado): roce = error y vía de retorno.
+# Las realimentaciones de cada convertidor (BB_FB, BST_FB, BST_COMP, BST_RC) también son D para
+# revisar-rutado, pero no van en ningún grupo de comprobar-flujo: viven dentro de su propia zona.
+criticas = ["USB_D*", "CAM_*", "I2S_*", "IPROPI", "IPROPI_IO", "MOT_VREF", "VBAT_SNS", "LIGHT",
+            "ENC_PT", "BB_FB", "BST_FB", "BST_COMP", "BST_RC"]
+arcos_permitidos = []
+via_en_pad_permitida = []
+clearance = 0.15
+
+[rutado]
+refs_tp = ["TP*"]
+tp_distancia_max = 5.0
+
+[rutado.anchos_minimos]
+# Tabla de raíles (NOTAS.md); los mismos valores van al DRC como reglas del .kicad_dru
+# (scripts/params.py ANCHOS_MINIMOS es la fuente única).
+VBUS_IN = 0.5
+VBUS = 0.5
+VSYS = 0.6
+BAT = 0.8
+BAT_PAD = 0.8
+3V3 = 0.4
+V6 = 0.5
+"MOT_OUT*" = 0.5
+BST_SW = 0.8
+"BB_SW*" = 0.6
+"SPK_*" = 0.4
+"IR_LED_*" = 0.3
+
+[flujo]
+ancho_pista = 0.2
+margen_zona_caliente = 3.0
+auto_zonas = true          # bobinas L1 (BB_SW1/BB_SW2) y L2 (BST_SW) y el área prohibida de la antena
+# Sin grupos automáticos: los prefijos BST_, BB_, BQ_ y MOT_ formarían grupos que «cruzan» su
+# propio convertidor. Los buses críticos se declaran abajo.
+auto_grupos = false
+# C30 (100 nF de DOVDD) desacopla el pin 11 del FPC, no un CI: va junto al LDO de la cámara.
+desacoplo_ignorar = ["C30"]
+
+[[flujo.grupo]]
+nombre = "USB"
+redes = ["USB_DP", "USB_DN"]
+critico = true
+
+[[flujo.grupo]]
+nombre = "DVP"
+redes = ["CAM_VSYNC", "CAM_HREF", "CAM_PCLK", "CAM_XCLK", "CAM_Y*"]
+critico = true
+
+[[flujo.grupo]]
+nombre = "I2S"
+redes = ["I2S_*"]
+critico = true
+
+[[flujo.grupo]]
+nombre = "sensado"
+redes = ["IPROPI", "IPROPI_IO", "MOT_VREF", "VBAT_SNS", "LIGHT", "ENC_PT"]
+critico = true
+
+# Salidas del puente H (PWM de 20 kHz a 1 A): margen reducido, justificado en NOTAS.md.
+[[flujo.zona_caliente]]
+nombre = "puente H"
+redes = ["MOT_OUT1", "MOT_OUT2"]
+margen = 1.0
+
+# Amplificador de clase D (≈ 300 kHz, 0,9 A de pico): la zona es el propio chip; sus salidas van
+# 6 mm hasta J8 por la cara izquierda, sin nada crítico cerca salvo el I2S que entra en él.
+[[flujo.zona_caliente]]
+nombre = "clase D"
+refs = ["U7"]
+margen = 1.0

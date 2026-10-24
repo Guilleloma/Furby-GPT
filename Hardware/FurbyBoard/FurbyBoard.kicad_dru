@@ -1,5 +1,112 @@
 (version 1)
 
+# El layout del fabricante del USB-C de montaje medio deja los pads de señal a 0,15 del fondo
+# de la ranura (y A1/B12 a 0,14 del alivio de la esquina): única excepción al margen de 0,3 a
+# borde, limitada a los pads de J1.
 (rule "USB-C de montaje medio: pads junto a la ranura"
 	(condition "A.memberOfFootprint('J1')")
 	(constraint edge_clearance (min 0.12mm)))
+
+# Vías de 0,45/0,2 (estándar de JLCPCB en 4 capas) solo en el par USB: el cruce de D+/D- en el
+# receptáculo de 16 pines (B7 A6 A7 B6) no cabe con vías de 0,6 entre pads a 0,5 de paso.
+# El resto de la placa sigue con 0,6/0,3.
+(rule "vias de 0,6 salvo el par USB"
+	(condition "A.Type == 'Via' && A.NetClass != 'USB'")
+	(constraint via_diameter (min 0.6mm))
+	(constraint hole_size (min 0.3mm)))
+
+# Anchos mínimos por red (tabla de raíles de NOTAS.md); también en pcb-toolkit.toml.
+
+(rule "ancho VBUS_IN"
+	(condition "A.NetName == 'VBUS_IN'")
+	(constraint track_width (min 0.5mm)))
+
+(rule "ancho VBUS"
+	(condition "A.NetName == 'VBUS'")
+	(constraint track_width (min 0.5mm)))
+
+(rule "ancho VSYS"
+	(condition "A.NetName == 'VSYS'")
+	(constraint track_width (min 0.6mm)))
+
+(rule "ancho BAT"
+	(condition "A.NetName == 'BAT'")
+	(constraint track_width (min 0.8mm)))
+
+(rule "ancho BAT_PAD"
+	(condition "A.NetName == 'BAT_PAD'")
+	(constraint track_width (min 0.8mm)))
+
+(rule "ancho 3V3"
+	(condition "A.NetName == '3V3'")
+	(constraint track_width (min 0.4mm)))
+
+(rule "ancho V6"
+	(condition "A.NetName == 'V6'")
+	(constraint track_width (min 0.5mm)))
+
+(rule "ancho MOT_OUT1"
+	(condition "A.NetName == 'MOT_OUT1'")
+	(constraint track_width (min 0.5mm)))
+
+(rule "ancho MOT_OUT2"
+	(condition "A.NetName == 'MOT_OUT2'")
+	(constraint track_width (min 0.5mm)))
+
+(rule "ancho BST_SW"
+	(condition "A.NetName == 'BST_SW'")
+	(constraint track_width (min 0.8mm)))
+
+(rule "ancho BB_SW1"
+	(condition "A.NetName == 'BB_SW1'")
+	(constraint track_width (min 0.6mm)))
+
+(rule "ancho BB_SW2"
+	(condition "A.NetName == 'BB_SW2'")
+	(constraint track_width (min 0.6mm)))
+
+(rule "ancho SPK_P"
+	(condition "A.NetName == 'SPK_P'")
+	(constraint track_width (min 0.4mm)))
+
+(rule "ancho SPK_N"
+	(condition "A.NetName == 'SPK_N'")
+	(constraint track_width (min 0.4mm)))
+
+(rule "ancho IR_LED_A"
+	(condition "A.NetName == 'IR_LED_A'")
+	(constraint track_width (min 0.3mm)))
+
+(rule "ancho IR_LED_K"
+	(condition "A.NetName == 'IR_LED_K'")
+	(constraint track_width (min 0.3mm)))
+
+# Cuellos de entrada a pads finos (<= 1 mm, layout-pcb.md 5.1): la última regla manda.
+
+(rule "cuello U2"
+	(condition "A.intersectsCourtyard('U2')")
+	(constraint track_width (min 0.25mm)))
+
+(rule "cuello U3"
+	(condition "A.intersectsCourtyard('U3')")
+	(constraint track_width (min 0.25mm)))
+
+(rule "cuello U5"
+	(condition "A.intersectsCourtyard('U5')")
+	(constraint track_width (min 0.25mm)))
+
+(rule "cuello U6"
+	(condition "A.intersectsCourtyard('U6')")
+	(constraint track_width (min 0.25mm)))
+
+(rule "cuello U7"
+	(condition "A.intersectsCourtyard('U7')")
+	(constraint track_width (min 0.25mm)))
+
+(rule "cuello Q1"
+	(condition "A.intersectsCourtyard('Q1')")
+	(constraint track_width (min 0.5mm)))
+
+(rule "cuello J1"
+	(condition "A.intersectsCourtyard('J1')")
+	(constraint track_width (min 0.2mm)))

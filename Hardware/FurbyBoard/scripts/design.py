@@ -28,7 +28,7 @@ FP_JP = "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm"
 
 # Resistencias 0603 UNI-ROYAL 1 %: valor -> (LCSC, clase)
 RES = {
-    "33": ("C23140", "base"), "100": ("C22775", "base"), "220": ("C22962", "base"),
+    "33": ("C23140", "base"), "100": ("C22775", "base"), "220": ("C22962", "base"), "470": ("C23179", "base"),
     "1k": ("C21190", "base"), "1.2k": ("C22765", "base"), "1.5k": ("C22843", "base"),
     "1.8k": ("C4177", "base"), "2.2k": ("C4190", "base"), "4.7k": ("C23162", "base"),
     "5.1k": ("C23186", "base"), "10k": ("C25804", "base"), "30k": ("C22984", "base"),
@@ -148,10 +148,10 @@ def build():
     R("R14", s, "470k", "VBAT_SNS", "GND", "Divisor de VBAT")
     C("C5", s, "100n", "VBAT_SNS", "GND", "Filtro del ADC")
     part("U3", s, "FurbyBoard:TPS63802", "TPS63802DLAR", "FurbyBoard:Texas_DLA_VSON-10_2x3mm_P0.5mm",
-         {"1": "VSYS", "2": "GND", "3": "GND", "4": "BB_FB", "5": "", "6": "3V3", "7": "BB_L2",
-          "8": "GND", "9": "BB_L1", "10": "VSYS"},
+         {"1": "VSYS", "2": "GND", "3": "GND", "4": "BB_FB", "5": "", "6": "3V3", "7": "BB_SW2",
+          "8": "GND", "9": "BB_SW1", "10": "VSYS"},
          "C2845237", "ext", "TI TPS63802DLAR", "Buck-boost 3,3 V, 2 A, PFM")
-    part("L1", s, "Device:L", "0.47u", "FurbyBoard:L_Changjiang_FHD4020S", {"1": "BB_L1", "2": "BB_L2"},
+    part("L1", s, "Device:L", "0.47u", "FurbyBoard:L_Changjiang_FHD4020S", {"1": "BB_SW1", "2": "BB_SW2"},
          "C602026", "ext", "Changjiang FHD4020S-R47MT", "0,47 µH, 4 × 4 mm")
     R("R15", s, "510k", "3V3", "BB_FB", "VOUT = 0,5 × (1 + 510/91) = 3,30 V")
     R("R16", s, "91k", "BB_FB", "GND", "Realimentación")
@@ -164,12 +164,15 @@ def build():
 
     # ------------------------------------------------------------------ MCU
     s = "mcu"
-    # GPIO reasignados en el rutado (2026-10-24): la cámara usa los pines del lado del FPC
-    # (fila inferior derecha y columna derecha), el I2S y los sensores, los de la izquierda.
+    # GPIO por geometría (replanteo del 2026-10-24): la cámara en los pines del lado del FPC
+    # (fila inferior derecha y columna derecha, en el orden de los pads de J6), y en la columna
+    # izquierda, de arriba abajo, lo que va al expansor (I2C, INT), al amplificador y al micro
+    # (I2S) y a J9 por el pasillo sur (HOME, ENC). Los pines 35-39 (IR_RX, UART0, LIGHT,
+    # VBAT_SNS) salen por debajo del módulo en capas internas: no cruzan el bus de la cámara.
     # Sin tocar strapping (IO0, IO3, IO45, IO46) ni el USB (IO19/IO20).
     io = {
-        "1": "GND", "2": "3V3", "3": "EN", "4": "I2C_SDA", "5": "I2C_SCL", "6": "I2S_BCLK",
-        "7": "I2S_WS", "8": "I2S_DOUT", "9": "I2S_DIN", "10": "HOME", "11": "EXP_INT",
+        "1": "GND", "2": "3V3", "3": "EN", "4": "I2C_SDA", "5": "I2C_SCL", "6": "EXP_INT",
+        "7": "I2S_BCLK", "8": "I2S_WS", "9": "I2S_DOUT", "10": "I2S_DIN", "11": "HOME",
         "12": "ENC_IO", "13": "USB_DN", "14": "USB_DP", "15": "IPROPI_IO", "16": "MOT_IN2_IO",
         "17": "MOT_IN1_IO", "18": "CAM_VSYNC", "19": "CAM_HREF", "20": "CAM_Y9", "21": "CAM_XCLK",
         "22": "CAM_Y8", "23": "CAM_Y7", "24": "CAM_PCLK", "25": "CAM_Y6", "26": "IR_TX",
@@ -243,10 +246,10 @@ def build():
     C("C24", s, "22u", "VSYS", "GND", "VDD del amplificador")
     C("C25", s, "22u", "VSYS", "GND", "VDD del amplificador")
     C("C26", s, "100n", "VSYS", "GND", "VDD del amplificador")
-    R("R31", s, "33", "I2S_BCLK", "MIC_SCK", "Serie hacia el micro (cable)")
-    R("R32", s, "33", "I2S_WS", "MIC_WS", "Serie hacia el micro (cable)")
-    pads("J5", s, ["3V3", "GND", "MIC_SCK", "MIC_WS", "I2S_DIN", "GND"], "FurbyBoard:Pads_2x03_P2.54mm",
-         "Micro I2S (3V3, GND, SCK, WS, SD, L/R)")
+    R("R31", s, "33", "I2S_BCLK", "I2S_SCK_MIC", "Serie hacia el micro (cable)")
+    R("R32", s, "33", "I2S_WS", "I2S_WS_MIC", "Serie hacia el micro (cable)")
+    pads("J5", s, ["I2S_DIN", "GND", "I2S_SCK_MIC", "I2S_WS_MIC", "3V3", "GND"], "FurbyBoard:Pads_2x03_P2.54mm",
+         "Micro I2S (SD, GND, SCK, WS, 3V3, GND)")
     TP("TP9", s, "I2S_DOUT", "Datos I2S al amplificador")
 
     # --------------------------------------------------------------- cámara
@@ -281,10 +284,12 @@ def build():
     # ------------------------------------------------------------- sensores
     s = "sensores"
     part("U10", s, "Interface_Expansion:TCA9535PWR", "TCA9535PWR", "Package_SO:TSSOP-24_4.4x7.8mm_P0.65mm",
-         {"1": "EXP_INT", "2": "GND", "3": "GND", "4": "TUMMY", "5": "BACK", "6": "TONGUE",
-          "7": "TILT_A", "8": "TILT_B", "9": "PGOOD", "10": "CHG", "11": "EXP_P07", "12": "GND",
-          "13": "BQ_EN1", "14": "BQ_EN2", "15": "EN_6V", "16": "AMP_SD", "17": "CAM_PWDN",
-          "18": "CAM_EN", "19": "LED_RUN_K", "20": "IR_PWR", "21": "GND", "22": "I2C_SCL",
+         # Puertos por geometría (2026-10-24): P0x (cara oeste) hacia J8, J11, J7 y el
+         # amplificador; P1x (cara este) hacia el cargador, el elevador, J9, la cámara y el LED.
+         {"1": "EXP_INT", "2": "GND", "3": "GND", "4": "TILT_A", "5": "TILT_B", "6": "TONGUE",
+          "7": "EXP_P07", "8": "IR_PWR", "9": "AMP_SD", "10": "PGOOD", "11": "CHG", "12": "GND",
+          "13": "BQ_EN1", "14": "BQ_EN2", "15": "EN_6V", "16": "TUMMY", "17": "BACK",
+          "18": "CAM_PWDN", "19": "CAM_EN", "20": "LED_RUN_K", "21": "GND", "22": "I2C_SCL",
           "23": "I2C_SDA", "24": "3V3"},
          "C130204", "ext", "TI TCA9535PWR", "Expansor I2C 0x20 (bus compartido con el SCCB)")
     C("C32", s, "100n", "3V3", "GND", "Desacoplo del TCA9535")
@@ -303,11 +308,11 @@ def build():
     R("R49", s, "100k", "HOME", "3V3", "Pull-up de la leva")
     R("R50", s, "1k", "HOME", "HOME_PAD", "Serie de la leva")
     C("C38", s, "10n", "HOME", "GND", "Filtro de la leva (τ = 1 ms)")
-    # Encoder: LED IR del engranaje con AO3400A (puerta en EN_6V) y fototransistor a Schmitt
-    R("R51", s, "220", "3V3", "ENC_LED_A", "LED del encoder ≈ 9,5 mA")
-    part("Q2", s, "Transistor_FET:Q_NMOS_GSD", "AO3400A", "Package_TO_SOT_SMD:SOT-23",
-         {"1": "EN_6V", "2": "GND", "3": "ENC_LED_K"}, "C20917", "base", "AOS AO3400A",
-         "Enciende el LED del encoder con el elevador")
+    # Encoder: el LED IR del engranaje se alimenta del raíl de 6 V, así solo luce con el elevador
+    # encendido (EN_6V) y sin transistor: (5,94 − 1,3) / 470 ≈ 9,9 mA, 46 mW en 0603 (≤ 50 %).
+    # Antes iba a 3V3 con un AO3400A gobernado por EN_6V (replanteo del 2026-10-24: sin sitio).
+    # C23179 (470 Ω UNI-ROYAL 0603): código por confirmar en la API de JLCPCB antes del pedido.
+    R("R51", s, "470", "V6", "ENC_LED_A", "LED del encoder ≈ 10 mA con el elevador encendido")
     R("R52", s, "10k", "ENC_PT", "3V3", "Pull-up del fototransistor (4,7k–47k)")
     part("U11", s, "74xGxx:74LVC1G17", "SN74LVC1G17DBVR", "Package_TO_SOT_SMD:SOT-23-5",
          {"1": "", "2": "ENC_PT", "3": "GND", "4": "ENC", "5": "3V3"}, "C7836", "ext",
@@ -329,9 +334,11 @@ def build():
          "FurbyBoard:Pads_2x04_P2.54mm", "Frente: IR (emisor ×2, receptor ×3), luz ×2, GND")
     pads("J8", s, ["TILT_A_PAD", "TILT_B_PAD", "GND", "TONGUE_PAD", "GND", "SPK_P", "SPK_N"],
          "FurbyBoard:Pads_1x07_P2.54mm", "Inclinación ×3, lengua ×2, altavoz ×2")
-    pads("J9", s, ["HOME_PAD", "GND", "ENC_LED_A", "ENC_LED_K", "ENC_PT", "GND", "TUMMY_PAD", "GND",
+    # Orden por geometría: la columna exterior lleva el encoder y la leva (fototransistor arriba, lejos
+    # de las salidas del motor); la interior, barriga, espalda y el motor abajo, junto al puente H.
+    pads("J9", s, ["ENC_PT", "GND", "ENC_LED_A", "GND", "HOME_PAD", "GND", "TUMMY_PAD", "GND",
                    "BACK_PAD", "GND", "MOT_OUT1", "MOT_OUT2"], "FurbyBoard:Pads_2x06_P2.54mm",
-         "Leva ×2, encoder ×4, barriga ×2, espalda ×2, motor ×2")
+         "Encoder ×3, leva ×2, barriga ×2, espalda ×2, motor ×2 (más GND)")
 
     # ---------------------------------------------------------------- LED y TP
     s = "led_tp"
@@ -343,7 +350,7 @@ def build():
     part("D5", s, "Device:LED", "Verde", "LED_SMD:LED_0805_2012Metric", {"1": "LED_RUN_K", "2": "LED_RUN_A"},
          "C2297", "base", "KT-0805G", "LED RUN: latido del firmware (P16 del expansor)")
     pads("J11", s, ["GND", "3V3", "VSYS", "VBUS", "I2C_SDA", "I2C_SCL", "EXP_P07", "GND", "U0TX", "U0RX"],
-         "FurbyBoard:Pads_1x10_P2.54mm", "J_EXP: header de expansión sin montar")
+         "FurbyBoard:Pads_2x05_P2.54mm", "J_EXP: header de expansión 2 x 5 sin montar")
     for i, ref in enumerate(("TP12", "TP13", "TP14")):
         TP(ref, s, "GND", "GND")
     return list(_parts)

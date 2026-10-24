@@ -2821,7 +2821,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "J_EXP: header de expansión sin montar"
+		(property "Value" "J_EXP: header de expansión 2 x 5 sin montar"
 			(at 275.82 67.04 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2832,7 +2832,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "FurbyBoard:Pads_1x10_P2.54mm"
+		(property "Footprint" "FurbyBoard:Pads_2x05_P2.54mm"
 			(at 279.4 76.2 0)
 			(hide yes)
 			(show_name no)
@@ -2856,7 +2856,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "J_EXP: header de expansión sin montar"
+		(property "Description" "J_EXP: header de expansión 2 x 5 sin montar"
 			(at 279.4 76.2 0)
 			(hide yes)
 			(show_name no)

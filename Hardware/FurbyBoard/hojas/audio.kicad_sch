@@ -1624,7 +1624,7 @@
 			)
 		)
 	)
-	(global_label "MIC_SCK"
+	(global_label "I2S_SCK_MIC"
 		(shape passive)
 		(at 233.68 74.93 270)
 		(fields_autoplaced yes)
@@ -1670,7 +1670,7 @@
 			)
 		)
 	)
-	(global_label "MIC_SCK"
+	(global_label "I2S_SCK_MIC"
 		(shape passive)
 		(at 309.88 71.12 180)
 		(fields_autoplaced yes)
@@ -1739,7 +1739,7 @@
 			)
 		)
 	)
-	(global_label "MIC_WS"
+	(global_label "I2S_WS_MIC"
 		(shape passive)
 		(at 274.32 74.93 270)
 		(fields_autoplaced yes)
@@ -1762,7 +1762,7 @@
 			)
 		)
 	)
-	(global_label "MIC_WS"
+	(global_label "I2S_WS_MIC"
 		(shape passive)
 		(at 309.88 73.66 180)
 		(fields_autoplaced yes)
@@ -1992,7 +1992,7 @@
 			)
 		)
 	)
-	(global_label "I2S_DIN"
+	(global_label "3V3"
 		(shape passive)
 		(at 309.88 76.2 180)
 		(fields_autoplaced yes)
@@ -2130,7 +2130,7 @@
 			)
 		)
 	)
-	(global_label "3V3"
+	(global_label "I2S_DIN"
 		(shape passive)
 		(at 309.88 66.04 180)
 		(fields_autoplaced yes)
@@ -2415,7 +2415,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Micro I2S (3V3, GND, SCK, WS, SD, L/R)"
+		(property "Value" "Micro I2S (SD, GND, SCK, WS, 3V3, GND)"
 			(at 313.92 67.04 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2450,7 +2450,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "Micro I2S (3V3, GND, SCK, WS, SD, L/R)"
+		(property "Description" "Micro I2S (SD, GND, SCK, WS, 3V3, GND)"
 			(at 317.5 71.12 0)
 			(hide yes)
 			(show_name no)

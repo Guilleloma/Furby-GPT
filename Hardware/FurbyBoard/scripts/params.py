@@ -41,6 +41,12 @@ RULE_CLEARANCE = 0.15
 RULE_TRACK_MIN = 0.15
 RULE_VIA_DIAM = 0.6
 RULE_VIA_DRILL = 0.3
+# Vía fina (0,45/0,2, anillo 0,125): dentro del estándar de JLCPCB para 4 capas
+# (taladro >= 0,15, diámetro >= taladro + 0,1; 0,2 de taladro preferido, sin sobrecoste según
+# fabricante-jlcpcb.md). Solo la clase USB la usa (cruce del par en J1); regla en el .kicad_dru.
+VIA_FINA_DIAM = 0.45
+VIA_FINA_DRILL = 0.2
+VIA_FINA_ANILLO = 0.12
 RULE_EDGE_CLEARANCE = 0.3
 TRACK_SIGNAL = 0.2
 # VSYS va por el plano de In2 (L3) y GND por el de In1 (L2): por pistas solo quedan tramos
@@ -52,6 +58,19 @@ TRACK_POWER = 0.4
 TRACK_MOTOR = 0.4
 TRACK_3V3 = 0.3
 TRACK_POWER_MAX = 0.8
+
+# Ancho mínimo por red de potencia (mm), de la tabla de raíles de NOTAS.md (IPC-2221, 1 oz
+# exterior, dT 10 °C: 0,3 -> 1,0 A; 0,5 -> 1,45 A; 0,8 -> 2,0 A). Por encima de 1,5 A manda el
+# polígono: VSYS y BAT llevan además el relleno de In2 y cobre ancho junto al cargador.
+ANCHOS_MINIMOS = {
+    "VBUS_IN": 0.5, "VBUS": 0.5,          # PTC de 1,5 A
+    "VSYS": 0.6, "BAT": 0.8, "BAT_PAD": 0.8,  # picos de 2,9 A (motor + radio + audio): polígonos
+    "3V3": 0.4,                           # 0,6 A de pico (radio + cámara)
+    "V6": 0.5, "MOT_OUT1": 0.5, "MOT_OUT2": 0.5,  # ITRIP 1,0 A
+    "BST_SW": 0.8, "BB_SW1": 0.6, "BB_SW2": 0.6,  # nodos SW: cortos y anchos
+    "SPK_P": 0.4, "SPK_N": 0.4,           # picos de 0,9 A
+    "IR_LED_A": 0.3, "IR_LED_K": 0.3,     # 100 mA en pulsos
+}
 
 # Par USB de ≈ 90 Ω diferenciales en L1 sobre GND en L2 (prepreg 7628 de 0,2104 mm,
 # εr 4,4). Microstrip acoplado (IPC-2141): con 0,28 de ancho Z0 ≈ 59 Ω y, con
