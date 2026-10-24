@@ -18,14 +18,14 @@ MARGEN_BORDE = 0.4
 
 # Referencia -> texto. Orden de preferencia de posición: derecha, izquierda, arriba, abajo.
 ARRIBA = {
-    "J2": "+", "J3": "-",
+    "J2": "+", "J3": "-",   # polaridad de la batería también arriba, por donde se suelda
     "SW1": "RST", "SW2": "BOOT",
     "D4": "PWR", "D5": "RUN", "D3": "TX",
     "JP1": "IO9", "JP2": "IO46", "JP3": "IO3", "JP4": "IO8", "JP5": "LED",
 }
 
-# TP: van en la cara inferior, sobre una vía de su red junto a la fuente (router/rutar.py),
-# y su rótulo se pone al aplicar el rutado (router/aplicar.py).
+# TP: van en la cara inferior, sobre una vía de su red junto a la fuente; su rótulo se pone
+# en la colocación (gen_pcb.py), como los demás, para poder seguir el TEST-PLAN sobre la placa.
 TP_ABAJO = {
     "TP1": "VBUS", "TP2": "D+", "TP3": "D-", "TP4": "BAT", "TP5": "VSYS", "TP6": "3V3",
     "TP7": "6V", "TP8": "IPR",
@@ -34,6 +34,7 @@ TP_ABAJO = {
 
 # Lado preferido de cada rótulo de arriba (por defecto RLUD).
 LADO_ARRIBA = {r: "D" for r in ("SW1", "SW2", "JP5")}
+LADO_ARRIBA["J2"] = "U"
 LADO_ARRIBA.update({r: "U" for r in ("D4", "D5", "D3")})
 # D1 (CHG, rojo) y D2 (PG, verde) se distinguen por el color y no llevan rótulo.
 
@@ -56,7 +57,8 @@ PADS = {
 # sitio alrededor (J9 y J5 pegados al borde derecho, J7 pegado al delantero) llevan al lado
 # una leyenda con la misma disposición que los pads: (lado, separación entre columnas).
 LADO_PADS = {"J8": "R", "J2": "D", "J3": "D"}
-LEYENDA = {"J9": ("L", 3.6), "J5": ("R", 3.0), "J7": ("R", 3.0), "J11": ("R", 3.0)}
+LADO_TP = "UDRL"
+LEYENDA = {"J9": ("L", 3.6), "J5": ("R", 3.0), "J7": ("R", 3.0), "J11": ("R", 5.8)}
 TITULOS = {"J9": "J9", "J7": "J7", "J8": "J8", "J11": "J_EXP"}
 
 

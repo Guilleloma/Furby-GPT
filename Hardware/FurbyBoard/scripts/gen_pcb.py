@@ -263,15 +263,16 @@ def silk(board):
     # Franja entre el módulo y el borde delantero: la única cara superior que no tapa la batería
     # y donde no hay cobre (zona de la antena).
     text(board, F, "FurbyBoard %s" % P.BOARD_REV, -73.0, -54.45, 0.8, 0.15)
-    lx = LAY.LOGO_INFERIOR["x"]
-    cx = (lx[0] + lx[1]) / 2
-    text(board, B, "FurbyBoard", cx, -87.2, 1.6, 0.2, mirror=True)
-    text(board, B, "%s · %s" % (P.BOARD_REV, P.BOARD_DATE), cx, -89.5, 1.2, 0.15, mirror=True)
-    # Recuadro en blanco para numerar la placa a rotulador (TEST-PLAN.md)
-    x0, x1, y0, y1 = cx - 3.0, cx + 5.0, -96.4, -92.4
+    # Nombre y versión a la derecha del logo (zona trasera izquierda, bajo la batería, sin pads en la cara B)
+    lx, ly = LAY.LOGO_INFERIOR["x"], LAY.LOGO_INFERIOR["y"]
+    tx = lx[1] + 6.0
+    text(board, B, "FurbyBoard", tx, -106.6, 1.2, 0.15, mirror=True)
+    text(board, B, "%s · %s" % (P.BOARD_REV, P.BOARD_DATE), tx, -104.9, 1.0, 0.15, mirror=True)
+    # Recuadro en blanco para numerar la placa a rotulador (TEST-PLAN.md), a la derecha del logo
+    x0, x1, y0, y1 = lx[1] + 1.5, lx[1] + 9.5, -117.0, -113.0
     for a, b in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
         shape(board, B, pcbnew.SHAPE_T_SEGMENT, a=a, b=b, width=0.15)
-    text(board, B, "PLACA", cx - 5.6, (y0 + y1) / 2, 0.8, 0.15, mirror=True)
+    text(board, B, "PLACA", (x0 + x1) / 2, y1 + 0.8, 0.8, 0.15, mirror=True)
 
 
 def contorno_muestreado(paso=0.5):
@@ -388,6 +389,12 @@ def rotulos(board):
             xy = abajo.coloca("%s.%s" % (ref, num), caja_pads(fp, [num]), rotulo(board, "B", txt), lados + "RLUD")
             if xy:
                 rotulo(board, "B", txt, xy)
+    # Nombre de cada TP en la cara inferior (preferencia: TEST-PLAN sobre la placa sin plano)
+    for ref, txt in SG.TP_ABAJO.items():
+        fp = board.FindFootprintByReference(ref)
+        xy = abajo.coloca(ref, caja_pads(fp, silk=pcbnew.B_SilkS), rotulo(board, "B", txt), SG.LADO_TP)
+        if xy:
+            rotulo(board, "B", txt, xy)
     for ref, txt in SG.PUENTES_ABAJO.items():
         fp = board.FindFootprintByReference(ref)
         xy = abajo.coloca("abajo " + ref, caja_pads(fp), rotulo(board, "B", txt), "CUDLR")
