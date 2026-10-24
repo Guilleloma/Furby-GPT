@@ -35,7 +35,7 @@ import numpy as np
 from matplotlib.path import Path
 
 G = 0.05            # paso de la rejilla, mm
-MARGEN = 0.09       # cubre la discretización de la pista y la del cobre ajeno (2 × media diagonal)
+MARGEN = float(os.environ.get("MARGEN", 0.09))       # cubre la discretización de la pista y la del cobre ajeno (2 × media diagonal)
 CAPAS = ["F", "I", "B"]
 ANCHO_SALIDA = 0.2  # ancho con el que una red ancha sale de sus pads finos
 ZONA_SALIDA = 0.8   # mm alrededor de sus pads donde se permite ese ancho
@@ -54,6 +54,7 @@ FUENTES_TP = {
     "TP13": ("U5", "5"), "TP14": ("U6", "7"),
 }
 R_TP = 0.75
+VIA_PAD_PENDIENTE = float(os.environ.get("VIA_PAD_PENDIENTE", 0.6))  # remate: de un pad aún sin unir de otra red al centro de una vía
 P_VIA_PAD = 0.45        # del borde de un pad SMD al centro de una vía de abanico (sin vía en pad)
 
 
@@ -760,6 +761,132 @@ def orden_por_bloques(redes):
     return [r for r in primero if r in redes] + [r for r in redes if r not in primero]
 
 
+def _mascara_item(rj, g):
+    """Celdas (3, H, W) de un elemento de la lista de pendientes (pad, vía o pista)."""
+    m = np.zeros((3, rj.H, rj.W), dtype=bool)
+    capas = [CAPAS.index(c) for c in g.get("capas", []) if c in CAPAS]
+    if g["tipo"] == "pad":
+        base = rj.poly_mask(g["poly"]).astype(bool)
+    elif g["tipo"] == "via":
+        base = rj.disco(g["pos"][0], g["pos"][1], g["r"]).astype(bool)
+    elif g["tipo"] == "pista":
+        tmp = np.full((3, rj.H, rj.W), -1, dtype=np.int16)
+        rj.pinta_segmento(0, g["a"], g["b"], g["w"], 1, tmp)
+        base = tmp[0] == 1
+    else:
+        return m
+    for l in capas:
+        m[l] = base
+    return m
+
+
+def rematar(geo, lib, pendientes, semilla=0):
+    """Une cada par pendiente (del DRC de KiCad) con todo lo demás como obstáculo fijo."""
+    rj = Rejilla(geo, lib)
+    rj.colocar_tps(activo=False)
+    # ninguna vía a menos de VIA_PAD_PENDIENTE de un pad que aún tiene que salir: si no, la vía
+    # de una red tapa la salida de la siguiente (pasaba en los pines de U5 y U2)
+    pend_pads = {}
+    for p in pendientes:
+        for g in (p["a"], p["b"]):
+            if g["tipo"] == "pad":
+                m = rj.poly_mask(g["poly"]).astype(np.uint8)
+                pend_pads.setdefault(p["red"], np.zeros_like(m))
+                pend_pads[p["red"]] |= m
+    fallos = []
+    # las señales finas primero: las anchas de potencia rodean mejor que al revés
+    orden = sorted(range(len(pendientes)), key=lambda k: (rj.ancho[pendientes[k]["red"]], k))
+    if semilla:
+        # otro orden al azar, con las salidas de pines de circuitos integrados delante
+        import random
+        rnd = random.Random(semilla)
+        orden = sorted(orden, key=lambda k: (not any(g.get("ref", "")[:1] in "UJ" for g in
+                                                     (pendientes[k]["a"], pendientes[k]["b"])), rnd.random()))
+    def une(k):
+        p = pendientes[k]
+        red = p["red"]
+        n, w = rj.nid[red], rj.ancho[red]
+        src, tgt = _mascara_item(rj, p["a"]), _mascara_item(rj, p["b"])
+        if not src.any() or not tgt.any():
+            return False
+        pads = [(pp, c) for pp, c in rj.pad_celdas if pp["red"] == red and
+                any(pp.get("ref") == g.get("ref") and pp.get("num") == g.get("num") for g in (p["a"], p["b"]))]
+        libre, estrecho, via_ok = rj.mascaras(n, w, [(l, m) for _, c in pads for l, m in c])
+        if red == "GND":
+            via_ok = via_ok & rj.lejos_pads
+        otros = np.zeros((rj.H, rj.W), dtype=np.uint8)
+        for r, m in pend_pads.items():
+            if r != red:
+                otros |= m
+        if otros.any():
+            via_ok = via_ok & (rj.edt(otros) >= (VIA_PAD_PENDIENTE / G) ** 2)
+        utiles_src = src & rj._angosto
+        utiles_tgt = tgt & rj._angosto
+        src = utiles_src if utiles_src.any() else src
+        tgt = utiles_tgt if utiles_tgt.any() else tgt
+        lib_o = libre | src | tgt
+        ls, js, is_ = np.nonzero(src)
+        fuentes = list(zip(ls, js, is_))
+        tj, ti = np.nonzero(tgt.any(axis=0))
+        caja = (max(0, min(ti.min(), is_.min()) - 120), max(0, min(tj.min(), js.min()) - 120),
+                min(rj.W, max(ti.max(), is_.max()) + 121), min(rj.H, max(tj.max(), js.max()) + 121))
+        camino = rj.astar(lib_o, via_ok, tgt, fuentes, caja)
+        if camino is None:
+            camino = rj.astar(lib_o, via_ok, tgt, fuentes, (0, 0, rj.W, rj.H))
+        if camino is None:
+            return False
+        rj._libre_actual = libre
+        rj.camino_a_cobre(camino, n, w, libre & ~estrecho, lib_o, centros=rj._centros(pads))
+        return True
+
+    def estorban(k):
+        """Redes con cobre de este remate a menos de 1 mm de los pads del par k."""
+        p = pendientes[k]
+        cs = [g["pos"] for g in (p["a"], p["b"]) if g["tipo"] == "pad"]
+        redes = set()
+        for t in rj.pistas_nuevas:
+            if t["fija"] or t["red"] == p["red"]:
+                continue
+            for c in cs:
+                if _dist_seg(c, t["a"], t["b"]) - t["w"] / 2 < 1.0:
+                    redes.add(t["red"])
+        for v in rj.vias_nuevas:
+            if not v["fija"] and v["red"] != p["red"] and any(
+                    math.hypot(v["pos"][0] - c[0], v["pos"][1] - c[1]) < 1.3 for c in cs):
+                redes.add(v["red"])
+        return redes
+
+    # levantar y rerutar por pares: si un par no sale, se quita lo rutado aquí que tapa sus
+    # pads, se ruta él y después se vuelven a rutar los levantados (cada par, dos intentos)
+    hechos, intentos, cola, pasos = set(), {}, list(orden), 0
+    while cola and pasos < 6 * len(pendientes):
+        pasos += 1
+        k = cola.pop(0)
+        if une(k):
+            hechos.add(k)
+            continue
+        intentos[k] = intentos.get(k, 0) + 1
+        redes = estorban(k)
+        if intentos[k] > 2 or not redes:
+            fallos.append(k)
+            p = pendientes[k]
+            print("FALLA", p["red"], p["a"].get("ref", p["a"]["tipo"]), p["b"].get("ref", p["b"]["tipo"]), flush=True)
+            continue
+        quitados = [q for q in hechos if pendientes[q]["red"] in redes]
+        rj.levantar(redes)
+        hechos -= set(quitados)
+        cola = [k] + quitados + cola
+    fallos.extend(k for k in cola if k not in fallos)
+    return rj, sorted(set(fallos))
+
+
+def _dist_seg(p, a, b):
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    L = dx * dx + dy * dy
+    t = 0 if L == 0 else max(0, min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L))
+    return math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy)
+
+
 def una_vuelta(geo, lib, redes, verboso=False):
     rj = Rejilla(geo, lib)
     rj.colocar_tps(activo="--sin-tp" not in sys.argv)
@@ -818,6 +945,14 @@ def main():
         geo["anchos"].update(json.load(open(sys.argv[sys.argv.index("--anchos") + 1])))
     vueltas = int(sys.argv[sys.argv.index("--vueltas") + 1]) if "--vueltas" in sys.argv else 6
     lib = compilar()
+    if "--remate" in sys.argv:
+        pend = json.load(open(sys.argv[sys.argv.index("--remate") + 1]))
+        rj, fallos = rematar(geo, lib, pend, int(os.environ.get("SEMILLA", 0)))
+        json.dump({"pistas": rj.pistas_nuevas, "vias": rj.vias_nuevas, "tps": {},
+                   "fallidas": [pend[k]["red"] for k in fallos], "fallidas_det": fallos}, open(salida, "w"))
+        print("Remate: %d de %d unidas; fallan: %s" % (len(pend) - len(fallos), len(pend),
+                                                      ", ".join(pend[k]["red"] for k in fallos)))
+        return
     if "--solo-tp" in sys.argv:
         rj = Rejilla(geo, lib)
         rj.colocar_tps()
