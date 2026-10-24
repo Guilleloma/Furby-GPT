@@ -50,7 +50,7 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 FUENTES_TP = {
     "TP1": ("F1", "2"), "TP2": ("U1", "1"), "TP3": ("U1", "3"), "TP4": ("Q1", "1"),
     "TP5": ("U2", "10"), "TP6": ("U3", "6"), "TP7": ("U5", "6"), "TP8": ("U6", "1"),
-    "TP9": ("U7", "1"), "TP10": ("U8", "5"), "TP11": ("U9", "5"), "TP12": ("J1", "A1"),
+    "TP9": ("U4", "8"), "TP10": ("U8", "5"), "TP11": ("U9", "5"), "TP12": ("J1", "A1"),
     "TP13": ("U5", "5"), "TP14": ("U6", "7"),
 }
 R_TP = 0.75
@@ -501,6 +501,11 @@ class Rejilla:
         self._fijo = True
         self.tps = {}
         self.reserva_tp = np.zeros((self.H, self.W), dtype=bool)
+        # courtyard de los tornillos (Ø5,1) + el del TP (Ø2,6)
+        self.cerca_tornillos = np.zeros((self.H, self.W), dtype=bool)
+        for p in self.geo["pads"]:
+            if p["npth"] and p["agujero"]:
+                self.cerca_tornillos |= self.disco(p["agujero"][0], p["agujero"][1], 2.55 + 1.35).astype(bool)
         silk = np.zeros((self.H, self.W), dtype=np.uint8)
         for x0, y0, x1, y1 in self.geo.get("silk_b", []):
             silk |= self.poly_mask([(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
@@ -518,7 +523,9 @@ class Rejilla:
             d_b = self.edt(((self.lab[2] >= 0) & (self.lab[2] != n)) | (self.lab[2] == -3))
             sitio = (via_ok & self.lejos_pads & (d_b >= lim(R_TP + hol + MARGEN))
                      & (self.d_borde >= lim(self.reglas["borde"] + R_TP + MARGEN))
-                     & (self.d_silk_b >= lim(R_TP + 0.2)) & ~self.reserva_tp)
+                     & (self.d_silk_b >= lim(R_TP + 0.2)) & ~self.reserva_tp
+                     & (self.d_agujeros >= lim(1.3 + 0.7))     # courtyard del TP lejos de taladros
+                     & (self.d_kovia >= lim(1.4)) & ~self.cerca_tornillos)
             m = [mm for l, mm in celdas if l == 0]
             if not m:
                 continue
@@ -803,6 +810,13 @@ def main():
     salida = sys.argv[2]
     vueltas = int(sys.argv[sys.argv.index("--vueltas") + 1]) if "--vueltas" in sys.argv else 6
     lib = compilar()
+    if "--solo-tp" in sys.argv:
+        rj = Rejilla(geo, lib)
+        rj.colocar_tps()
+        json.dump({"pistas": rj.pistas_nuevas, "vias": rj.vias_nuevas, "tps": rj.tps, "fallidas": []},
+                  open(salida, "w"))
+        print("TP colocados:", len(rj.tps))
+        return
     orden = json.load(open(sys.argv[sys.argv.index("--orden") + 1])) if "--orden" in sys.argv else None
     redes = orden or orden_por_bloques(sorted(geo["anchos"]))
     mejor = None

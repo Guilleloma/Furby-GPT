@@ -58,7 +58,7 @@ def main():
     board = pcbnew.LoadBoard(P.PCB)
     redes = {}
     n_p = n_v = 0
-    for ruta in sys.argv[1:]:
+    for ruta in [a for a in sys.argv[1:] if not a.startswith("--")]:
         datos = json.load(open(ruta))
         for t in datos["pistas"]:
             red = redes.setdefault(t["red"], board.FindNet(t["red"]))
@@ -68,6 +68,7 @@ def main():
             s.SetWidth(mm(t["w"]))
             s.SetLayer(CAPAS[t["capa"]])
             s.SetNet(red)
+            s.SetLocked("--fijar" in sys.argv)
             board.Add(s)
             n_p += 1
         for v in datos["vias"]:
@@ -77,6 +78,7 @@ def main():
             via.SetWidth(mm(P.RULE_VIA_DIAM))
             via.SetDrill(mm(P.RULE_VIA_DRILL))
             via.SetNet(red)
+            via.SetLocked("--fijar" in sys.argv)
             board.Add(via)
             n_v += 1
         for ref, pos in datos.get("tps", {}).items():
@@ -86,7 +88,8 @@ def main():
                 fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
             fp.SetPosition(punto(pos))
     rotular_tps(board)
-    rellenos_exteriores(board)
+    if "--rellenos" in sys.argv:
+        rellenos_exteriores(board)
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     pcbnew.SaveBoard(P.PCB, board)
     print("Aplicadas %d pistas y %d vías; planos rellenos" % (n_p, n_v))
