@@ -75,10 +75,23 @@ def project():
     }
 
 
+# El layout del fabricante del USB-C de montaje medio deja los pads de señal a 0,15 del fondo
+# de la ranura (y A1/B12 a 0,14 del alivio de la esquina): es la única excepción al margen de
+# 0,3 a borde y se limita a los pads de J1.
+DRU = """(version 1)
+
+(rule "USB-C de montaje medio: pads junto a la ranura"
+\t(condition "A.memberOfFootprint('J1')")
+\t(constraint edge_clearance (min 0.12mm)))
+"""
+
+
 def main():
     with open(P.PRO, "w") as fh:
         json.dump(project(), fh, indent=2, ensure_ascii=False)
         fh.write("\n")
+    with open(os.path.splitext(P.PRO)[0] + ".kicad_dru", "w") as fh:
+        fh.write(DRU)
     print("Proyecto escrito:", os.path.basename(P.PRO))
 
 

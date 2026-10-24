@@ -1,0 +1,5 @@
+(version 1)
+
+(rule "USB-C de montaje medio: pads junto a la ranura"
+	(condition "A.memberOfFootprint('J1')")
+	(constraint edge_clearance (min 0.12mm)))
