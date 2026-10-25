@@ -493,7 +493,9 @@ pista("MOT_VREF", "F.Cu", 0.25, "U6.4", "C23.1")
 pista("MOT_VREF", "F.Cu", 0.25, "C23.1", (-51.875, -105.3), (-55.275, -105.3), "R27.1")
 pista("MOT_VREF", "F.Cu", 0.2, "R27.1", "R26.2")
 stub("GND", "R28.2", (-0.825, 0.0), 0.3)
-stub("GND", "C23.2", (-0.875, 0.0), 0.3)
+# C23.2 a una vía 0,1 al sur del eje del pad: deja sitio a la vía de MOT_IN2 entre las de GND de R28.2 y C23.2 (bloque C)
+pista("GND", "F.Cu", 0.3, "C23.2", (-53.525, -104.55), (-54.3, -104.55))
+via("GND", (-54.3, -104.55))
 stub("GND", "R27.2", (0.0, -0.8), 0.3)
 stub("GND", "C19.2", (1.0, 0.0), 0.3)
 stub("GND", "C21.2", (0.0, 1.2), 0.3)
@@ -877,3 +879,29 @@ pista("ENC_IO", "In3.Cu", 0.2, (-79.6, -75.3), (-46.5, -75.3), (-46.5, -80.5), (
       (-45.6, -90.6), (-45.6, -106.3), (-43.95, -106.3), (-43.95, -109.3), (-41.9, -109.3), (-41.6, -109.0), (-41.6, -108.0))
 via("ENC_IO", (-41.6, -108.0))
 pista("ENC_IO", "F.Cu", 0.2, "JP4.2", (-41.6, -108.0))
+# ---------------------------------------------------------------- bloque C: MOT_IN2, UART0, EXP_P07 e I2C a J11
+# MOT_IN2: los pines 1 (IPROPI a R28.1) y 4 (MOT_VREF a C23.1) de U6 encierran a los pines 2 y 3; su única salida en F.Cu
+# es el hueco de 0,55 mm entre R28 y C23 (una sola pista). Vía entre las de GND de R28.2/C23.2 (0,15 local), B.Cu al este
+# por debajo de U6 y al norte por la ranura entre TP8 y TP11, al oeste en y -94,5 hasta el borde del agujero y al norte
+# hasta una vía al SE de la de IPROPI; In2 rodea esa vía por el norte (y -86,6) hasta la vía de MOT_IN2.
+# Codo de 0,3 en x -51,15 (fuera del patio de U6, a 0,15 de R28.1); 0,0001 de más para que revisar-rutado no lo mida
+# por debajo de 2 x ancho por el redondeo de coma flotante.
+pista("MOT_IN2", "F.Cu", 0.25, "U6.2", (-51.15, -103.4499))   # 0,25 dentro del patio de U6
+pista("MOT_IN2", "F.Cu", 0.15, (-51.15, -103.4499), (-51.15, -103.75), (-54.3, -103.75))
+via("MOT_IN2", (-54.3, -103.75))
+pista("MOT_IN2", "B.Cu", 0.2, (-54.3, -103.75), (-50.25, -103.75), (-50.25, -99.7), (-51.3, -99.7), (-51.3, -94.5),
+      (-54.5, -94.5), (-54.5, -89.7), (-55.0, -89.2), (-56.3, -89.2))
+via("MOT_IN2", (-56.3, -89.2))
+pista("MOT_IN2", "In2.Cu", 0.2, (-56.3, -89.2), (-56.3, -87.0), (-56.7, -86.6), (-61.05, -86.6), (-61.35, -86.3))
+# EXP_P07: el pin 7 de U10 queda encerrado por TONGUE (pines 6 y 8 al oeste); vía bajo el cuerpo y por In3, al oeste entre
+# las vías de x -97,15 y al sur por el este de J8 y J5, hasta la fila entre las dos primeras de J11 y J11.7 desde arriba.
+pista("EXP_P07", "F.Cu", 0.2, "U10.7", (-91.45, -81.325))
+via("EXP_P07", (-91.45, -81.325))
+pista("EXP_P07", "In3.Cu", 0.2, (-91.45, -81.325), (-91.775, -81.65), (-100.0, -81.65), (-100.0, -87.6), (-101.1, -88.7),
+      (-101.1, -96.97), (-105.34, -96.97), "J11.7")
+# I2C_SCL a J11.6: de R37.1 al sur a una vía al sur de EXP_INT (In2) y entre LED_RUN_K y TUMMY (In3); por In2 al oeste
+# entre las vías de TILT_A_PAD y 3V3, por el hueco entre J8.4 y J8.5 y entre las columnas de J5 hasta J11.6.
+pista("I2C_SCL", "F.Cu", 0.15, ("R37.1", -0.075, 0.0), (-91.4, -77.3))
+via("I2C_SCL", (-91.4, -77.3))
+pista("I2C_SCL", "In2.Cu", 0.2, (-91.4, -77.3), (-92.35, -78.25), (-99.5, -78.25), (-100.74, -79.49), (-104.07, -79.49),
+      (-104.07, -95.7), "J11.6")
