@@ -17,6 +17,7 @@ Se ejecuta con el Python de KiCad:
   con relleno de VSYS; In3 (L4) señal; relleno de GND en F.Cu y B.Cu tras el rutado.
 - Áreas de reglas: sin cobre bajo la antena (todas las capas) y sin vías ni pads
   pasantes bajo el logo de la cara inferior.
+- Las zonas quedan sin rellenar: se rellenan con scripts/rellenar.sh después de gen_pro.py.
 """
 import json
 import math
@@ -52,7 +53,35 @@ def load_fp(fpid):
     if fp is None:
         raise RuntimeError("huella no encontrada: " + fpid)
     fp.SetFPID(pcbnew.LIB_ID(lib, name))
+    modelo_3d(fp, name)
     return fp
+
+
+# Huellas estándar cuyo modelo 3D no instala KiCad 10: se sustituye por uno propio
+# (scripts/gen_modelos3d.py) o por el de KiCad del mismo cuerpo. Origen en el centro de
+# la huella, z = 0 en la cara de la placa y pin 1 en el pad 1: offset, giro y escala por defecto.
+MODELOS_3D = {
+    "VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm":
+        "${KIPRJMOD}/lib/FurbyBoard.3dshapes/VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm.step",
+    "Texas_VQFN-RNR0011A-11":
+        "${KIPRJMOD}/lib/FurbyBoard.3dshapes/Texas_VQFN-RNR0011A-11.step",
+    "Vishay_PowerPAK_1212-8_Single":
+        "${KIPRJMOD}/lib/FurbyBoard.3dshapes/Vishay_PowerPAK_1212-8_Single.step",
+    "Texas_DSG0008A_WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm":
+        "${KICAD10_3DMODEL_DIR}/Package_SON.3dshapes/WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm.step",
+    # Mismo cuerpo (3 × 3 × 0,775) y terminales; solo cambia el pad expuesto, que va debajo
+    "TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm":
+        "${KICAD10_3DMODEL_DIR}/Package_DFN_QFN.3dshapes/TQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm.step",
+}
+
+
+def modelo_3d(fp, name):
+    if name not in MODELOS_3D:
+        return
+    modelo = pcbnew.FP_3DMODEL()
+    modelo.m_Filename = MODELOS_3D[name]
+    fp.Models().clear()
+    fp.Models().append(modelo)
 
 
 def shape(board, layer, kind, **kw):
@@ -821,12 +850,10 @@ def main():
     recorta_serigrafia(board)
     rotulos(board)
     zones(board, netmap, exteriores=rutado)
+    # Las zonas se guardan sin rellenar: aquí el .kicad_pro aún tiene las reglas por defecto
+    # de KiCad (margen a borde 0,5 en vez de 0,3), porque SaveBoard lo reescribe. Se rellenan
+    # con scripts/rellenar.sh después de gen_pro.py (hallazgo E1-1).
     pcbnew.SaveBoard(P.PCB, board)
-    if rutado or "--rellenar" in sys.argv:
-        # Relleno sobre la placa recargada del disco (kicad-automatizacion.md §3 y §10)
-        board = pcbnew.LoadBoard(P.PCB)
-        pcbnew.ZONE_FILLER(board).Fill(board.Zones())
-        pcbnew.SaveBoard(P.PCB, board)
     escribir_stackup(P.PCB)
     print("PCB escrito:", os.path.basename(P.PCB))
     sys.stdout.flush()

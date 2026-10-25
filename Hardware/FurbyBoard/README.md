@@ -361,7 +361,6 @@ La v1.0 depende del firmware para no pasar de estos límites (`NOTAS.md`, «Regl
 - **Agujero del mecanismo dado por bueno sin medir** (Ø11,3 mm, decisión del autor del 2026-10-24). El cobre más cercano a su borde es MOT_IN2 a 0,34 mm, IPROPI a 0,43, HOME a 0,63 y MOT_IN1 a 0,64 (medido en el PCB, 2026-10-25): cumple el mínimo del fabricante (0,2 mm), pero agrandar el agujero cortaría pistas.
 - **Rizado de VDD del amplificador:** 70 mV pp simulados (87 en el peor caso): C41 no cabe pegado a los pines 7/8 (con él pegado serían 25 mV pp).
 - **Pinout de la cámara de facto:** el FPC sigue el pinout habitual de los módulos para ESP32; hay que comprobarlo con el módulo comprado.
-- **Rellenos de cobre:** `gen_pcb.py` rellena con el margen a borde por defecto de KiCad (0,5 mm) en vez del del proyecto (0,3). Antes de exportar los Gerber hay que rellenar con kicad-cli (paso en «Cómo regenerar»). Ese relleno se comprobó en la puerta E1: DRC limpio y sin trozos sueltos.
 - **Piezas por confirmar antes del pedido:** C22962 (220 Ω, R51) como básica en la API de JLCPCB e Isat de la bobina FHD4020S-1R0MT.
 - **Sin GPIO libres:** solo J_EXP (I2C, UART, P04 y alimentaciones); los puentes JP1–JP4 liberan GPIO9, GPIO46, GPIO3 y GPIO8 si se renuncia a su función.
 - **Serigrafía:** la leyenda de J9 está aparte (22 mm por encima de sus pads), «IO8» de JP4 solo en la cara inferior, J5 sin título y 12 textos a 0,8 mm de letra, en cuatro grupos (nombre de la cara superior, leyenda de J7, «I2S» de TP9, «BAT» de TP4 y «BAT-» de J3), por debajo del 1,0 mm recomendado por JLCPCB.
@@ -380,10 +379,9 @@ python3 scripts/gen_sch.py                       # esquema jerárquico desde des
 for f in FurbyBoard.kicad_sch hojas/*.kicad_sch; do $KC sch upgrade "$f"; done
 python3 scripts/gen_pro.py                       # proyecto, clases de red, reglas y .kicad_dru
 python3 scripts/logo_guillemaker.py              # huella del logo de GuilleMaker (lib/; numpy, Pillow y matplotlib)
-$KP scripts/gen_pcb.py                           # coloca, ruta (rutas_fijas.py), rotula y rellena
+$KP scripts/gen_pcb.py                           # coloca, ruta (rutas_fijas.py) y rotula; zonas sin rellenar
 python3 scripts/gen_pro.py                       # otra vez: guardar el PCB reescribe el .kicad_pro
-$KC pcb drc --refill-zones --save-board --schematic-parity --severity-all --exit-code-violations \
-    -o /tmp/drc-relleno.rpt FurbyBoard.kicad_pcb  # relleno con las reglas del proyecto (obligatorio antes de make_fab.sh)
+scripts/rellenar.sh                              # rellena las zonas con las reglas del proyecto (kicad-cli) y pasa el DRC
 
 $KC sch erc --severity-all --exit-code-violations FurbyBoard.kicad_sch
 $KC pcb drc --schematic-parity --severity-all --exit-code-violations FurbyBoard.kicad_pcb
