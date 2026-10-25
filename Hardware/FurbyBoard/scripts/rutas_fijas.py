@@ -905,3 +905,11 @@ pista("I2C_SCL", "F.Cu", 0.15, ("R37.1", -0.075, 0.0), (-91.4, -77.3))
 via("I2C_SCL", (-91.4, -77.3))
 pista("I2C_SCL", "In2.Cu", 0.2, (-91.4, -77.3), (-92.35, -78.25), (-99.5, -78.25), (-100.74, -79.49), (-104.07, -79.49),
       (-104.07, -95.7), "J11.6")
+# I2C_SDA a J11.5: por In3 (en In2 cerraba el relleno de VSYS de R54): desde la vía junto a R36 al oeste por el hueco entre
+# J8.2 y J8.3, a 1 mm al oeste de SCL (In2), por el oeste de J5 y J11 (x -106,8) hasta la fila entre J11.8 y J11.9 y por el
+# hueco entre columnas a J11.5.
+pista("I2C_SDA", "In3.Cu", 0.2, (-95.0, -74.2), (-97.0, -74.2), (-97.3, -74.5), (-104.6, -74.5), (-104.6, -75.5),
+      (-105.1, -76.0), (-105.1, -84.6), (-106.8, -86.3), (-106.8, -102.05), (-104.07, -102.05), (-104.07, -105.86), "J11.5")
+# VSYS de U7 (pines 7/8 y C26): su vía (-96,25; -85,7) quedaba en una bolsa del relleno de In2 cerrada por SCL (y -78,25),
+# el 3V3 de In2 (x -97,6) y el bus I2S; la une por B.Cu (0,6) a la vía del pin 2 de U7, que sí cuelga del relleno.
+pista("VSYS", "B.Cu", 0.6, (-96.25, -85.7), (-92.4, -89.55), (-92.4, -89.85))
