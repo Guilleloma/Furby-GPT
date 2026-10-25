@@ -1,5 +1,5 @@
 * FurbyBoard: amplificador de clase D MAX98357A (U7) sobre VSYS, con el puente de VSYS de 0,6 mm
-* por B.Cu y 2 + 2 vías entre el relleno de In2 y los pines 7/8 (VDD) de U7.
+* por B.Cu y 2 + 2 vías entre el relleno de In2 y los pines 7/8 (VDD) de U7, y C41 (10 uF) junto a los pines.
 * Qué se mide: tensión en los pines VDD (rizado de conmutación y mínimo), caída de VSYS en el
 * relleno (lo que ve U3, el TPS63802) y corriente de pico de la alimentación, con un tono de 1 kHz
 * a 1,4 W sobre 4 ohm y la batería a media carga.
@@ -8,14 +8,19 @@
 * MAX98357A-MAX98357B.pdf): VDD 2,5-5,5 V, UVLO 1,5-2,3 V, fOSC 300 kHz (± 20 kHz de espectro
 * ensanchado, no modelado), modulación sin filtro, límite de corriente 2,8 A, PSRR 77 dB a 217 Hz y
 * 60 dB a 10 kHz; pide 0,1 uF + 10 uF en VDD («Power-Supply Input»); carga de prueba 4 ohm + 33 uH.
-* Geometría (PCB actual, rutado del bloque C): VSYS llega del relleno de In2 por 2 vías en
-* (127,6; 49,85/50,65), sigue 6,5 mm de B.Cu de 0,6 mm y sube por 2 vías en (123,0/123,75; 45,7) a
-* los pines 7/8 y a C26 (100 nF). C24 y C25 (22 uF) están del lado del relleno, con sus propias vías.
+* Geometría (PCB actual, rutado del bloque C y C41 del bloque F): VSYS llega del relleno de In2 por 2
+* vías en (127,6; 49,85/50,65), sigue 6,5 mm de B.Cu de 0,6 mm y sube por 2 vías en
+* (123,125/123,75; 45,7) a los pines 7/8, a C26 (100 nF) y a C41 (10 uF). C24 y C25 (22 uF) están del
+* lado del relleno, con sus propias vías.
 * Supuestos (declarados):
 *  - Puente: 10 mohm (6,5 mm x 0,82 mohm/mm de 1 oz + vías + tramos de F.Cu y relleno) y 3 nH
 *    (microstrip de 0,6 mm a 0,21 mm de In4 ≈ 0,2 nH/mm, vías y tramos); peor caso 5 nH.
 *  - C24 y C25: 22 uF 25 V 0805 ≈ 12 uF a 3,6 V cada uno, ESR 3 mohm, ESL 0,5 nH con sus vías;
 *    C26 100 nF X7R 0603, ESL 0,4 nH.
+*  - C41 (bloque F): 10 uF 10 V X5R 0603 (C19702) ≈ 5 uF a 3,6 V, ESR 5 mohm. Conexión a los pines
+*    7/8: 1,5 mm de F.Cu de 0,6 mm hasta el tronco, 1,1 mm de tronco de 0,6 mm y 1 mm de 0,25 mm
+*    (≈ 0,2 nH/mm a 0,6 mm y 0,33 nH/mm a 0,25 mm sobre In1) más 0,4 nH de ESL: 1,25 nH; peor
+*    caso 2 nH.
 *  - Etapa de salida: 0,25 ohm por interruptor (estimado del 92 % de rendimiento), flancos de 15 ns y
 *    tiempo muerto (los dos lados de cada rama apagados mientras la puerta cruza 0,45-0,55).
 *    Modulación BD de 3 niveles a 300 kHz (OUTP compara +m·sen, OUTN compara -m·sen).
@@ -26,7 +31,7 @@
 * por encima no hay dato); VSYS en el relleno >= 2,3 V (VIN;LOAD del TPS63802).
 * Ejecutar desde sim/: ngspice -b max98357_vsys.cir   (≈ 1 min)
 
-.param LPU=3n RPU=10m M=0.9 FSW=300k RON=0.25 CLOC=1p
+.param LPU=3n RPU=10m M=0.9 FSW=300k RON=0.25 CLOC=5u LLOC=1.25n
 
 * --- VSYS: batería, resto de la red y relleno de In2 hasta el amplificador
 Vbat bat 0 3.7
@@ -49,9 +54,9 @@ Lpu pu1 vdd {LPU}
 C26 vdd c26a 100n
 L26 c26a c26b 0.4n
 R26 c26b 0 10m
-* propuesta: 10 uF 10 V 0603 junto a los pines (≈ 5 uF a 3,6 V); CLOC = 1 pF = sin montar
+* C41: 10 uF 10 V 0603 junto a los pines (≈ 5 uF a 3,6 V); CLOC = 1 pF = sin montar
 Cloc vdd cla {CLOC}
-Lloc cla clb 0.4n
+Lloc cla clb {LLOC}
 Rloc clb 0 5m
 
 * --- modulador BD y etapa de salida
@@ -96,29 +101,33 @@ meas tran a_ipu MAX i(Lpu) from=0.2m to=1.2m
 meas tran a_ipuavg AVG i(Lpu) from=0.2m to=1.2m
 meas tran a_ispkrms RMS i(Vspk) from=0.2m to=1.2m
 wrdata datos/max_puente.dat v(vddf) v(pla) v(vsys) i(Vspk) i(Lpu)
-* comparación: los 22 uF pegados a los pines (sin puente)
+* comparación: los 22 uF pegados a los pines (sin puente y sin C41)
 alterparam LPU=0.3n
 alterparam RPU=2m
+alterparam CLOC=1p
 reset
 run
 meas tran b_vddmin MIN v(vddf) from=0.2m to=1.2m
 meas tran b_vddpp_pico PP v(vddf) from=0.24m to=0.26m
 wrdata datos/max_directo.dat v(vddf) v(pla)
-* peor caso del puente: 5 nH
+* peor caso: puente de 5 nH y C41 con 2 nH de conexión
 alterparam LPU=5n
 alterparam RPU=10m
+alterparam CLOC=5u
+alterparam LLOC=2n
 reset
 run
 meas tran c_vddmin MIN v(vddf) from=0.2m to=1.2m
 meas tran c_vddpp_pico PP v(vddf) from=0.24m to=0.26m
-* propuesta: puente de 3 nH y un 10 uF junto a los pines 7/8
+* diseño anterior al bloque F: puente de 3 nH sin C41 (solo C26 junto a los pines)
 alterparam LPU=3n
-alterparam CLOC=5u
+alterparam CLOC=1p
+alterparam LLOC=1.25n
 reset
 run
 meas tran d_vddmin MIN v(vddf) from=0.2m to=1.2m
 meas tran d_vddpp_pico PP v(vddf) from=0.24m to=0.26m
-wrdata datos/max_propuesta.dat v(vddf) v(pla)
+wrdata datos/max_sin_c41.dat v(vddf) v(pla)
 quit
 .endc
 .end

@@ -330,21 +330,22 @@ def bloque_max98357():
            f"{v(m['a_ispkrms']**2*4)} W; {v(m['a_ispk'])} A de pico en 4 Ω", "Informativo", None)
     t.fila("Corriente por el puente de B.Cu (media / pico)", f"{v(m['a_ipuavg'])} / {v(m['a_ipu'])} A",
            "≤ 0,7 A por vía en continua (2 vías por extremo: 1,4 A)", m["a_ipuavg"] <= 1.4)
-    t.fila("VDD en los pines 7/8 con el puente (3 nH, 10 mΩ): mínimo", f"{v(m['a_vddmin'])} V", "≥ 2,5 V", m["a_vddmin"] >= 2.5)
-    t.fila("Rizado de conmutación en los pines 7/8, puente de 3 nH / 5 nH",
+    t.fila("VDD en los pines 7/8 (puente de 3 nH, C41 a 1,25 nH): mínimo", f"{v(m['a_vddmin'])} V", "≥ 2,5 V",
+           m["a_vddmin"] >= 2.5)
+    t.fila("Rizado de conmutación en los pines 7/8 con C41: nominal (3 nH, 1,25 nH) / peor caso (5 nH, 2 nH)",
            f"{v(m['a_vddpp_pico']*1e3, 0)} / {v(m['c_vddpp_pico']*1e3, 0)} mV pp", "≤ 200 mV pp (rizado de la prueba de PSRR)",
            max(m["a_vddpp_pico"], m["c_vddpp_pico"]) <= 0.2)
+    t.fila("Diseño anterior al bloque F (sin C41, solo C26 junto a los pines)",
+           f"{v(m['d_vddpp_pico']*1e3, 0)} mV pp; mín. {v(m['d_vddmin'])} V", "≤ 200 mV pp (informativo: ya no aplica)", None)
     t.fila("Rizado en los pines con los 22 µF pegados (referencia sin puente)", f"{v(m['b_vddpp_pico']*1e3, 0)} mV pp",
            "≤ 200 mV pp", m["b_vddpp_pico"] <= 0.2)
-    t.fila("Propuesta: puente de 3 nH + 10 µF junto a los pines 7/8", f"{v(m['d_vddpp_pico']*1e3, 0)} mV pp; mín. {v(m['d_vddmin'])} V",
-           "≤ 200 mV pp", m["d_vddpp_pico"] <= 0.2)
     t.fila("VSYS en el relleno de In2 (lo que ve U3)", f"mín. {v(m['a_plmin'])} V", "≥ 2,3 V (VIN;LOAD del TPS63802)",
            m["a_plmin"] >= 2.3)
-    a, b, d = leer("max_puente.dat"), leer("max_directo.dat"), leer("max_propuesta.dat")
+    a, b, d = leer("max_puente.dat"), leer("max_directo.dat"), leer("max_sin_c41.dat")
     z = [recorte(x, 0.2495e-3, 0.2535e-3) for x in (a, b, d)]
     figura("max98357_vdd.png", "MAX98357A: VDD en los pines 7/8 en la cresta del tono (20 MHz)", [
-        ("VDD en los pines (V)", [(z[0]["time"], z[0]["v(vddf)"], "puente actual (3 nH)"),
-                                  (z[2]["time"], z[2]["v(vddf)"], "propuesta: + 10 µF en los pines"),
+        ("VDD en los pines (V)", [(z[2]["time"], z[2]["v(vddf)"], "sin C41 (antes del bloque F)"),
+                                  (z[0]["time"], z[0]["v(vddf)"], "con C41 (placa actual)"),
                                   (z[1]["time"], z[1]["v(vddf)"], "22 µF pegados (referencia)")], []),
     ], escala_x=1e6, etiqueta_x="tiempo (µs)")
     figura("max98357_vsys.png", "MAX98357A: VSYS en el relleno de In2 durante un periodo del tono", [
@@ -422,10 +423,10 @@ def bloque_senales():
     for clave, texto, diseño in (("i_d1", "D1 CHG (rojo, VBUS, 2,2 kΩ)", 1.4), ("i_d2", "D2 PG (verde, VBUS, 2,2 kΩ)", 1.4),
                                  ("i_d3", "D3 PROG (rojo, 3V3, 1,5 kΩ)", 1.0)):
         t.fila(f"LED {texto}", f"{v(m[clave]*1e3, 2)} mA", f"≥ 0,3 mA (diseño ≈ {v(diseño, 1)} mA)", m[clave] >= 0.3e-3)
-    for clave, texto, diseño in (("i_d4", "D4 PWR (verde, 3V3, 2,2 kΩ)", 0.6), ("i_d5", "D5 RUN (verde, 3V3, 1,5 kΩ)", 0.9)):
+    for clave, texto in (("i_d4", "D4 PWR (verde, 3V3, 1 kΩ)"), ("i_d5", "D5 RUN (verde, 3V3, 1 kΩ)")):
         lo, hi = m[clave + "t"], m[clave + "b"]
         t.fila(f"LED {texto}, VF 3,1 / 2,6 V a 5 mA", f"{v(lo*1e3, 2)}–{v(hi*1e3, 2)} mA",
-               f"≥ 0,3 mA (diseño en NOTAS: ≈ {v(diseño, 1)} mA)", lo >= 0.3e-3)
+               "≥ 0,3 mA (diseño: 0,5–0,9 mA)", lo >= 0.3e-3)
     p_pico = m["ir_ih"] ** 2 * 22
     t.fila("IR: corriente del LED con VSYS 4,4 / 3,0 V", f"{v(m['ir_ih']*1e3, 0)} / {v(m['ir_il']*1e3, 0)} mA (VF {v(m['ir_vf'])} V)",
            "Informativo (≈ 100 mA de diseño)", None)

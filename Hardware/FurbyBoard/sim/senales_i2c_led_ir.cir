@@ -10,7 +10,7 @@
 * LED (VF de las fichas de LCSC): rojo KT-0603R (C2286) 1,8-2,4 V a 20 mA; verde KT-0805G (C2297)
 * InGaN 2,6-3,1 V a 5 mA. Modelos de diodo ajustados a esos extremos (supuesto: ideal 2 en el rojo y
 * 3 en el verde). D1 (CHG) y D2 (PGOOD) desde VBUS (5,0 V) por 2,2 k; D3 (PROG, U0TX) desde 3V3 por
-* 1,5 k; D4 (PWR) por 2,2 k y D5 (RUN) por 1,5 k desde 3V3. Criterio (propio): >= 0,3 mA para que se vea
+* 1,5 k; D4 (PWR) y D5 (RUN) por 1 k desde 3V3 (bloque F; antes 2,2 k y 1,5 k). Criterio (propio): >= 0,3 mA para que se vea
 * en interior; corriente y potencia de las resistencias dentro de su valor nominal.
 *
 * IR: VSYS -> R54 22 ohm 0805 (UNI-ROYAL 0805W8F, 1/8 W) -> LED IR -> Q3 AO3400A (RDS(on) <= 48 mohm a
@@ -48,13 +48,13 @@ D2 d2a 0 LEDGT
 R19 n3v3 d3a 1.5k
 D3 d3a 0 LEDR
 * D4 y D5 en las dos esquinas de VF del verde (T: 3,1 V; B: 2,6 V a 5 mA)
-R57 n3v3 d4a 2.2k
+R57 n3v3 d4a 1k
 D4 d4a 0 LEDGT
-R57b n3v3 d4b 2.2k
+R57b n3v3 d4b 1k
 D4b d4b 0 LEDGB
-R58 n3v3 d5a 1.5k
+R58 n3v3 d5a 1k
 D5 d5a 0 LEDGT
-R58b n3v3 d5b 1.5k
+R58b n3v3 d5b 1k
 D5b d5b 0 LEDGB
 
 * --- IR: VSYS 4,4 V (USB) y 3,0 V (batería baja); un periodo de portadora a 38 kHz
