@@ -627,7 +627,7 @@ pista("VBAT_SNS", "F.Cu", 0.15, (-70.3, -104.0), (-70.3, -104.875), "R13.2")
 pista("VBAT_SNS", "F.Cu", 0.15, (-70.3, -104.875), (-70.3, -109.725), "R14.1")
 pista("VBAT_SNS", "F.Cu", 0.15, (-70.3, -109.725), (-70.3, -112.875), "C5.1")
 pista("LIGHT", "B.Cu", 0.2, (-65.4, -65.53), (-66.4, -65.53), (-67.93, -64.0), (-91.96, -64.0), "J7.6")
-pista("LIGHT", "In2.Cu", 0.2, "J7.6", (-91.96, -70.75), (-88.66, -74.05), (-87.2, -74.05))
+pista("LIGHT", "In2.Cu", 0.2, "J7.6", (-91.96, -70.4), (-88.31, -74.05), (-87.2, -74.05))   # codo a -70,4: deja sitio a la vía de IR_LED_A
 via("LIGHT", (-87.2, -74.05))
 via("GND", (-86.5, -73.4))
 pista("LIGHT", "F.Cu", 0.15, (-87.2, -74.05), "C40.1")
@@ -954,9 +954,9 @@ pista("VSYS", "B.Cu", 0.6, (-92.4, -89.85), (-92.4, -90.65))
 stub("IR_TX", "U4.26", (0.0, 1.55), 0.2)
 pista("IR_TX", "In2.Cu", 0.2, ("U4.26", 0.0, 1.55), (-70.0, -75.19), (-70.0, -67.4))
 via("IR_TX", (-70.0, -67.4))
-pista("IR_TX", "In3.Cu", 0.2, (-70.0, -67.4), (-80.9, -67.4), (-82.075, -68.575), (-95.0, -68.575), (-95.0, -71.3))
-via("IR_TX", (-95.0, -71.3))   # al oeste del 3V3 de In2 (x -93,85) y del SDA de B.Cu (x -94,3), fuera del keepout de H1
-pista("IR_TX", "F.Cu", 0.2, (-95.0, -71.3), (-93.35, -71.3), "Q3.1")
+pista("IR_TX", "In3.Cu", 0.2, (-70.0, -67.4), (-80.9, -67.4), (-82.075, -68.575), (-95.0, -68.575), (-95.0, -70.9))
+via("IR_TX", (-95.0, -70.9))   # al oeste del 3V3 de In2 (x -93,85) y del SDA de B.Cu (x -94,3), fuera del keepout de H1
+pista("IR_TX", "F.Cu", 0.2, (-95.0, -70.9), (-95.0, -71.3), (-93.35, -71.3), "Q3.1")
 pista("IR_TX", "F.Cu", 0.2, (-95.0, -71.3), (-96.43, -71.3), "R55.1")
 # IR_RX (U4.35 a R56.1): vía al oeste del pin, por B.Cu al norte cruzando LED_RUN_K de In3 y por In3 al oeste entre las
 # vías EN y SDA de los pines 3/4 y al norte de la vía de GND de C9 hasta una vía junto a R56 (entre EN y LIGHT de In2).
@@ -970,3 +970,16 @@ via("IR_RX", (-91.28, -67.8))
 pista("IR_RX", "F.Cu", 0.2, (-91.28, -67.8), "R56.1", modo="d")
 # IR_RX_PAD: de R56.2 al norte entre J7.7 y J7.8 (0,32 a cada lado) y en diagonal a J7.4.
 pista("IR_RX_PAD", "F.Cu", 0.2, "R56.2", (-88.15, -63.97), "J7.4", modo="d")
+# IR_LED_A (J7.1 a R54.2, 0,3: pulsos de 0,1 A): R54.2 queda encerrado en F.Cu (Q3, EN, SCL) y la única vía posible es la
+# del pasillo entre Q3 y R54 (-92,0; -71,54): entre LED_RUN_K (In3) y SCL (B.Cu), con LIGHT de In2 doblando 0,35 más arriba.
+# Llega por In2 desde J7.1 por el hueco entre J7.5 y J7.6 (0,27 a cada lado) y entre el 3V3 de In2 y LIGHT.
+pista("IR_LED_A", "In2.Cu", 0.3, "J7.1", (-93.23, -63.97), (-93.23, -70.31), (-92.0, -71.54))
+via("IR_LED_A", (-92.0, -71.54))
+pista("IR_LED_A", "F.Cu", 0.3, (-92.0, -71.54), "R54.2")
+# IR_LED_K (Q3.3 a J7.2, 0,3): F.Cu al norte por el hueco entre J7.5 y J7.6 y en diagonal a J7.2.
+pista("IR_LED_K", "F.Cu", 0.3, "Q3.3", (-92.4, -67.06), (-93.23, -66.23), (-93.23, -63.97), "J7.2")
+# VSYS de R54.1: IR_LED_A ocupa en In2 el único paso del relleno de VSYS hacia la bolsa de R54 (entre J7.5 y J7.6); la vía de
+# R54.1 se une al relleno principal de In2 por un puente de In3 de 0,6 (bolsa entre IR_TX y LED_RUN_K, y entre las vías
+# de IR_TX y de GND de R55.2, 0,4 a cada lado) hasta una vía al oeste de R55. Solo lleva los pulsos de 0,1 A del LED IR.
+pista("VSYS", "In3.Cu", 0.6, ("R54.1", 0.0, -1.2), (-93.96, -73.25), (-93.96, -72.05), (-97.4, -72.05))
+via("VSYS", (-97.4, -72.05))
