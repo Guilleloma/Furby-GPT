@@ -23,24 +23,26 @@ Convenciones: «peor caso» = tolerancias, DC bias de los cerámicos y tensión 
 | 3V3 (TPS63802) | `tps63802_3v3.cir`, `tps63802_rizado.cir` | PASS |
 | Batería y Q1 | `bateria_q1.cir` | PASS (con USB y batería al revés, en la esquina mala el BQ entra en precarga: 0,32 W en Q1) |
 | Power path (BQ24073) | `bq24073_powerpath.cir` | **2 FAIL** (pico de 2,9 A con USB en USB500 en el peor caso; enchufe con ≥ 4,3 W en modo ILIM): propuestas de firmware |
-| Puente H y motor | `drv8231a_motor.cir` | PASS (θJA del DSG mal copiada en NOTAS: 66,5 °C/W, no 42,8) |
-| Amplificador (MAX98357A) | `max98357_vsys.cir` | **FAIL**: 257 mV pp en VDD por el puente de B.Cu; propuesta: 10 µF junto a los pines 7/8 (25 mV pp) |
+| Puente H y motor | `drv8231a_motor.cir` | PASS (θJA del DSG, 66,5 °C/W, corregida en NOTAS en el bloque F) |
+| Amplificador (MAX98357A) | `max98357_vsys.cir` | PASS con C41 (10 µF junto a los pines 7/8, bloque F): 70 mV pp en VDD (87 en el peor caso); sin C41 eran 258 mV pp (FAIL) |
 | LDO de la cámara (ME6211) | `ldo_camara.cir`, `ldo_camara_psrr.cir` | PASS (RESETB sin reset por hardware al encender: el firmware usa el reset por SCCB) |
 | NTC en TS | `ntc_ts.cir` | PASS frente a 0–51 °C (nominal 0,2–51,2 °C; con tolerancias −2,2–56,4 °C); frente a 0–45 °C, pendiente de la hoja de la celda |
-| Señales | `senales_i2c_led_ir.cir`, `senales_sensores_adc.cir` | **FAIL** menores: D4/D5 tenues (verdes InGaN; R57/R58 a 1 kΩ) y ADC solo con muestreo ≤ 1 kHz (regla de firmware); I2C a 400 kHz PASS |
+| Señales | `senales_i2c_led_ir.cir`, `senales_sensores_adc.cir` | D4/D5 PASS con R57/R58 de 1 kΩ (bloque F); **FAIL** condicionado: ADC solo con muestreo ≤ 1 kHz (regla de firmware); I2C a 400 kHz PASS |
 | Arranque y caída de batería | `arranque_brownout.cir` | Arranque PASS; **FAIL**: el pico de 10,2 W hunde VSYS bajo 2,5 V con la batería < 3,36 V (0,21 Ω) o < 4,0 V (0,37 Ω); 3V3 se mantiene. Propuesta: presupuesto de potencia en firmware y celda de baja resistencia |
 
-### Propuestas que salen de las simulaciones (ninguna aplicada al esquema)
+### Propuestas que salen de las simulaciones
+
+El bloque F (2026-10-25) aplicó las de pieza y documentación (C41, R57/R58 y la θJA); las de firmware están en `NOTAS.md` y en el `README.md` de la placa, sección «Reglas para el firmware».
 
 | Prioridad | Propuesta | Por qué | Dónde |
 |-----------|-----------|---------|-------|
 | Alta (firmware) | Presupuesto de potencia: con USB presente (PGOOD) o con VBAT en carga < ≈ 3,7 V, no sumar motor bloqueado + audio a plena potencia + TX (PWM del motor ≤ 50–60 %, audio a −12 dBFS mientras se mueve) | VO(SC2) del BQ24073 con USB500 y caída de VSYS bajo el UVLO del elevador con la batería baja | «Power path», «Arranque» |
 | Alta (firmware) | Al subir PGOOD, pausar motor y audio ≈ 5 ms | Biestabilidad del power path con cargas de potencia constante | «Power path» |
-| Media (pieza, si cabe en el rutado) | 10 µF 10 V 0603 (C19702) junto a los pines 7/8 de U7 | 257 → 25 mV pp de rizado en VDD del amplificador | «Amplificador» |
+| **Aplicada** (bloque F) | C41: 10 µF 10 V 0603 (C19702) junto a los pines 7/8 de U7 | 258 → 70 mV pp de rizado en VDD del amplificador (25 mV pp si estuviera pegado al pin; no cabe) | «Amplificador» |
 | Media (compra) | Celda con resistencia interna (con PCM) ≤ 100 mΩ; medirla en el bring-up | El pico de 10,2 W se sostiene hasta 3,07 V en vez de 3,36–4,0 V | «Arranque» |
-| Baja (BOM) | R57 y R58 de 1 kΩ (C21190) | Los LED verdes son de InGaN (VF ≈ 2,8 V): D4 se queda en 0,24 mA | «Señales» |
+| **Aplicada** (bloque F) | R57 y R58 de 1 kΩ (C21190) | Los LED verdes son de InGaN (VF ≈ 2,8 V): D4 se quedaba en 0,24 mA; ahora 0,47–0,92 mA | «Señales» |
 | Baja (firmware) | ADC de VBAT_SNS y LIGHT en lecturas sueltas a ≤ 1 kHz de media; antirrebote ≥ 30 ms en la INT del TCA9535; reset de la cámara por SCCB | Impedancia de 235 kΩ, entradas sin histéresis, RESETB sin flanco al encender | «Señales», «LDO de la cámara» |
-| Baja (documentación) | θJA del DRV8231A en `NOTAS.md`: 66,5 °C/W (DSG), no 42,8 | Tj con el motor bloqueado 103 °C, no 76 °C | «Puente H» |
+| **Aplicada** (bloque F) | θJA del DRV8231A en `NOTAS.md`: 66,5 °C/W (DSG), no 42,8 | Tj con el motor bloqueado 103 °C, no 76 °C | «Puente H» |
 | v1.1 | NTC de B ≈ 3950–4100 K si la celda pide 0–45 °C; R54 en 1206; PTC de 2 A + modo ILIM | Ventana de carga, potencia de R54 con portadora continua, margen de VO(SC2) | «NTC», «Señales», «Power path» |
 
 ## Elevador de 6 V (TPS61089 + FHD4020S-1R0MT) — `elevador_6v.cir`
@@ -168,7 +170,7 @@ Supuestos:
 Observaciones:
 
 - La regulación funciona como dice la hoja: el pico se queda en ITRIP en el arranque, bloqueado y al invertir sin freno, lejos del OCP (3,7 A). Con el motor bloqueado la corriente oscila entre 0,74 y 1,0 A (0,93 A de media) con un periodo de ≈ 230 µs (≈ 4 kHz): **se oirá un pitido** mientras regula. Si molesta al micro, el firmware evita sostener la regulación (rampa de PWM y detección de bloqueo).
-- **θJA del DRV8231A**: `NOTAS.md` («Tabla de raíles», «Cálculos») y `ARQUITECTURA.md` §6 usan 42,8 °C/W, que es la del encapsulado DDA (HSOP). U6 es el **DSG (WSON 2 × 2)**: 66,5 °C/W (tabla 6.4). Con el motor bloqueado de forma continua y RDS(on) en caliente, Tj ≈ 103 °C (PASS justo); con 0,6 W, 90 °C en vez de 76 °C. El firmware limita el bloqueo a ≤ 150 ms (encoder), así que en uso real no se llega al régimen. Corregir el dato en `NOTAS.md` al cerrar el rutado.
+- **θJA del DRV8231A**: `NOTAS.md` («Tabla de raíles», «Cálculos») y `ARQUITECTURA.md` §6 usan 42,8 °C/W, que es la del encapsulado DDA (HSOP). U6 es el **DSG (WSON 2 × 2)**: 66,5 °C/W (tabla 6.4). Con el motor bloqueado de forma continua y RDS(on) en caliente, Tj ≈ 103 °C (PASS justo); con 0,6 W, 90 °C en vez de 76 °C. El firmware limita el bloqueo a ≤ 150 ms (encoder), así que en uso real no se llega al régimen. Corregido en `NOTAS.md` (bloque F).
 - **ITRIP**: el ±6 % de AERR solo está garantizado con VM ≥ 6,5 V y V6 es 5,94 V. Con el resto de tolerancias, 0,91–1,10 A. Se mide en el bring-up (TEST-PLAN §11, IPROPI en TP8 con el motor bloqueado: 2,25 V ± 10 %).
 - V6 no baja de 5,85 V en ningún caso (UVLO del DRV8231A 4,05–4,35 V). El rizado de V6 con el motor bloqueado (130 mV pp) viene de la carga a golpes de la regulación; el lazo del elevador (fc ≈ 20 kHz) lo sigue sin problemas.
 
@@ -176,27 +178,31 @@ Figuras: `png/drv_arranque.png`, `png/drv_bloqueo.png`, `png/drv_inversion.png`.
 
 ## Amplificador MAX98357A sobre VSYS — `max98357_vsys.cir`
 
+Repetida el 2026-10-25 con C41 (bloque F); la primera pasada, sin C41, daba 257 mV pp en VDD (FAIL).
+
 Supuestos:
 
 - **Clase D conmutado**: modulación BD de 3 niveles a 300 kHz, 0,25 Ω por interruptor (estimado del 92 % de rendimiento de la hoja), flancos de 15 ns con tiempo muerto, altavoz de 4 Ω + 33 µH (la carga de prueba de la hoja) y tono de 1 kHz con m = 0,9 (≈ 1 W con VSYS a 3,6 V). El ensanchado de espectro (± 20 kHz) no se modela.
-- **Puente de VSYS** (rutado del bloque C, `NOTAS.md`): los pines 7/8 y C26 (100 nF) cuelgan del relleno de In2 a través de 2 vías, 6,5 mm de B.Cu de 0,6 mm y otras 2 vías; C24 y C25 (22 µF) están del lado del relleno. Estimado: 10 mΩ y 3 nH (peor caso 5 nH).
+- **Puente de VSYS** (rutado del bloque C, `NOTAS.md`): los pines 7/8, C26 (100 nF) y C41 (10 µF) cuelgan del relleno de In2 a través de 2 vías, 6,5 mm de B.Cu de 0,6 mm y otras 2 vías; C24 y C25 (22 µF) están del lado del relleno. Estimado: 10 mΩ y 3 nH (peor caso 5 nH).
+- **C41** (bloque F): 10 µF 10 V X5R 0603 (C19702), ≈ 5 µF a 3,6 V, a 1,3 mm de los pines 7/8 por el oeste de C26. Conexión medida en el PCB: 1,5 mm de F.Cu de 0,6 mm hasta el tronco de los pines, 1,1 mm de tronco y 1 mm de 0,25 mm, más el ESL del 0603: **1,25 nH** estimados (peor caso 2 nH).
 - Batería a media carga (3,7 V) con 0,21 Ω; ≈ 58 µF en el resto de VSYS.
 
 | Magnitud | Resultado | Criterio | PASS/FAIL |
 |----------|-----------|----------|-----------|
 | Potencia en el altavoz (tono de 1 kHz, m = 0,9, VSYS ≈ 3,6 V) | 1,01 W; 0,71 A de pico en 4 Ω | Informativo | — |
-| Corriente por el puente de B.Cu (media / pico) | 0,32 / 1,52 A | ≤ 0,7 A por vía en continua (2 vías por extremo: 1,4 A) | PASS |
-| VDD en los pines 7/8 con el puente (3 nH, 10 mΩ): mínimo | 3,42 V | ≥ 2,5 V | PASS |
-| Rizado de conmutación en los pines 7/8, puente de 3 nH / 5 nH | 257 / 240 mV pp | ≤ 200 mV pp (rizado de la prueba de PSRR) | **FAIL** |
-| Rizado en los pines con los 22 µF pegados (referencia sin puente) | 40 mV pp | ≤ 200 mV pp | PASS |
-| Propuesta: puente de 3 nH + 10 µF junto a los pines 7/8 | 25 mV pp; mín. 3,55 V | ≤ 200 mV pp | PASS |
-| VSYS en el relleno de In2 (lo que ve U3) | mín. 3,53 V | ≥ 2,3 V (VIN;LOAD del TPS63802) | PASS |
+| Corriente por el puente de B.Cu (media / pico) | 0,32 / 0,84 A | ≤ 0,7 A por vía en continua (2 vías por extremo: 1,4 A) | PASS |
+| VDD en los pines 7/8 (puente de 3 nH, C41 a 1,25 nH): mínimo | 3,53 V | ≥ 2,5 V | PASS |
+| Rizado de conmutación en los pines 7/8 con C41: nominal (3 nH, 1,25 nH) / peor caso (5 nH, 2 nH) | 70 / 87 mV pp | ≤ 200 mV pp (rizado de la prueba de PSRR) | PASS |
+| Diseño anterior al bloque F (sin C41, solo C26 junto a los pines) | 258 mV pp; mín. 3,42 V | ≤ 200 mV pp (informativo: ya no aplica) | — |
+| Rizado en los pines con los 22 µF pegados (referencia sin puente) | 39 mV pp | ≤ 200 mV pp | PASS |
+| VSYS en el relleno de In2 (lo que ve U3) | mín. 3,55 V | ≥ 2,3 V (VIN;LOAD del TPS63802) | PASS |
 
-Observaciones y propuesta:
+Observaciones:
 
-- **FAIL — rizado en VDD de U7.** Con solo 100 nF junto a los pines 7/8 y el bulk al otro lado del puente, cada flanco de la salida excita la resonancia de C26 con la inductancia del puente (≈ 9 MHz): **257 mV pp en los pines** (40 mV pp si los 22 µF estuvieran pegados). VDD no baja de 3,42 V, así que el amplificador funciona; el riesgo es de calidad (rizado por encima del que caracteriza su PSRR, ruido de 9 MHz hacia el micro y EMI). La hoja pide 0,1 µF **y 10 µF** junto a VDD («Power-Supply Input»).
-- **Propuesta (sin cambiar la v1.0 si no cabe; recomendada si cabe en el rutado):** un 10 µF 10 V X5R 0603 (C19702, el mismo que C1/C3/C4/C6) junto a los pines 7/8, en paralelo con C26, con su vía de GND: 25 mV pp en la simulación. Alternativa sin pieza nueva: mover C24 (o C25) del lado de los pines del puente.
-- El puente aguanta la corriente (0,32 A medios, 1,5 A de pico con el anillo; 2 vías por extremo) y VSYS en el relleno apenas se mueve (mín. 3,53 V): **3V3 no se entera** (U3 regula con VIN ≥ 2,3 V; la figura 10-29 del TPS63802 da < 0,1 V para escalones de entrada de 0,6 V en 1 µs).
+- **Sin C41 (primera pasada): 257 mV pp en los pines.** Con solo 100 nF junto a los pines 7/8 y el bulk al otro lado del puente, cada flanco de la salida excitaba la resonancia de C26 con la inductancia del puente (≈ 9 MHz). VDD no bajaba de 3,42 V, pero el rizado quedaba por encima del que caracteriza el PSRR de la hoja, que pide 0,1 µF **y 10 µF** junto a VDD («Power-Supply Input»).
+- **Con C41 (bloque F): 70 mV pp** (87 mV pp con el puente de 5 nH y 2 nH hasta C41). Queda por encima de los 25 mV pp de un 10 µF pegado al pin (0,4 nH) porque junto a los pines 7/8 no cabe un 0603: al norte está C26, al oeste SPK_P y al este los pines sin conexión; C41 va al oeste de C26 y entra en el tronco de VSYS de los pines. Un barrido de esa conexión con el puente de 3 nH (0,4 / 1 / 1,5 / 2 / 3 nH → 25 / 59 / 71 / 75 / 96 mV pp) muestra que el margen frente a 200 mV pp es amplio aunque la estimación de 1,25 nH se quede corta.
+- El puente aguanta la corriente (0,32 A medios; el pico baja de 1,5 a 0,84 A porque C41 da los flancos) y VSYS en el relleno apenas se mueve (mín. 3,55 V): **3V3 no se entera** (U3 regula con VIN ≥ 2,3 V; la figura 10-29 del TPS63802 da < 0,1 V para escalones de entrada de 0,6 V en 1 µs).
+- Se mide en el bring-up (TEST-PLAN §13, «Rizado de VDD»): osciloscopio en el pad de VSYS de C41 con masa corta y 20 MHz de ancho de banda, tono de 1 kHz a −6 dBFS.
 
 Figuras: `png/max98357_vdd.png` (VDD en los pines: puente actual, propuesta y referencia), `png/max98357_vsys.png`.
 
@@ -261,8 +267,8 @@ Supuestos (detalle en la cabecera de cada `.cir`):
 | LED D1 CHG (rojo, VBUS, 2,2 kΩ) | 1,42 mA | ≥ 0,3 mA (diseño ≈ 1,4 mA) | PASS |
 | LED D2 PG (verde, VBUS, 2,2 kΩ) | 0,96 mA | ≥ 0,3 mA (diseño ≈ 1,4 mA) | PASS |
 | LED D3 PROG (rojo, 3V3, 1,5 kΩ) | 0,97 mA | ≥ 0,3 mA (diseño ≈ 1,0 mA) | PASS |
-| LED D4 PWR (verde, 3V3, 2,2 kΩ), VF 3,1 / 2,6 V a 5 mA | 0,24–0,45 mA | ≥ 0,3 mA (diseño en NOTAS: ≈ 0,6 mA) | **FAIL** |
-| LED D5 RUN (verde, 3V3, 1,5 kΩ), VF 3,1 / 2,6 V a 5 mA | 0,34–0,63 mA | ≥ 0,3 mA (diseño en NOTAS: ≈ 0,9 mA) | PASS |
+| LED D4 PWR (verde, 3V3, 1 kΩ), VF 3,1 / 2,6 V a 5 mA | 0,47–0,92 mA | ≥ 0,3 mA (diseño: 0,5–0,9 mA) | PASS |
+| LED D5 RUN (verde, 3V3, 1 kΩ), VF 3,1 / 2,6 V a 5 mA | 0,47–0,92 mA | ≥ 0,3 mA (diseño: 0,5–0,9 mA) | PASS |
 | IR: corriente del LED con VSYS 4,4 / 3,0 V | 131 / 73 mA (VF 1,59 V) | Informativo (≈ 100 mA de diseño) | — |
 | IR: potencia de R54 (0805, 0,125 W) con VSYS 4,4 V | pico 0,37 W; portadora continua 124 mW; trama NEC 51 mW | ≤ 62 mW (50 %) de media en una trama | PASS |
 | Barriga/espalda/lengua: rebote al pulsar (47 kΩ, 1 kΩ, 100 nF) | máx. 0,76 V entre el primer contacto y el fin del rebote | < VIH 2,31 V (no hay flanco falso) | PASS |
@@ -279,7 +285,7 @@ Supuestos (detalle en la cabecera de cada `.cir`):
 Observaciones y propuestas:
 
 - **I2C a 400 kHz es viable** con los pull-ups de 4,7 kΩ (166 ns frente a 300 ns), con la Cb estimada desde el rutado. Si se conecta algo a J_EXP con cable, se suma su capacidad: con más de ≈ 75 pF de bus, 400 kHz deja de cumplir. Se mide en TEST-PLAN (tiempo de subida con el osciloscopio).
-- **FAIL — LED D4 (PWR) y D5 (RUN) más tenues de lo previsto.** Los verdes KT-0805G son de InGaN (VF ≈ 2,6–3,1 V), no de 2 V como suponían los cálculos: con 3V3 quedan 0,24–0,45 mA en D4 (diseño 0,6 mA) y 0,34–0,63 mA en D5 (diseño 0,9 mA). Funcionan, pero D4 puede verse muy flojo en la esquina mala. Propuesta: R57 y R58 de 1 kΩ (C21190, básica, ya en la BOM): 0,4–0,75 mA. Coste en reposo: el LED PWR se puede quitar con JP5, como ya está previsto.
+- **LED D4 (PWR) y D5 (RUN): resuelto en el bloque F.** Los verdes KT-0805G son de InGaN (VF ≈ 2,6–3,1 V), no de 2 V como suponían los cálculos: con 2,2 kΩ y 1,5 kΩ quedaban 0,24–0,45 mA en D4 (FAIL) y 0,34–0,63 mA en D5. Con R57 y R58 de 1 kΩ (C21190, básica, ya en la BOM): 0,47–0,92 mA en los dos. Coste en reposo: hasta 0,9 mA del LED PWR, que se quita cortando JP5.
 - **IR**: con USB (VSYS 4,4 V), R54 ve 0,37 W de pico y 124 mW de media con la portadora continua, justo su potencia nominal (0,125 W en 0805). Con tramas NEC (51 mW de media) cumple el 50 %; el firmware no debe emitir portadora continua más de ≈ 50 ms. Mejora para la v1.1: R54 en 1206 (0,25 W).
 - **Sensores**: los RC filtran el rebote de sobra (nunca se acercan a VIH) y responden en 1,4–26 ms. El TCA9535 no tiene histéresis en sus entradas: con la subida lenta de la inclinación (26 ms) el ruido puede dar varias interrupciones en el cruce; el firmware debe hacer antirrebote por tiempo (≥ 30 ms) en la INT del expansor.
 - **FAIL condicionado — ADC de VBAT_SNS con muestreo rápido.** Con un divisor de 470 kΩ + 470 kΩ, cada muestra se lleva la carga del condensador de muestreo; la media cae ≈ Cs · V · fs · 235 kΩ: 4,9 mV a 1 kHz (PASS), 48 mV a 10 kHz y 0,4 V a 100 kHz (modo continuo del ESP-IDF). **Regla de firmware: lecturas sueltas (oneshot) a ≤ 1 kHz de media** (para la batería sobra con 1 Hz). La fuga del pin (hasta 11,8 mV, 0,56 %) es un desplazamiento fijo que corrige la calibración de TEST-PLAN §9. Lo mismo vale para LIGHT.

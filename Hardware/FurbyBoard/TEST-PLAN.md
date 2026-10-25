@@ -224,6 +224,7 @@ Si falla, se revisa por este orden: la soldadura del cable, el pull-up (R39/R41/
 | Micro | Grabar 10 s a 16 kHz (J5 «SD», GPIO41) y escuchar el fichero | Voz clara; ruido de fondo < −60 dBFS en silencio | L/R del micro (J5 pin 6 a GND), R31/R32 (33 Ω en SCK y WS), longitud del cable (≤ 15 cm) |
 | Altavoz | Tono de 1 kHz a −12 dBFS con el altavoz del Furby (4 Ω) en J8 «SP+»/«SP-» | Sin distorsión audible; AMP_SD (P13) a 1 | AMP_SD, GAIN, TP9 (I2S DOUT) |
 | Potencia máxima | Tono a −6 dBFS (límite del firmware) con la batería a 3,7 V; medir la corriente de VSYS | ≤ 0,45 A de pico, sin reinicios ni distorsión fea | GAIN_SLOT (6 dB) y el limitador |
+| Rizado de VDD | Tono de 1 kHz a −6 dBFS; osciloscopio en el pad de VSYS de C41 (al oeste de C26) con masa de muelle en su pad de GND, 20 MHz de ancho de banda | ≤ 200 mV pp (simulado: 70 mV pp, `sim/RESULTADOS.md`) | C41 sin montar o mal soldado; puente de VSYS de B.Cu (2 + 2 vías) |
 | Full duplex | Reproducir y grabar a la vez | El micro graba mientras suena, sin cortes | Configuración de I2S0 |
 | Motor y audio | Motor en marcha mientras se graba | Sin zumbido del PWM (20 kHz, fuera de banda) | Masa del elevador y del puente H, C18–C22 |
 
