@@ -1,0 +1,43 @@
+* FurbyBoard: PSRR de los LDO de la cámara (U8 ME6211C28 y U9 ME6211C12), análisis AC.
+* Mismo modelo y valores que ldo_camara.cir; 3V3 ideal a 3,27 V (en el módulo) con 1 V de AC.
+* La hoja da 70 dB a 1 kHz y 62 dB a 10 kHz con VIN = VOUT + 1 V; el modelo se ajusta a esos dos
+* puntos y se aplana en -38 dB por encima de ≈ 170 kHz (supuesto). Con 0,47 V de margen en U8
+* (3,27 -> 2,8 V) la PSRR real será algo peor: se mide el rizado en el bring-up.
+* Ejecutar desde sim/: ngspice -b ldo_camara_psrr.cir
+
+.include models/furby.lib
+
+V3 n3v3 0 dc 3.27 ac 1
+Ven en 0 3.3
+XU8 n3v3 cam28 en 0 LDO_ME6211 params: VSET=2.8 RDO=1.1 IMAX=0.45 ISH=0.065
+C28 cam28 c28n 0.8u
+R28c c28n 0 10m
+Cm28 cam28 0 1u
+Iav cam28 0 0.02
+XU9 cam28 dvdd en 0 LDO_ME6211 params: VSET=1.2 RDO=2.8 IMAX=0.3 ISH=0.065
+C29 dvdd c29n 0.8u
+R29c c29n 0 10m
+Cm12 dvdd 0 1u
+Idv dvdd 0 0.08
+
+.nodeset v(xu8.ss)=1.02 v(xu9.ss)=1.02 v(cam28)=2.8 v(dvdd)=1.2 v(xu8.tgt)=2.8 v(xu9.tgt)=1.2
+.options gmin=1e-10
+.ac dec 20 10 10meg
+.control
+set wr_singlescale
+set wr_vecnames
+run
+let p28 = vdb(cam28)
+let p12 = vdb(dvdd)
+meas ac p_1k FIND p28 AT=1k
+meas ac p_10k FIND p28 AT=10k
+meas ac p_20k FIND p28 AT=20k
+meas ac p_1m6 FIND p28 AT=1.6meg
+meas ac q_20k FIND p12 AT=20k
+meas ac q_1m6 FIND p12 AT=1.6meg
+wrdata datos/ldo_psrr.dat p28 p12
+op
+print v(cam28) v(dvdd)
+quit
+.endc
+.end

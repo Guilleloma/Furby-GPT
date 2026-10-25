@@ -1,0 +1,69 @@
+* FurbyBoard: termistor RT1 en el pin TS del BQ24073 (ventana de temperatura de carga).
+* El BQ24073 inyecta INTC en TS y deja de cargar si V(TS) sale de [VHOT, VCOLD] (SLUS810N, tabla
+* 8.5): INTC 72/75/78 uA; VHOT 270/300/330 mV (bajando; histéresis 30 mV); VCOLD 2000/2100/2200 mV
+* (subiendo; histéresis 300 mV). Nota (1) de la tabla: con un NTC 103AT-2 son 0 y 50 °C.
+* RT1: Murata NCP18XH103F03RB (C13564): R25 10 kohm ± 1 %, B25/50 3380 K ± 1 %
+* (https://www.murata.com/en-global/products/productdetail?partno=NCP18XH103F03RB). Modelo B entre
+* 25 y 50 °C (exacto en los dos extremos por definición de B25/50); por debajo de 25 °C el error del
+* modelo B es de ≈ 0,5 °C (supuesto).
+* Se barre la temperatura del NTC (V(temp) en °C) y se buscan los cruces con los umbrales en las
+* esquinas que alargan y que acortan la ventana.
+* Criterio: ventana dentro de la que pidió el encargo y documenta TI (0-51 °C: 28 kohm y 4 kohm, tabla
+* 9-3) con las tolerancias: frío entre -3 y +3 °C; caliente <= 55 °C. Frente al 0-45 °C típico de
+* carga de una LiPo, informativo (lo manda la hoja de la celda).
+* Ejecutar desde sim/: ngspice -b ntc_ts.cir
+
+.param R25=10k B=3380 INTC=75u
+
+Vtemp temp 0 25
+Intc 0 ts {INTC}
+Brt ts 0 I = V(ts)/({R25}*exp({B}*(1/(V(temp)+273.15)-1/298.15)))
+
+.dc Vtemp -20 70 0.05
+.control
+set wr_singlescale
+set wr_vecnames
+* nominal
+run
+meas dc n_hot WHEN v(ts)=0.30 FALL=1
+meas dc n_cold WHEN v(ts)=2.10 FALL=1
+wrdata datos/ntc_nominal.dat v(ts)
+* ventana más ancha. Caliente: INTC máx., R25 máx., B mín. (R mayor por encima de 25 °C), VHOT mín.
+* Frío: INTC mín., R25 mín., B mín. (R menor por debajo de 25 °C), VCOLD máx.
+alterparam INTC=78u
+alterparam R25=10.1k
+alterparam B=3346.2
+reset
+run
+meas dc w_hot WHEN v(ts)=0.27 FALL=1
+wrdata datos/ntc_ancha.dat v(ts)
+alterparam INTC=72u
+alterparam R25=9.9k
+alterparam B=3346.2
+reset
+run
+meas dc w_cold WHEN v(ts)=2.2 FALL=1
+* ventana más estrecha: las esquinas contrarias
+alterparam INTC=72u
+alterparam R25=9.9k
+alterparam B=3413.8
+reset
+run
+meas dc s_hot WHEN v(ts)=0.33 FALL=1
+alterparam INTC=78u
+alterparam R25=10.1k
+alterparam B=3413.8
+reset
+run
+meas dc s_cold WHEN v(ts)=2.0 FALL=1
+* temperatura de reanudación (histéresis) en el caso nominal
+alterparam INTC=75u
+alterparam R25=10k
+alterparam B=3380
+reset
+run
+meas dc h_hot WHEN v(ts)=0.33 FALL=1
+meas dc h_cold WHEN v(ts)=1.80 FALL=1
+quit
+.endc
+.end

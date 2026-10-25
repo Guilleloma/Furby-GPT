@@ -1,0 +1,12 @@
+(footprint "BAT_POS_Square3x3_Drill1.2"
+	(version 20260206)
+	(generator "gen_lib")
+	(layer "F.Cu")
+	(descr "Pad BAT+ de la batería: cuadrado de 3 x 3, taladro de 1,2")
+	(tags "battery pad positive")
+	(property "Reference" "REF**" (at 0 0 0) (layer "F.SilkS") (hide yes) (effects (font (size 0.8 0.8) (thickness 0.12))))
+	(property "Value" "BAT_POS_Square3x3_Drill1.2" (at 0 0 0) (layer "F.Fab") (hide yes) (effects (font (size 0.8 0.8) (thickness 0.12))))
+	(attr through_hole)
+	(pad "1" thru_hole rect (at 0 0) (size 3 3) (drill 1.2) (layers "*.Cu" "*.Mask"))
+	(fp_rect (start -1.75 -1.75) (end 1.75 1.75) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd"))
+)

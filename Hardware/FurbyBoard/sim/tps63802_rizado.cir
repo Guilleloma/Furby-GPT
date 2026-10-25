@@ -1,0 +1,92 @@
+* FurbyBoard: rizado de 3V3 y pico de la bobina L1 del TPS63802 (U3), etapa de potencia idealizada.
+* Modelo de comportamiento declarado, como elevador_6v.cir: interruptores ideales con PWM a ciclo
+* fijo (lazo abierto) en los dos modos extremos del buck-boost:
+*  - buck: VSYS 4,4 V (USB), fSW 1,6 MHz (datasheet SLVSEU9D, tabla 8.5, VIN 4,3 V), D = 3,3/4,4;
+*  - boost: VSYS 3,0 V (batería agotada), fSW 2,1 MHz (tabla 8.5, VIN 2,3 V), D = 1 - 3,0/3,3.
+* La zona de transición (VSYS ≈ 3,3 V, 4 ciclos buck-boost) no se simula: su rizado queda entre
+* los dos (figuras 10-17 a 10-20 del datasheet) y se mide en el bring-up.
+* Peor caso: L1 FHD4020S-R47MT -20 % (0,376 uH; el datasheet admite 0,37-0,57 uH efectivos);
+* carga 0,7 A (pico del raíl x 1,3); C7 + C8 22 uF 25 V 0805 con DC bias y -20 % (2 x 10,4 uF),
+* ESR 3 mohm (estimada; sin ESL: el rizado se mide con 20 MHz de ancho de banda); pista de 58 mohm / 12 nH hasta C9 (módulo).
+* PFM (MODE = GND, por debajo de ≈ 1 A de pico) no se modela: su rizado es mayor y a menor frecuencia
+* y se mide en el bring-up (TEST-PLAN 7).
+* Criterios: pico de bobina < límite (buck 3,8 A típ.; boost 4 A mín.) con margen >= 20 %;
+* rizado de 3V3 <= 33 mV pico a pico (1 %) en C7/C8 y en el módulo.
+* Ejecutar desde sim/: ngspice -b tps63802_rizado.cir
+
+.param L=0.376u COEF=10.4u RLOAD={3.3/0.7}
+
+* --- buck (VSYS 4,4 V, 1,6 MHz)
+.param FB=1.6e6 DB={3.3/4.4}
+Vinb inb 0 4.4
+B1b inb swb I = V(inb,swb)*(max(0,min(1,(V(gb)-0.55)/0.4))/0.03+1e-6)
+Vgb gb 0 pulse(0 1 0 2n 2n {DB/FB} {1/FB})
+Dhb swb inb DIDEAL
+B2b swb 0 I = V(swb)*(max(0,min(1,(0.45-V(gb))/0.4))/0.03+1e-6)
+Dlb 0 swb DIDEAL
+Lb swb outb {L} ic=0.7
+C7b outb c7b {COEF}
+R7b c7b 0 3m
+C8b outb c8b {COEF}
+R8b c8b 0 3m
+Rtb outb tb 58m
+Ltb tb modb 12n
+C9b modb c9b {COEF}
+R9b c9b 0 3m
+Rlb modb 0 {RLOAD}
+
+* --- boost (VSYS 3,0 V, 2,1 MHz)
+.param FS=2.1e6 DS={1-3.0/3.3}
+Vins ins 0 3.0
+Ls ins sws {L} ic=0.77
+B1s sws 0 I = V(sws)*(max(0,min(1,(V(gs)-0.55)/0.4))/0.03+1e-6)
+Vgs gs 0 pulse(0 1 0 2n 2n {DS/FS} {1/FS})
+B2s sws outs I = V(sws,outs)*(max(0,min(1,(0.45-V(gs))/0.4))/0.03+1e-6)
+Dls sws outs DIDEAL
+Dhs 0 sws DIDEAL
+C7s outs c7s {COEF}
+R7s c7s 0 3m
+C8s outs c8s {COEF}
+R8s c8s 0 3m
+Rts outs ts 58m
+Lts ts mods 12n
+C9s mods c9s {COEF}
+R9s c9s 0 3m
+Rls mods 0 {RLOAD}
+
+* interruptores como conductancias gobernadas por la puerta (30 mohm encendidos, rectificación
+* síncrona complementaria con tiempo muerto: conduce en los dos sentidos, PWM forzado por encima de
+* ≈ 1 A de pico)
+* medida con 20 MHz de ancho de banda, como en el bring-up (filtro RC de 1 polo en cada punto)
+Rfob outb fob 1k
+Cfob fob 0 8p
+Rfmb modb fmb 1k
+Cfmb fmb 0 8p
+Rfos outs fos 1k
+Cfos fos 0 8p
+Rfms mods fms 1k
+Cfms fms 0 8p
+.model DIDEAL d(is=1e-9 n=1 rs=0.02)
+* capacidad del nodo de conmutación (COSS, estimada) para que el solver pase los tiempos muertos
+Cswb swb 0 200p
+Csws sws 0 200p
+.ic v(outb)=3.3 v(modb)=3.3 v(outs)=3.3 v(mods)=3.3
+.tran 1n 1.2m 1.18m uic
+.control
+run
+meas tran b_ipk MAX i(Lb) from=1.18m to=1.2m
+meas tran b_imin MIN i(Lb) from=1.18m to=1.2m
+meas tran b_rpp PP v(fob) from=1.18m to=1.2m
+meas tran b_rpp_mod PP v(fmb) from=1.18m to=1.2m
+meas tran b_vavg AVG v(outb) from=1.18m to=1.2m
+meas tran s_ipk MAX i(Ls) from=1.18m to=1.2m
+meas tran s_imin MIN i(Ls) from=1.18m to=1.2m
+meas tran s_rpp PP v(fos) from=1.18m to=1.2m
+meas tran s_rpp_mod PP v(fms) from=1.18m to=1.2m
+meas tran s_vavg AVG v(outs) from=1.18m to=1.2m
+set wr_singlescale
+set wr_vecnames
+wrdata datos/tps63802_rizado.dat v(fob) v(fmb) i(Lb) v(fos) v(fms) i(Ls)
+quit
+.endc
+.end

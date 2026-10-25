@@ -1,0 +1,116 @@
+* FurbyBoard: raíl de 3V3 (TPS63802, U3) con el modelo promediado de models/furby.lib.
+* Qué se mide: caída de 3V3 en los pines del módulo con el escalón de carga del TX WiFi y la
+* cámara, y con la caída de VSYS al desenchufar el USB (4,4 -> 3,0 V en 10 us).
+*
+* Supuestos (declarados):
+*  - Lazo: PI de transconductancia GT y cero FZ, calibrado en el caso «calibracion» para dar
+*    0,12 V de caída con un escalón de 0,1 a 1 A, VI 3,3 V y un 22 uF de 6,3 V en 0603 (≈ 11 uF
+*    efectivos a 3,3 V): lo que se lee en la figura 10-22 del datasheet (SLVSEU9D). La lectura de la
+*    figura es aproximada; por eso el caso «peor» usa GT a la mitad.
+*  - Condensadores: C7, C8 (salida) y C9 (módulo) son 22 uF 25 V X5R 0805 (C45783): ≈ 13 uF
+*    efectivos a 3,3 V (DC bias, estimado) y 10,4 uF con -20 % de tolerancia; ESR 3 mohm.
+*    C6 (entrada) 10 uF 10 V X5R 0603: ≈ 5 uF a 3-4,4 V, 4 uF en el peor caso (mínimo del
+*    datasheet: 4 uF efectivos).
+*  - Pista de 3V3 de C7/C8 a C9 (U4): 58 mohm medidos en el PCB actual (pistas y vías, sin
+*    rellenos; sim/ruta_r.py) y 12 nH (40 mm sobre plano, estimado).
+*  - VSYS: batería a 3,0 V con 0,25 ohm (celda agotada + PCM), Q1 9,8 mohm y BAT-FET del BQ24073
+*    0,1 ohm (máximo); resto de condensadores de VSYS (C3, C16, C17, C24, C25) ≈ 58 uF.
+*  - Carga: 0,1 A de base y escalón a 0,55 A en 1 us (TX 802.11b a 21 dBm 340 mA de pico,
+*    datasheet ESP32-S3 v2.2 tabla 5-7, + cámara 0,15 A + lógica), como la tabla de raíles.
+* Criterios: 3V3 en el módulo >= 3,0 V (ESP32-S3, tabla 5-2) en todo momento; 3V3 en reposo
+* 3,30 V ± 3 %.
+* Ejecutar desde sim/: ngspice -b tps63802_3v3.cir  (datos en datos/tps63802_*.dat)
+
+.include models/furby.lib
+
+.param GTP=7.5 FZP=15k COEF=13u CINEF=5u RSRC=0.36 VBATP=3.0 ISTEP=0.45 IBASE=0.1
+.param VUSB=0 RTRZ=58m LTRZ=12n
+
+* VSYS: batería (o USB a 4,4 V en el caso de línea) con su impedancia
+Vbat bat 0 {VBATP}
+Rsrc bat bat2 {RSRC}
+Dbat bat2 vsysa DID
+Vusb usb 0 pwl(0 {VUSB} 2.5m {VUSB} 2.51m 0)
+Dusb usb vsysa DID
+.model DID d(is=1e-12 n=0.05)
+Cvs vsysa 0 58u
+Rpl vsysa vsys 10m
+C6 vsys c6n {CINEF}
+R6 c6n 0 5m
+
+XU3 vsys out3 0 TPS63802_AVG params: GT={GTP} FZ={FZP}
+
+C7 out3 c7n {COEF}
+R7 c7n 0 3m
+C8 out3 c8n {COEF}
+R8 c8n 0 3m
+Rtrz out3 t1 {RTRZ}
+Ltrz t1 mod {LTRZ}
+C9 mod c9n {COEF}
+R9 c9n 0 3m
+C10 mod 0 100n
+
+* carga en el módulo: base resistiva (el modelo arranca solo, con su retardo y arranque suave)
+* y escalón de corriente a 2,0 ms durante 0,4 ms
+Rbase mod 0 {3.3/IBASE}
+Iload mod 0 pwl(0 0 2.0m 0 2.001m {ISTEP} 2.4m {ISTEP} 2.401m 0)
+
+.tran 20n 3.2m
+
+.control
+set wr_singlescale
+set wr_vecnames
+* 1) calibración contra la figura 10-22: VI 3,3 V, un 22 uF 6,3 V 0603 (≈ 11 uF), 0,1 -> 1 A
+alterparam VBATP=3.3
+alterparam RSRC=0.01
+alterparam COEF=3.67u
+alterparam RTRZ=1m
+alterparam LTRZ=0.1n
+alterparam ISTEP=0.9
+reset
+run
+meas tran cal_vmin MIN v(mod) from=2.0m to=2.4m
+meas tran cal_vpre AVG v(mod) from=1.9m to=2.0m
+let cal_caida = cal_vpre - cal_vmin
+print cal_caida
+wrdata datos/tps63802_calibracion.dat v(mod)
+* 2) placa, batería a 3,0 V, condensadores nominales
+alterparam VBATP=3.0
+alterparam RSRC=0.36
+alterparam COEF=13u
+alterparam RTRZ=58m
+alterparam LTRZ=12n
+alterparam ISTEP=0.45
+reset
+run
+meas tran nom_vmin MIN v(mod) from=2.0m to=2.6m
+meas tran nom_v3min MIN v(out3) from=2.0m to=2.6m
+meas tran nom_vrep AVG v(mod) from=1.9m to=2.0m
+meas tran nom_vcarga AVG v(mod) from=2.3m to=2.4m
+meas tran nom_vsysmin MIN v(vsys) from=2.0m to=2.6m
+wrdata datos/tps63802_placa_nominal.dat v(mod) v(out3) v(vsys)
+* 3) peor caso: condensadores -20 %, lazo a la mitad de GT
+alterparam COEF=10.4u
+alterparam CINEF=4u
+alterparam GTP=3.75
+reset
+run
+meas tran peor_vmin MIN v(mod) from=2.0m to=2.6m
+meas tran peor_vcarga AVG v(mod) from=2.3m to=2.4m
+wrdata datos/tps63802_placa_peor.dat v(mod) v(out3) v(vsys)
+* 4) línea: USB (4,4 V) que se va a 1 ms con 0,55 A de carga; la batería a 3,0 V toma el relevo
+alterparam GTP=7.5
+alterparam COEF=13u
+alterparam CINEF=5u
+alterparam VUSB=4.45
+alterparam IBASE=0.55
+alterparam ISTEP=0
+reset
+run
+meas tran lin_vmin MIN v(mod) from=2.4m to=3.2m
+meas tran lin_vmax MAX v(mod) from=2.4m to=3.2m
+meas tran lin_vsysmin MIN v(vsys) from=2.4m to=3.2m
+wrdata datos/tps63802_linea.dat v(mod) v(out3) v(vsys)
+quit
+.endc
+.end

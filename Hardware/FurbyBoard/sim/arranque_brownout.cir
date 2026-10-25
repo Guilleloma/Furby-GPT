@@ -1,0 +1,78 @@
+* FurbyBoard: arranque completo y caída de batería.
+* Qué se mide:
+*  A) Arranque al soldar/conectar la batería (sin USB): VSYS, 3V3 (TPS63802 con su retardo y su arranque
+*     suave) y EN del ESP32 (R17 10 k a 3V3, C11 1 uF y SW1). Comprueba que EN pasa VIH_nRST (0,75·VDD)
+*     con 3V3 ya estable (tSTBL >= 50 us, datasheet ESP32-S3 v2.2 tabla 2-13) y que la calibración del
+*     WiFi tras el arranque no tumba 3V3. Con la batería a 3,0 V (agotada) y 0,37 ohm (peor caso).
+*  B) Caída lenta de la batería (VOC de 4,2 a 2,8 V en 140 ms) con el pico simultáneo de cargas: ¿a qué
+*     tensión de batería deja de sostenerse? Cargas de potencia constante (convertidores): elevador +
+*     motor bloqueado 6,6 W (se apaga por UVLO a 2,5 V y vuelve a 2,7 V, TPS61089), 3V3 2,0 W (TPS63802,
+*     hasta 1,25 V) y amplificador 1,6 W (UVLO 2,3 V máx.). Resistencia de la batería a VSYS: 0,21 ohm
+*     (nominal: celda y PCM 0,15 + Q1 0,01 + BAT-FET 0,05) y 0,37 ohm (peor: celda vieja o fría 0,25 +
+*     BAT-FET 0,1 + 0,02).
+* Con una carga de potencia constante P y una fuente VOC con resistencia R, VSYS = (VOC + raíz(VOC² −
+* 4RP)) / 2 y no hay solución si VOC² < 4RP: el raíl se hunde. Supuestos: ESP32 con 1 mA en reset,
+* 50 mA al arrancar y 0,4 A durante 5 ms de calibración del WiFi (a los 60 ms); sin pulsar RESET.
+* Criterios: A) EN cruza 0,75·3V3 al menos 50 us después de que 3V3 >= 3,0 V; 3V3 >= 3,0 V con el
+* WiFi. B) Informativo: tensión de batería mínima para el pico; 3V3 >= 3,0 V mientras VSYS >= 2,3 V.
+* Ejecutar desde sim/: ngspice -b arranque_brownout.cir
+
+.include models/furby.lib
+
+.param RB=0.37 PMOT=6.6 PAMP=1.6 P3=2.0 MODO=0
+* MODO 0: arranque (A); MODO 1: caída de batería (B)
+
+* --- batería: en A, 3,0 V desde t = 0; en B, de 4,2 a 2,8 V entre 10 y 150 ms
+Vbat bat 0 pwl(0 {3.0+1.2*MODO} 10m {3.0+1.2*MODO} 150m {3.0-0.2*MODO})
+Rbat bat vsys {RB}
+Cvs vsys 0 58u
+
+* --- A) 3V3 con el modelo del TPS63802 y el módulo
+XU3 vsys o3 0 TPS63802_AVG
+C78 o3 c78 26u
+R78 c78 0 2m
+Rtr o3 t1 58m
+Ltr t1 v3 12n
+C9 v3 c9n 13u
+R9 c9n 0 3m
+R17 v3 en 10k
+C11 en 0 1u
+Besp v3 0 I = (1-MODO)*((V(en) > 0.75*V(v3) ? 0.05 : 0.001) + (time > 60m && time < 65m ? 0.4 : 0))
+
+* --- B) cargas de potencia constante en VSYS (elevador con histéresis de UVLO)
+Bonr onr 0 V = V(vsys) > 2.7 ? 1 : (V(vsys) < 2.5 ? 0 : (V(onq) > 0.5 ? 1 : 0))
+Ronq onr onq 1k
+Conq onq 0 10n
+Bmot vsys 0 I = MODO*{PMOT}*V(onq)/max(V(vsys),1)*(time > 5m ? 1 : 0)
+Bamp vsys 0 I = MODO*{PAMP}*0.5*(1+tanh((V(vsys)-2.3)/0.02))/max(V(vsys),1)*(time > 5m ? 1 : 0)
+B3v3 v3 0 I = MODO*{P3}*0.9/3.3*(time > 5m ? 1 : 0)
+
+.tran 2u 160m
+.control
+set wr_singlescale
+set wr_vecnames
+* A) arranque con batería agotada y resistencia de peor caso
+run
+meas tran a_t3 WHEN v(v3)=3.0 RISE=1
+meas tran a_ten WHEN v(en)=2.475 RISE=1
+meas tran a_v3max MAX v(v3) from=0 to=20m
+meas tran a_vsysmin MIN v(vsys) from=0.2m to=160m
+meas tran a_v3wifi MIN v(v3) from=59m to=70m
+wrdata datos/arranque.dat v(vsys) v(v3) v(en)
+* B) caída de batería con el pico de 10,2 W, R nominal y de peor caso
+alterparam MODO=1
+alterparam RB=0.21
+reset
+run
+meas tran b_tcae WHEN v(vsys)=2.5 FALL=1
+meas tran b_v3min MIN v(v3) from=10m to=160m
+wrdata datos/caida_nominal.dat v(bat) v(vsys) v(v3) v(onq)
+alterparam RB=0.37
+reset
+run
+meas tran c_tcae WHEN v(vsys)=2.5 FALL=1
+meas tran c_v3min MIN v(v3) from=10m to=160m
+wrdata datos/caida_peor.dat v(bat) v(vsys) v(v3) v(onq)
+quit
+.endc
+.end

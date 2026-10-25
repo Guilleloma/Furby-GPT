@@ -20,7 +20,7 @@
  "funda_largo": 15.0,
  "usb_cuerpo_ancho": 8.94,
  "usb_cuerpo_largo": 6.8,
- "holgura_pcb_pared_min": 0.5,
+ "holgura_pcb_pared_min": 0.47,
  "holgura_usb_pared_min": 0.25,
  "eps_coplanar": 0.005,
  "tolerancia_malla": 1e-6,

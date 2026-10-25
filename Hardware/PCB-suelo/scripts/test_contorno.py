@@ -35,16 +35,17 @@ from shapely.geometry import LinearRing, Point, Polygon
 DXF_PCB = Path(__file__).resolve().parent.parent / "contorno-pcb.dxf"
 JSON_GEOMETRIA = DXF_PCB.parent / "geometria.json"
 
-TALADROS_ESPERADOS = [(-97.0, -68.5), (-50.0, -68.5), (-86.8, -122.4), (-60.2, -122.4)]
+TALADROS_ESPERADOS = [(-97.0, -68.5), (-50.0, -68.5), (-86.7, -121.9), (-60.3, -121.9)]
 TALADRO_D = 2.3
 AGUJEROS_BASE_ESPERADOS = [(-105.51, -78.23), (-41.33, -78.15), (-105.77, -106.80), (-41.23, -106.83)]
 AGUJERO_BASE_D = 2.134
 MUESCA_R = 3.0
-# Sin muescas, el borde de la PCB pasa a 1,07-1,15 mm por fuera de cada centro.
-# Cualquier muesca que deje libre siquiera el agujero (R 1,07) lo descubre.
-AGUJERO_BAJO_PCB_MIN = 1.0
+# Sin muescas y con holgura de 1,0, el borde de la PCB pasa a 0,57-0,65 mm por fuera de
+# cada centro. Los agujeros están tapados en la base, así que basta con que queden debajo.
+AGUJERO_BAJO_PCB_MIN = 0.5
 BORDE_TALADRO_MIN = 2.5
-HOLGURA_MIN = 0.5
+HOLGURA_MIN = 1.0
+HOLGURA_OREJETAS_USB_MIN = 0.45   # las patas delanteras del USB-C (ver contorno_suelo.py)
 TOL_POSICION = 0.01
 TOL_EXTREMOS = 1e-4
 PASO_MM = 0.01
@@ -238,7 +239,7 @@ def comparar_geometria_json(geometria, circulos, muesca_r):
             f"funda {funda['ancho']} × {funda['alto']}{' (supuesto)' if funda.get('supuesto') else ''}")
 
 
-def comprobar_holgura(placa, ruta_suelo):
+def comprobar_holgura(placa, ruta_suelo, ruta_geometria):
     msp = ezdxf.readfile(ruta_suelo).modelspace()
     polilineas = [e for e in msp.query("LWPOLYLINE") if e.dxf.layer == "SueloInterior"]
     if len(polilineas) != 1:
@@ -246,11 +247,18 @@ def comprobar_holgura(placa, ruta_suelo):
     suelo = Polygon([(x, y) for x, y, *_ in polilineas[0].get_points()])
     if not suelo.contains(placa):
         raise AssertionError("La PCB sale del suelo")
-    muestras = shapely.points(np.array(placa.exterior.coords))
-    holgura = shapely.distance(muestras, suelo.exterior)
-    if holgura.min() < HOLGURA_MIN - 1e-6:
-        raise AssertionError(f"Holgura mínima {holgura.min():.4f} mm (se pide {HOLGURA_MIN})")
-    return f"holgura mínima {holgura.min():.3f} mm"
+    coords = np.array(placa.exterior.segmentize(0.05).coords)
+    holgura = shapely.distance(shapely.points(coords), suelo.exterior)
+    usb = json.loads(Path(ruta_geometria).read_text())["usb"]
+    xoi, xod = usb["x_orejetas"]
+    en_orejetas = (coords[:, 0] > xoi - 0.01) & (coords[:, 0] < xod + 0.01) & (coords[:, 1] < usb["y_borde"] + 1.0)
+    if holgura[~en_orejetas].min() < HOLGURA_MIN - 1e-6:
+        raise AssertionError(f"Holgura mínima {holgura[~en_orejetas].min():.4f} mm (se pide {HOLGURA_MIN})")
+    if holgura[en_orejetas].min() < HOLGURA_OREJETAS_USB_MIN - 1e-6:
+        raise AssertionError(f"Orejetas del USB-C a {holgura[en_orejetas].min():.4f} mm de la pared "
+                             f"(se pide {HOLGURA_OREJETAS_USB_MIN})")
+    return (f"holgura mínima {holgura[~en_orejetas].min():.3f} mm; "
+            f"orejetas del USB-C {holgura[en_orejetas].min():.3f} mm")
 
 
 def main():
@@ -278,7 +286,7 @@ def main():
          lambda: comprobar_geometria_json(args.geometria, circulos, muesca_r)),
     ]
     if args.suelo:
-        comprobaciones.append(("holgura contra el suelo", lambda: comprobar_holgura(placa, args.suelo)))
+        comprobaciones.append(("holgura contra el suelo", lambda: comprobar_holgura(placa, args.suelo, args.geometria)))
 
     for nombre, comprobacion in comprobaciones:
         try:

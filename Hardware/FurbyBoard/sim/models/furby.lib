@@ -1,0 +1,173 @@
+* FurbyBoard v1.0: modelos de comportamiento compartidos por las simulaciones de sim/.
+* Ningún fabricante da modelos SPICE de estos chips que ngspice acepte, así que cada modelo
+* reproduce solo lo que dice su hoja de datos (citada en cada subcircuito) y declara lo que
+* se supone. Las cifras «supuesto» son estimaciones y se miden en el bring-up (TEST-PLAN.md).
+
+* ----------------------------------------------------------------------------------------
+* Celda LiPo 1S 1400 mAh con su PCM y los cables hasta los pads J2/J3.
+* VOC: tensión en vacío. R0: resistencia interna + PCM + cables (supuesto: 0,15 ohm nueva a
+* 25 °C; 0,25 ohm agotada o fría). LW: inductancia de 2 x 10 cm de cable (supuesto 100 nH).
+.subckt BAT_LIPO pos neg params: VOC=3.7 R0=0.15 LW=100n
+V1 p1 neg {VOC}
+R1 p1 p2 {R0}
+L1 p2 pos {LW}
+R2 p2 pos 10
+.ends
+
+* ----------------------------------------------------------------------------------------
+* SI7615ADN (Q1), P-MOSFET de polaridad: drenador = pad BAT+, fuente = nodo BAT, puerta = GND
+* por R12. Modelo EKV de canal (sin saturación: VDS pequeña en uso normal) + diodo interno.
+* Hoja de datos Vishay SI7615ADN (https://www.vishay.com/docs/62667/si7615adn.pdf, rev. B):
+* VGS(th) -0,4 a -1,5 V a -250 uA; RDS(on) <= 9,8 mohm a VGS -2,5 V, <= 6,0 mohm a -4,5 V.
+* Modelo EKV simétrico (subumbral, lineal y saturación) + 3 mohm de encapsulado (supuesto).
+* VTH: |VGS| a la que circulan 250 uA en saturación (parámetro de la esquina: 0,4 o 1,5 V).
+* BETA 206 A/V2 da RDS(on) = 9,8 mohm a |VGS| = 2,5 V con VTH = 1,5 V (peor caso de la hoja)
+* y 4,8 mohm a 4,5 V (<= 6,0). N 1,5: pendiente subumbral de 89 mV/década (supuesto típico).
+.subckt SI7615 d g s params: VTH=1.5 BETA=206 N=1.5 RPKG=3m
+.param VT=0.02585 I0={2*N*BETA*VT*VT}
+.param VT0={VTH-2*N*VT*ln(exp(sqrt(250e-6/(2*N*BETA*VT*VT)))-1)}
+Rpkg s si {RPKG}
+Bch si d I = {I0}*( pow(ln(1+exp((V(si,g)-{VT0})/(2*{N}*{VT}))),2)
++ - pow(ln(1+exp((V(si,g)-{VT0})/(2*{N}*{VT}) - V(si,d)/(2*{VT}))),2) )
+Dbody d si DBODY
+.model DBODY d(is=1e-9 n=1.3 rs=0.01 bv=20)
+.ends
+
+* ----------------------------------------------------------------------------------------
+* BQ24073 (U2), power path de comportamiento. Hoja de datos TI SLUS810N
+* (https://www.ti.com/lit/ds/symlink/bq24073.pdf), tabla 8.5:
+*  - OUT regulado a VO(REG) 4,4 V (4,3-4,5) con límite de entrada IINmax: USB500 450-500 mA;
+*    modo ILIM KILIM/RILIM = 1500-1720 / 1,2 k = 1,25-1,43 A.
+*  - VIN-DPM 4,35-4,63 V (EN2 = 0); caída IN-OUT 300-475 mV a 1 A (RDO).
+*  - DPPM: la carga baja cuando OUT cae a VO(REG) - 100 mV.
+*  - Supplement: la batería entra cuando VOUT <= VBAT - 40 mV; BAT-FET: VBAT - VOUT 50 mV típ.,
+*    100 mV máx. a 1 A (RFET 0,05-0,1 ohm).
+*  - Cortocircuito en supplement (VO(SC2)): VBAT - VOUT > 200-300 mV durante 250 us apaga OUT
+*    60 ms. No se modela el apagado: lo comprueba analiza.py sobre V(bat) - V(out).
+*  - tDGL(PGOOD) 1,2 ms al enchufar (TON). Al desenchufar, el paso a supplement se modela con un
+*    retardo de primer orden TSUP (supuesto: la hoja no lo da; la figura 10-6 lo muestra < 100 us).
+* Pines: in out bat gnd.
+.subckt BQ24073_PP in out bat gnd params: ILIM=0.475 ICHG=0.494 VOREG=4.4 RFET=0.05 RDO=0.4
++ VINDPM=4.5 TSUP=5u TON=1.2m TIN=5u CHGEN=1
+* entrada válida: VIN > UVLO (3,3 V) y VIN > VBAT + VIN(DT) (80 mV típ.); se valida tras TON y cae
+* en 1 us. Consumo propio de IN: ICC 1,5 mA máx. (descarga C1 tras desenchufar)
+Bokr okr gnd V = (V(in,gnd) > 3.3 && V(in,gnd) > V(bat,gnd)+0.08) ? 1 : 0
+Bicc in gnd I = 1.5m*min(1,max(0,V(in,gnd)-1))
+Bok gnd ok I = V(okr) > V(ok) ? (V(okr)-V(ok))/{TON} : (V(okr)-V(ok))/1u
+Cok ok gnd 1
+Rok ok gnd 1e9
+* corriente de entrada: regula OUT a VO(REG) con el límite (y VIN-DPM y la caída IN-OUT)
+Bic icr gnd V = (V(ok)>0.5 ? 1 : 0) * max(0, min( min({ILIM}*max(0,min(1,(V(in,gnd)-{VINDPM}+0.1)/0.1)),
++ max(V(in,gnd)-V(out,gnd),0)/{RDO}), 20*({VOREG}-V(out,gnd)) ))
+Ric icr ic 1
+Cic ic gnd {TIN}
+Bin in gnd I = V(ic)
+Bout gnd out I = V(ic)
+* carga de la batería con DPPM (solo con entrada válida y BAT < 4,2 V)
+Bch out bat I = (V(ok)>0.5 ? 1 : 0) * {CHGEN}*{ICHG}*max(0,min(1,(V(out,gnd)-{VOREG}+0.1)/0.05))
++ * (V(bat,gnd) < 4.2 ? 1 : 0)
+* BAT-FET: con entrada válida entra en supplement a VBAT - 40 mV; sin entrada, siempre conduce
+Bswr swr gnd V = V(ok)>0.5 ? 0.5*(1+tanh((V(bat,gnd)-V(out,gnd)-0.04)/0.003)) : 1
+Rsw swr sw 1
+Csw sw gnd {TSUP}
+Bsup bat out I = V(sw)*max(V(bat,gnd)-V(out,gnd),0)/{RFET}
+.ends
+
+* ----------------------------------------------------------------------------------------
+* TPS63802 (U3), buck-boost a 3,3 V, modelo promediado de gran señal.
+* Hoja de datos TI SLVSEU9D (https://www.ti.com/lit/ds/symlink/tps63802.pdf):
+*  - VFB 0,5 V ±1 %: VOUT = 0,5 x (1 + 510/91) = 3,302 V (R15/R16).
+*  - UVLO 1,2-1,29 V (bajando) y 1,6-1,79 V (subiendo); VIN;LOAD 2,3 V para 2 A.
+*  - Límite de pico 4-5,75 A en boost, 3,8 A en buck: IMAX de salida supuesta 2,5 A.
+*  - Tdelay 321 us desde EN y rampa del límite de corriente Tramp 224 us (arranque suave).
+* La compensación es interna y no está publicada: el lazo se modela como un PI de
+* transconductancia GT (A/V) con un cero FZ y un retardo del lazo de corriente TAUI, calibrado
+* en tps63802_3v3.cir contra la figura 10-22 (escalón de 0,1 a 1 A, VI 3,3 V, 22 uF nominales).
+* Rendimiento ETA constante (supuesto 0,9; figura 8-7 del datasheet: 0,88-0,94 entre 0,1 y 1 A).
+.subckt TPS63802_AVG vin vout gnd params: GT=7.5 FZ=15k TAUI=0.8u ETA=0.9 IMAX=2.5 VSET=3.302
++ TDLY=321u TRAMP=224u
+Benr enr gnd V = V(vin,gnd) > 1.7 ? 1 : (V(vin,gnd) < 1.25 ? 0 : (V(en) > 0.5 ? 1 : 0))
+Ben gnd en I = V(enr) > V(en) ? (V(enr)-V(en))/({TDLY}/0.693) : (V(enr)-V(en))/1u
+Cen en gnd 1
+Ren en gnd 1e9
+* arranque suave: el límite de corriente sube de 0 a IMAX en TRAMP
+Bss gnd ss I = V(en) > 0.5 ? max(0,min(1,(1.05-V(ss))/0.05))/{TRAMP} : -V(ss)/1u
+Css ss gnd 1
+Rss ss gnd 1e9
+* controlador PI con antiwindup por recálculo (el integrador sigue a la orden recortada)
+Bhi hi gnd V = {IMAX}*min(V(ss),1)
+Bu u gnd V = {GT}*({VSET}-V(vout,gnd)) + V(ni)
+Bc ncr gnd V = (V(en) > 0.5 ? 1 : 0) * max(0, min(V(hi), V(u)))
+Bint gnd ni I = (V(en) > 0.5 ? 1 : 0) * ({GT}*6.2832*{FZ}*({VSET}-V(vout,gnd)) + 6.2832*{FZ}*10*(V(ncr)-V(u)))
++ - (V(en) > 0.5 ? 0 : V(ni)/1u)
+Cint ni gnd 1
+Rint ni gnd 1e9
+Rc ncr nc 1
+Cc nc gnd {TAUI}
+Bo gnd vout I = V(nc)
+Bi vin gnd I = V(vout,gnd)*V(nc)/({ETA}*max(V(vin,gnd),0.5))
+.ends
+
+* ----------------------------------------------------------------------------------------
+* TPS61089 (U5), elevador a 5,94 V, modelo promediado con control de pico de corriente.
+* Hoja de datos TI SLVSD38C (https://www.ti.com/lit/ds/symlink/tps61089.pdf):
+*  - VREF 1,212 V (1,188-1,236); GEA 190 uS; Rsense equivalente 0,08 ohm (sección 9.2.2.8);
+*  - ILIM de pico = 1 030 000 / RILIM = 3,8 A con 270 k (ecuación 2); fSW con 150 k ~ 0,96 MHz;
+*  - UVLO de VIN 2,4-2,5 V bajando.
+* Compensación real de la placa: R24 30 k, C14 4,7 nF, C15 10 pF; divisor R21 390 k / R22 100 k.
+* Supuestos: REA (resistencia de salida del amplificador) 10 Mohm; VOFF (COMP a corriente nula)
+* 1,4 V; lazo de corriente interno de 160 kHz (KP); pérdidas en RL (DCR + RDS(on), 50 mohm).
+* El límite de pico se pasa a media restando medio rizado: IL,med <= ILIM - Vin*D/(2*L*fSW).
+.subckt TPS61089_AVG vin vout gnd params: L=1u RL=0.05 GEA=190u REA=10meg RS=0.08 VOFF=1.4
++ ILIMPK=3.8 FSW=0.96e6 KP=0.17
+L1 vin x1 {L}
+R1 x1 x2 {RL}
+VsL x2 x3 0
+Bx x3 gnd V = V(vout,gnd)*(1-V(d))
+Bo gnd vout I = i(VsL)*(1-V(d))
+* UVLO: por debajo de 2,5 V el convertidor no conmuta (D = 0: la salida sigue a la entrada)
+Bon on gnd V = V(vin,gnd) > 2.5 ? 1 : 0
+Bdil dil gnd V = V(vin,gnd)*max(0,1-V(vin,gnd)/max(V(vout,gnd),1))/({L}*{FSW})
+Bicmd icmd gnd V = max(0, min({ILIMPK}-V(dil)/2, (V(comp,gnd)-{VOFF})/{RS}))
+Bd d gnd V = V(on)*max(0, min(0.9, 1-V(vin,gnd)/max(V(vout,gnd),1) + {KP}*(V(icmd)-i(VsL))))
+* amplificador de error y compensación de la placa
+R21 vout fb 390k
+R22 fb gnd 100k
+Bea gnd comp I = {GEA}*(1.212-V(fb,gnd))
+Rea comp gnd {REA}
+Bclp comp gnd I = 0.01*(max(V(comp,gnd)-2.3,0) - max({VOFF}-0.2-V(comp,gnd),0))
+R24 comp rc 30k
+C14 rc gnd 4.7n
+C15 comp gnd 10p
+.ends
+
+* ----------------------------------------------------------------------------------------
+* ME6211 (U8 2,8 V, U9 1,2 V), LDO de comportamiento. Hoja de datos Microne ME6211 V24
+* (https://static.chipdip.ru/lib/463/DOC043463792.pdf, tablas ME6211C28 y ME6211C12):
+*  - caída VDIF1 a 100 mA: 110 mV (C28) y 280 mV (C12) -> RDO 1,1 y 2,8 ohm;
+*  - IOUTMAX 450 mA (C28) y 300 mA (C12); cortocircuito ISHORT 65 mA (limitador con repliegue);
+*  - PSRR (VIN = VOUT + 1 V + 1 Vpp): 70 dB a 1 kHz (10 mA) y 62 dB a 10 kHz (100 mA);
+*  - ISS 30-60 uA; CE alto >= 1,0 V, bajo <= 0,5 V.
+* Supuestos: PSRR con un polo de lazo a 4,2 kHz (cuadra con los dos puntos de la hoja) que se aplana
+* en -38 dB por encima de ≈ 170 kHz (la hoja no da datos ahí); regulación de carga 1/GFAST = 67 mohm
+* (la hoja: 7-8 mV de 1 a 100 mA); arranque con rampa de la referencia TSS (supuesto 50 us; la hoja
+* solo dice «fast turn-on»). Con menos de 1 V de margen (U8: 0,47 V) la PSRR real empeora.
+.subckt LDO_ME6211 in out en gnd params: VSET=2.8 RDO=1.1 IMAX=0.45 ISH=0.065 GFAST=15
++ K=3.08e-4 KHF=0.0123 FHP=172k TSS=50u
+* parte alterna de la entrada (la continua se filtra con 10 ms)
+Ravg in inavg 10k
+Cavg inavg gnd 1u
+Bvac vac gnd V = V(in,gnd) - V(inavg,gnd)
+* paso alto para el tramo de PSRR que se aplana
+Chp vac hp {1/(6.2832*FHP*1k)}
+Rhp hp gnd 1k
+* arranque: la referencia sube en TSS cuando CE pasa de 1 V
+Bss gnd ss I = V(en,gnd) > 1.0 ? max(0,min(1,(1.02-V(ss))/0.02))/{TSS} : -V(ss)/1u
+Css ss gnd 1
+Rss ss gnd 1e9
+Bt tgt gnd V = {VSET}*min(V(ss),1) + {K}*V(vac) + {KHF}*V(hp)
+* paso: corriente limitada por el lazo, el repliegue y la caída (in-out)/RDO
+Bp in out I = (V(en,gnd) > 1.0 ? 1 : 0) * max(0, min( min({ISH}+({IMAX}-{ISH})*max(V(out,gnd),0)/{VSET},
++ max(V(in,out),0)/{RDO}), {GFAST}*(V(tgt)-V(out,gnd)) ))
+Biq in gnd I = 40u*(V(en,gnd) > 1.0 ? 1 : 0)
+.ends

@@ -1,0 +1,180 @@
+* FurbyBoard: puente H DRV8231A (U6) con el motor, alimentado por el elevador TPS61089 (U5).
+* Qué se mide:
+*  1) Arranque al 100 % desde parado: la regulación de corriente (ITRIP) limita el pico; V6 y VSYS.
+*  2) Motor bloqueado al 100 %: corriente regulada, IPROPI frente a VREF, disipación del DRV8231A.
+*  3) PWM a 20 kHz al 70 % en decaimiento lento (IN1 = 1, IN2 = PWM al 30 %): rizado de corriente y de V6.
+*  4) Inversión a toda velocidad sin freno (peor caso): pico frente al disparo de OCP (3,7 A).
+*
+* DRV8231A (SLVSFZ8A, https://www.ti.com/lit/ds/symlink/drv8231a.pdf), tabla 5.5:
+*  - IN/IN: 10 y 01 mueven, 11 frena (lados bajos), 00 libre (alta impedancia, por los diodos).
+*  - ITRIP = VREF / (RIPROPI x AIPROPI), AIPROPI 1500 uA/A (AERR ±6 % a 1 A con VM >= 6,5 V).
+*  - Regulación de tiempo fijo: al pasar ITRIP (tras tBLK 1,4 us y tDEG 0,7 us) frena tOFF 25 us;
+*    un cambio de IN durante tOFF lo termina (sección 7.4.2.2).
+*  - RDS(on) por lado 0,30 ohm a 24 V; figuras 6-5/6-6: ≈ 0,33 ohm a 4,5-6,5 V y 27 °C y ≈ 0,45 ohm
+*    a 125 °C (RDSP). VM UVLO 4,05-4,35 V bajando. IOCP 3,7 A mín. θJA del DSG (WSON) 66,5 °C/W.
+* Valores de la placa: R26 4,7 k / R27 10 k desde 3V3 y C23 100 nF (VREF 2,246 V), R28 1,5 k
+* (IPROPI), C22 100 nF; V6 con C18-C21 (4 x 22 uF 25 V, ≈ 53 uF efectivos a 6 V, como elevador_6v.cir).
+* Supuestos (declarados, el motor no está medido; ARQUITECTURA.md §6):
+*  - Motor de escobillas: R 5 ohm (1,2 A bloqueado a 6 V, por encima de ITRIP: el caso que regula),
+*    L 0,5 mH, KE = KT 5 mV·s/rad, rozamiento 1 uN·m·s, J 0,15 g·cm2: 0,2 A y 1000 rad/s en vacío,
+*    constante mecánica ≈ 30 ms.
+*  - VSYS: batería a media carga (3,7 V) con 0,21 ohm (celda y PCM 0,15 + Q1 0,01 + BAT-FET 0,05) y
+*    C16/C17 + resto ≈ 58 uF. El límite con la batería baja se calcula en arranque_brownout.cir.
+*  - Elevador: modelo promediado TPS61089_AVG (models/furby.lib) con la compensación real.
+*  - Capacidad del nodo IPROPI (pin del ESP32 y pista) 20 pF.
+* Criterios: corriente regulada 1,0 A ± 10 % (VREF ±2 %, resistencias 1 %, AERR 6 %); pico < 3,7 A
+* (OCP); V6 > 4,45 V (UVLO del DRV8231A, máx. de subida) y VSYS > 2,7 V (UVLO del TPS61089, máx.);
+* V(IPROPI) <= 3,0 V (rango de precisión de AERR); Tj del DRV8231A <= 110 °C con Ta 50 °C.
+* Ejecutar desde sim/: ngspice -b drv8231a_motor.cir   (tarda ≈ 1-2 min)
+
+.include models/furby.lib
+
+.param MODO=1 STALL=0 W0=0 RDSP=0.33 TFIN=40m
+* MODO 1: IN1 = 1 desde 1 ms; 2: IN1 = 1 e IN2 = PWM 20 kHz al 30 % (70 % útil); 3: inversión a 1 ms
+.param RM=5 LM=0.5m KE=5m BF=1u JM=1.5e-7
+
+* --- VSYS y elevador
+Vbat bat 0 3.7
+Rsrc bat vsys 0.21
+Cvs vsys cvn 58u
+Rcv cvn 0 5m
+XU5 vsys v6 0 TPS61089_AVG
+Cv6 v6 cv6n 53u
+Rv6 cv6n 0 3m
+C22 v6 0 100n
+
+* --- entradas
+V3v3 n3v3 0 3.302
+Vin1 in1 0 pwl(0 0 1m 0 1.0001m 3.3)
+* (selección de modo con aritmética y parámetros sin llaves: el «==» de numparam no sirve aquí)
+* (el elevador arranca desde el punto de operación y se asienta antes de 1 ms)
+Vsw3 sw3 0 pwl(0 0 2m 0 2.0001m 1)
+Vin2p in2p 0 pulse(0 3.3 1m 20n 20n 15u 50u)
+.param M2={1-min(1,abs(MODO-2))} M3={1-min(1,abs(MODO-3))}
+Bin1 in1x 0 V = M3*(V(sw3) > 0.5 ? 0 : V(in1)) + (1-M3)*V(in1)
+Bin2 in2x 0 V = M2*V(in2p) + M3*3.3*V(sw3)
+* la inversión del MODO 3 ocurre a 2 ms (1 ms en marcha tras arrancar ya a W0)
+
+* --- lógica del DRV8231A (0/1)
+Ba1 a1 0 V = V(in1x) > 1.5 ? 1 : 0
+Ba2 a2 0 V = V(in2x) > 1.5 ? 1 : 0
+Rd1 a1 a1d 1k
+Cd1 a1d 0 50p
+Rd2 a2 a2d 1k
+Cd2 a2d 0 50p
+Bedge edge 0 V = abs(V(a1)-V(a1d)) + abs(V(a2)-V(a2d)) > 0.5 ? 1 : 0
+Bdrv drv 0 V = (V(a1) + V(a2) > 0.5 && V(a1) + V(a2) < 1.5 && V(qd) < 0.5) ? 1 : 0
+* tBLK desde que el puente empieza a mover; tDEG con el comparador activo
+Btb 0 tb I = V(drv) > 0.5 ? (V(tb) < 2 ? 1/1.4u : 0) : -V(tb)/20n
+Ctb tb 0 1
+Bcmp cmp 0 V = (V(ipropi) > V(vref) && V(tb) > 1) ? 1 : 0
+Btd 0 td I = V(cmp) > 0.5 ? (V(td) < 2 ? 1/0.7u : 0) : -V(td)/20n
+Ctd td 0 1
+Bq qr 0 V = (V(td) > 1 || (V(qd) > 0.5 && V(to) < 1 && V(edge) < 0.5)) ? 1 : 0
+Rq qr qd 1k
+Cq qd 0 10p
+Bto 0 to I = V(qd) > 0.5 ? (V(to) < 2 ? 1/25u : 0) : -V(to)/20n
+Cto to 0 1
+* puertas (1 = encendido), con ≈ 100 ns de pendiente (tRISE 220 ns); cada interruptor conduce solo
+* con su puerta por encima de 0,55: al cambiar de lado hay tiempo muerto, sin conducción cruzada
+Bh1 h1r 0 V = (V(qd) < 0.5 && V(a1) > 0.5 && V(a2) < 0.5) ? 1 : 0
+Bl1 l1r 0 V = (V(qd) > 0.5 || V(a2) > 0.5) ? 1 : 0
+Bh2 h2r 0 V = (V(qd) < 0.5 && V(a2) > 0.5 && V(a1) < 0.5) ? 1 : 0
+Bl2 l2r 0 V = (V(qd) > 0.5 || V(a1) > 0.5) ? 1 : 0
+Rh1 h1r h1 1k
+Ch1 h1 0 100p
+Rl1 l1r l1 1k
+Cl1 l1 0 100p
+Rh2 h2r h2 1k
+Ch2 h2 0 100p
+Rl2 l2r l2 1k
+Cl2 l2 0 100p
+
+* --- etapa de potencia (conductancias gobernadas por las puertas) y diodos internos
+Bhs1 v6 out1 I = V(v6,out1)*(max(0,min(1,(V(h1)-0.55)/0.4))/{RDSP} + 1e-7)
+Bls1 out1 0 I = V(out1)*(max(0,min(1,(V(l1)-0.55)/0.4))/{RDSP} + 1e-7)
+Bhs2 v6 out2 I = V(v6,out2)*(max(0,min(1,(V(h2)-0.55)/0.4))/{RDSP} + 1e-7)
+Bls2 out2 0 I = V(out2)*(max(0,min(1,(V(l2)-0.55)/0.4))/{RDSP} + 1e-7)
+Dh1 out1 v6 DB
+Dl1 0 out1 DB
+Dh2 out2 v6 DB
+Dl2 0 out2 DB
+.model DB d(is=1e-9 n=1.2 rs=0.05)
+Cs1 out1 0 100p
+Cs2 out2 0 100p
+
+* --- motor
+Vm out1 m1 0
+Rm m1 m2 {RM}
+Lm m2 m3 {LM}
+Bemf m3 out2 V = {KE}*V(w)
+Bmec 0 w I = (1-{STALL})*({KE}*i(Vm) - {BF}*V(w))
+Cw w 0 {JM}
+Rw w 0 1e9
+
+* --- IPROPI y VREF
+Bip 0 ipropi I = 1.5e-3*abs(i(Vm))*min(1, V(h1) + V(h2) + V(l1)*V(l2))
+R28 ipropi 0 1.5k
+Cip ipropi 0 20p
+R26 n3v3 vref 4.7k
+R27 vref 0 10k
+C23 vref 0 100n
+
+.ic v(w)={W0}
+.options reltol=2e-3 abstol=1e-9 vntol=1e-5
+.tran 0.1u {TFIN} 0 0.2u
+
+.control
+set wr_singlescale
+set wr_vecnames
+* 1) arranque al 100 % desde parado
+reset
+run
+meas tran s_ipk MAX i(Vm) from=1m to=40m
+meas tran s_v6min MIN v(v6) from=1m to=40m
+meas tran s_vsysmin MIN v(vsys) from=1m to=40m
+meas tran s_iend AVG i(Vm) from=35m to=40m
+meas tran s_wend AVG v(w) from=35m to=40m
+meas tran s_tchop WHEN v(qd)=0.5 CROSS=LAST
+wrdata datos/drv_arranque.dat i(Vm) v(v6) v(vsys) v(ipropi) v(w)
+* 2) bloqueado al 100 %, RDS(on) en caliente
+alterparam STALL=1
+alterparam RDSP=0.45
+alterparam TFIN=6m
+reset
+run
+meas tran b_iavg AVG i(Vm) from=3m to=6m
+meas tran b_irms RMS i(Vm) from=3m to=6m
+meas tran b_ipk MAX i(Vm) from=3m to=6m
+meas tran b_imin MIN i(Vm) from=3m to=6m
+meas tran b_vip MAX v(ipropi) from=3m to=6m
+meas tran b_vref AVG v(vref) from=3m to=6m
+meas tran b_v6min MIN v(v6) from=3m to=6m
+meas tran b_v6pp PP v(v6) from=3m to=6m
+meas tran b_vsysmin MIN v(vsys) from=3m to=6m
+wrdata datos/drv_bloqueo.dat i(Vm) v(v6) v(vsys) v(ipropi) v(vref)
+* 3) PWM 20 kHz al 70 % (decaimiento lento) en marcha a 700 rad/s
+alterparam STALL=0
+alterparam RDSP=0.33
+alterparam MODO=2
+alterparam W0=700
+reset
+run
+meas tran p_ipp PP i(Vm) from=4m to=6m
+meas tran p_iavg AVG i(Vm) from=4m to=6m
+meas tran p_v6pp PP v(v6) from=4m to=6m
+meas tran p_v6min MIN v(v6) from=4m to=6m
+wrdata datos/drv_pwm.dat i(Vm) v(v6) v(ipropi)
+* 4) inversión a 2 ms a toda velocidad (1000 rad/s), sin freno
+alterparam MODO=3
+alterparam W0=1000
+reset
+run
+meas tran i_ipk MIN i(Vm) from=2m to=6m
+meas tran i_v6max MAX v(v6) from=2m to=6m
+meas tran i_v6min MIN v(v6) from=2m to=6m
+meas tran i_vip MAX v(ipropi) from=2m to=6m
+wrdata datos/drv_inversion.dat i(Vm) v(v6) v(ipropi)
+quit
+.endc
+.end

@@ -1,0 +1,28 @@
+ERC report (2026-10-25T08:54:11, Encoding UTF8)
+Report includes: Errors, Warnings, Exclusions
+
+***** Sheet /
+
+***** Sheet /USB-C y protección/
+
+***** Sheet /Carga, batería y 3,3 V/
+
+***** Sheet /ESP32-S3-WROOM-1/
+
+***** Sheet /Elevador 6 V y puente H/
+
+***** Sheet /Amplificador y micro/
+
+***** Sheet /Cámara DVP/
+
+***** Sheet /Expansor y sensores del Furby/
+
+***** Sheet /LED, puntos de test y J_EXP/
+
+ ** ERC messages: 0  Errors 0  Warnings 0
+
+ ** Ignored checks:
+    - Global label only appears once in the schematic
+    - Four connection points are joined together
+    - SPICE model issue
+    - Assigned footprint doesn't match footprint filters

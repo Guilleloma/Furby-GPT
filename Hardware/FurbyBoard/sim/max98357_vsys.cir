@@ -1,0 +1,133 @@
+* FurbyBoard: amplificador de clase D MAX98357A (U7) sobre VSYS, con el puente de VSYS de 0,6 mm
+* por B.Cu y 2 + 2 vías entre el relleno de In2 y los pines 7/8 (VDD) de U7, y C41 (10 uF) junto a los pines.
+* Qué se mide: tensión en los pines VDD (rizado de conmutación y mínimo), caída de VSYS en el
+* relleno (lo que ve U3, el TPS63802) y corriente de pico de la alimentación, con un tono de 1 kHz
+* a 1,4 W sobre 4 ohm y la batería a media carga.
+*
+* MAX98357A (Maxim/ADI, https://www.analog.com/media/en/technical-documentation/data-sheets/
+* MAX98357A-MAX98357B.pdf): VDD 2,5-5,5 V, UVLO 1,5-2,3 V, fOSC 300 kHz (± 20 kHz de espectro
+* ensanchado, no modelado), modulación sin filtro, límite de corriente 2,8 A, PSRR 77 dB a 217 Hz y
+* 60 dB a 10 kHz; pide 0,1 uF + 10 uF en VDD («Power-Supply Input»); carga de prueba 4 ohm + 33 uH.
+* Geometría (PCB actual, rutado del bloque C y C41 del bloque F): VSYS llega del relleno de In2 por 2
+* vías en (127,6; 49,85/50,65), sigue 6,5 mm de B.Cu de 0,6 mm y sube por 2 vías en
+* (123,125/123,75; 45,7) a los pines 7/8, a C26 (100 nF) y a C41 (10 uF). C24 y C25 (22 uF) están del
+* lado del relleno, con sus propias vías.
+* Supuestos (declarados):
+*  - Puente: 10 mohm (6,5 mm x 0,82 mohm/mm de 1 oz + vías + tramos de F.Cu y relleno) y 3 nH
+*    (microstrip de 0,6 mm a 0,21 mm de In4 ≈ 0,2 nH/mm, vías y tramos); peor caso 5 nH.
+*  - C24 y C25: 22 uF 25 V 0805 ≈ 12 uF a 3,6 V cada uno, ESR 3 mohm, ESL 0,5 nH con sus vías;
+*    C26 100 nF X7R 0603, ESL 0,4 nH.
+*  - C41 (bloque F): 10 uF 10 V X5R 0603 (C19702) ≈ 5 uF a 3,6 V, ESR 5 mohm. Conexión a los pines
+*    7/8: 1,5 mm de F.Cu de 0,6 mm hasta el tronco, 1,1 mm de tronco de 0,6 mm y 1 mm de 0,25 mm
+*    (≈ 0,2 nH/mm a 0,6 mm y 0,33 nH/mm a 0,25 mm sobre In1) más 0,4 nH de ESL: 1,25 nH; peor
+*    caso 2 nH.
+*  - Etapa de salida: 0,25 ohm por interruptor (estimado del 92 % de rendimiento), flancos de 15 ns y
+*    tiempo muerto (los dos lados de cada rama apagados mientras la puerta cruza 0,45-0,55).
+*    Modulación BD de 3 niveles a 300 kHz (OUTP compara +m·sen, OUTN compara -m·sen).
+*  - Tono de 1 kHz con índice m = 0,9 a VSYS 3,6 V: 3,35 V de pico sobre 4 ohm = 1,4 W.
+*  - VSYS: batería a 3,7 V con 0,21 ohm y ≈ 58 uF repartidos en el resto de la red.
+* Criterios: VDD en los pines >= 2,5 V (mín. de funcionamiento) en todo momento; rizado de
+* conmutación en los pines <= 200 mV pp (20 MHz; es el rizado con el que la hoja caracteriza el PSRR,
+* por encima no hay dato); VSYS en el relleno >= 2,3 V (VIN;LOAD del TPS63802).
+* Ejecutar desde sim/: ngspice -b max98357_vsys.cir   (≈ 1 min)
+
+.param LPU=3n RPU=10m M=0.9 FSW=300k RON=0.25 CLOC=5u LLOC=1.25n
+
+* --- VSYS: batería, resto de la red y relleno de In2 hasta el amplificador
+Vbat bat 0 3.7
+Rsrc bat vsys 0.21
+Cvs vsys cvn 58u
+Rcv cvn 0 5m
+Rpl vsys pl 8m
+Lpl pl pla 1n
+* C24 y C25 en el relleno, junto a U7
+C24 pla c24a 12u
+L24 c24a c24b 0.5n
+R24 c24b 0 3m
+C25 pla c25a 12u
+L25 c25a c25b 0.5n
+R25 c25b 0 3m
+* puente de B.Cu con sus vías
+Rpu pla pu1 {RPU}
+Lpu pu1 vdd {LPU}
+* pines 7/8 y C26
+C26 vdd c26a 100n
+L26 c26a c26b 0.4n
+R26 c26b 0 10m
+* C41: 10 uF 10 V 0603 junto a los pines (≈ 5 uF a 3,6 V); CLOC = 1 pF = sin montar
+Cloc vdd cla {CLOC}
+Lloc cla clb {LLOC}
+Rloc clb 0 5m
+
+* --- modulador BD y etapa de salida
+Vtri tri 0 pulse(-1 1 0 {0.5/FSW} {0.5/FSW} 1p {1/FSW})
+Bsig sig 0 V = {M}*sin(2*3.14159265*1k*time)
+Bp gpr 0 V = V(sig) > V(tri) ? 1 : 0
+Bn gnr 0 V = -V(sig) > V(tri) ? 1 : 0
+Rgp gpr gp 1k
+Cgp gp 0 15p
+Rgn gnr gn 1k
+Cgn gn 0 15p
+Bhp vdd outp I = V(vdd,outp)*(max(0,min(1,(V(gp)-0.55)/0.4))/{RON} + 1e-7)
+Blp outp 0 I = V(outp)*(max(0,min(1,(0.45-V(gp))/0.4))/{RON} + 1e-7)
+Bhn vdd outn I = V(vdd,outn)*(max(0,min(1,(V(gn)-0.55)/0.4))/{RON} + 1e-7)
+Bln outn 0 I = V(outn)*(max(0,min(1,(0.45-V(gn))/0.4))/{RON} + 1e-7)
+Dhp outp vdd DB
+Dlp 0 outp DB
+Dhn outn vdd DB
+Dln 0 outn DB
+.model DB d(is=1e-9 n=1.2 rs=0.05)
+* altavoz 4 ohm + 33 uH
+Vspk outp s1 0
+Rspk s1 s2 4
+Lspk s2 outn 33u
+
+* medida con 20 MHz de ancho de banda en los pines
+Rf vdd vddf 1k
+Cf vddf 0 8p
+
+.options reltol=2e-3
+.tran 2n 1.2m 0.2m 5n
+.control
+set wr_singlescale
+set wr_vecnames
+run
+meas tran a_vddmin MIN v(vddf) from=0.2m to=1.2m
+meas tran a_vddpp_pico PP v(vddf) from=0.24m to=0.26m
+meas tran a_plmin MIN v(pla) from=0.2m to=1.2m
+meas tran a_vsysmin MIN v(vsys) from=0.2m to=1.2m
+meas tran a_ispk MAX i(Vspk) from=0.2m to=1.2m
+meas tran a_ipu MAX i(Lpu) from=0.2m to=1.2m
+meas tran a_ipuavg AVG i(Lpu) from=0.2m to=1.2m
+meas tran a_ispkrms RMS i(Vspk) from=0.2m to=1.2m
+wrdata datos/max_puente.dat v(vddf) v(pla) v(vsys) i(Vspk) i(Lpu)
+* comparación: los 22 uF pegados a los pines (sin puente y sin C41)
+alterparam LPU=0.3n
+alterparam RPU=2m
+alterparam CLOC=1p
+reset
+run
+meas tran b_vddmin MIN v(vddf) from=0.2m to=1.2m
+meas tran b_vddpp_pico PP v(vddf) from=0.24m to=0.26m
+wrdata datos/max_directo.dat v(vddf) v(pla)
+* peor caso: puente de 5 nH y C41 con 2 nH de conexión
+alterparam LPU=5n
+alterparam RPU=10m
+alterparam CLOC=5u
+alterparam LLOC=2n
+reset
+run
+meas tran c_vddmin MIN v(vddf) from=0.2m to=1.2m
+meas tran c_vddpp_pico PP v(vddf) from=0.24m to=0.26m
+* diseño anterior al bloque F: puente de 3 nH sin C41 (solo C26 junto a los pines)
+alterparam LPU=3n
+alterparam CLOC=1p
+alterparam LLOC=1.25n
+reset
+run
+meas tran d_vddmin MIN v(vddf) from=0.2m to=1.2m
+meas tran d_vddpp_pico PP v(vddf) from=0.24m to=0.26m
+wrdata datos/max_sin_c41.dat v(vddf) v(pla)
+quit
+.endc
+.end

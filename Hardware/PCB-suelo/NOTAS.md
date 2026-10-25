@@ -16,8 +16,28 @@ Sustituye al planteamiento de `Hardware/PCB/`: el contorno del colaborador (`Fur
 | `render/lateral-lobulo.png` | Corte por x = −73,5: suelo, separador, PCB, USB-C, funda del cable y corte de la pared |
 | `scripts/contorno_suelo.py` | Calcula el contorno y escribe el DXF, `geometria.json` y los renders |
 | `scripts/generar_kicad.py` | Crea el proyecto KiCad (se ejecuta con el Python de KiCad) |
+| `ARQUITECTURA.md` | Arquitectura de la FurbyBoard v1.0 (fase 1): ESP32-S3-WROOM-1, cámara, potencia, pines, GPIO libres, LED, puntos de test, BOM, colocación y dudas abiertas |
+| `TEST-PLAN.md` | Borrador del plan de pruebas de hardware (bring-up) de la FurbyBoard |
+| `serigrafia/logo-furby-pixelart.txt` | Logo «Furby» en pixel art de 1 bit (36 × 34 px), la fuente de la huella del logo |
+| `scripts/logo_furby.py` | Genera `kicad/Furby.pretty/Logo_Furby_PixelArt.kicad_mod` y `render/logo-furby.png` desde la matriz |
+| `render/logo-furby.png` | Vista previa del logo a escala (14,4 × 13,6 mm con píxel de 0,40) |
+| `render/planta-arquitectura.png` | Colocación por bloques sobre el contorno: batería en bandeja, WROOM-1 con la antena delante, cámara, potencia, audio, pads, TP y header |
+| `render/bloques.png` | Diagrama de bloques de la FurbyBoard v1.0 |
+| `scripts/render_arquitectura.py` | Comprueba la colocación de la propuesta y dibuja los dos renders anteriores |
 
 El STL y el DXF del suelo de la base son de un tercero y no están en el repositorio. Aquí solo está el contorno de la PCB derivado de ellos.
+
+## Cambios para la FurbyBoard (2026-10-24)
+
+El contorno se regeneró para la FurbyBoard (ver `../FurbyBoard/` y `ARQUITECTURA.md`, sección 12.1):
+
+- **Holgura PCB-pared de 1,0 mm** (antes 0,5). La posición la fijan los 4 tornillos, no el borde.
+- **H3 y H4** pasan a (−86,7; −121,9) y (−60,3; −121,9) para seguir a ≥ 2,5 mm del borde.
+- **USB-C de 16 pines HRO TYPE-C-31-M-13C** (LCSC C2848620) en lugar del de 6 pines. Ranura de 9,24 × 5,85; la boca sale 0,70 del borde y sigue en y −128,49, a 0,30 de la pared. El eje sube 0,02 (z 5,525).
+- `test_contorno.py`: holgura mínima de 1,0, taladros nuevos y agujeros originales a ≥ 0,5 del borde (están tapados).
+- El proyecto `kicad/FurbyGPT-suelo` es el de la v1 (solo USB-C de alimentación) y se queda como **histórico**: su placa tiene el contorno anterior. La placa real es `../FurbyBoard/`.
+
+Las secciones de abajo describen la v1 donde no se dice otra cosa.
 
 ## Coordenadas
 
@@ -38,12 +58,12 @@ El script comprueba que el contorno cierra, que no se corta a sí mismo, que est
 
 | Medida | Valor |
 |--------|-------|
-| Holgura PCB-pared | **0,500 mín.**, 0,697 máx. (fuera de la ranura) |
-| Caja | 69,85 × 75,39 mm |
-| Área | 4248 mm² (el suelo tiene 4437) |
-| Primitivas | 57 arcos y 32 rectas; radios de 0,5 a 60,5 mm |
-| Perímetro | 251,91 mm |
-| Centro de cada agujero original al borde de la PCB | 1,07 a 1,15 mm, por dentro: los 4 quedan bajo la PCB |
+| Holgura PCB-pared | **1,000 mín.**, 1,199 máx. (fuera de la ranura) |
+| Caja | 68,85 × 74,39 mm |
+| Área | 4137 mm² (el suelo tiene 4437) |
+| Primitivas | 55 arcos y 33 rectas; radios de 0,46 a 60,0 mm |
+| Perímetro | 246,84 mm |
+| Centro de cada agujero original al borde de la PCB | 0,57 a 0,65 mm, por dentro: los 4 quedan bajo la PCB |
 
 ### Agujeros originales del suelo: tapados y sin muescas
 
@@ -54,11 +74,11 @@ En el Furby real no hay tornillos ni torretas en los 4 agujeros originales del s
 - `geometria.json` lleva `"muescas": null` y el DXF no tiene capa `Muescas`.
 - El código de las muescas sigue en `contorno_suelo.py`. Con `--muescas` se abre un arco cóncavo de R 3,0 en cada agujero (torreta supuesta de Ø5,0 + 0,5 de holgura), con las esquinas en R 0,5, y sale un área de 4165 mm². Habría que regenerar KiCad y pasar `--muescas` a `test_contorno.py`.
 
-### Por qué 0,5 mm de holgura
+### Por qué 1,0 mm de holgura (antes 0,5)
 
 - JLCPCB fresa el contorno con ±0,2 mm de tolerancia (CNC normal), así que la placa puede salir 0,2 mm más grande por lado.
 - En FDM los contornos interiores salen más pequeños, unos 0,1-0,2 mm por lado, según la impresora y el ancho de línea.
-- Peor caso: 0,2 + 0,2 = 0,4 mm, y aún sobran 0,1 mm. Con 0,3 mm de holgura la placa podría no entrar, y con 1,0 mm bailaría y perdería área sin necesidad.
+- Peor caso: 0,2 + 0,2 = 0,4 mm. Con 0,5 sobraban solo 0,1 mm y había riesgo de tener que forzarla; con 1,0 sobran 0,6. La placa no baila porque la fijan los 4 tornillos, y cuesta ≈ 110 mm² de área.
 
 ## USB-C de alimentación
 
@@ -157,7 +177,7 @@ $KICAD_CLI pcb drc --schematic-parity --exit-code-violations FurbyGPT-suelo.kica
 | Dato | Estado |
 |------|--------|
 | Suelo interior, pared y alturas de la base | Medido en el STL (3d-modeler) |
-| Holgura de 0,500 mm mínimo | Verificado por el script en todo el contorno |
+| Holgura de 1,000 mm mínimo | Verificado por el script en todo el contorno |
 | Cotas del USB-C (pads, ranuras, ranura de la PCB, eje a ras de la cara superior) | Hoja de datos de HRO |
 | Boca 0,2 mm fuera del borde de la PCB | Deducido del dibujo; no viene acotado |
 | Agujero del mecanismo en (−60,88; −95,32), Ø11,3 | **Supuesto**: colocación del contorno del colaborador sin girar |
