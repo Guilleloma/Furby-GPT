@@ -11,7 +11,8 @@ Se ejecuta con el Python de KiCad:
 - Rutado: lo crítico va escrito en scripts/rutas_fijas.py (bloqueado); con --ses <fichero>
   se importa además el resultado de Freerouting sobre esas rutas; con --sin-rutado el PCB
   queda colocado y sin rutar (puerta C).
-- Serigrafía: nombre y versión, logo y rótulos colocados solos tras el rutado (scripts/serigrafia.py).
+- Serigrafía: nombre y versión, logos (Furby y GuilleMaker) y rótulos colocados solos tras el rutado
+  (scripts/serigrafia.py, scripts/logo_guillemaker.py).
 - Planos (6 capas, params.STACKUP): GND en In1 (L2) e In4 (L5) enteros; In2 (L3) es capa de señal
   con relleno de VSYS; In3 (L4) señal; relleno de GND en F.Cu y B.Cu tras el rutado.
 - Áreas de reglas: sin cobre bajo la antena (todas las capas) y sin vías ni pads
@@ -285,6 +286,40 @@ def silk_abajo(board, abajo):
         for a, b in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
             shape(board, B, pcbnew.SHAPE_T_SEGMENT, a=a, b=b, width=SG.GROSOR)
         rotulo(board, "B", "PLACA", (xy[0], y1 + 0.3 + th / 2))
+
+
+def logo_guillemaker(board, abajo):
+    """Logo de GuilleMaker en la cara inferior, lo último (es decoración): en el sitio libre más cercano
+    a LAY.LOGO_GUILLEMAKER donde su silueta (el courtyard: círculo del símbolo y caja del texto) no pisa
+    vías, pads, serigrafía, rótulos ni otros courtyards de la cara inferior. Si no cabe, no se pone."""
+    fp = load_fp("FurbyBoard:Logo_GuilleMaker")
+    fp.SetReference("LOGO2")
+    board.Add(fp)
+    cx, cy = LAY.LOGO_GUILLEMAKER["centro"]
+    fp.SetPosition(pt(cx, cy))
+    fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
+    cajas, circulos = [], []
+    for g in fp.GraphicalItems():
+        if g.GetLayer() != pcbnew.B_CrtYd:
+            continue
+        if g.GetShape() == pcbnew.SHAPE_T_CIRCLE:
+            circulos.append((pcbnew.ToMM(g.GetCenter().x) - P.STL_OX - cx, P.STL_OY - pcbnew.ToMM(g.GetCenter().y) - cy,
+                             pcbnew.ToMM(g.GetRadius())))
+        else:
+            cajas.append(caja_stl(g.GetBoundingBox()).mueve(-cx, -cy))
+    patios = [caja_stl(g.GetBoundingBox()) for f in board.GetFootprints() if f.GetReference() != "LOGO2"
+              for g in f.GraphicalItems() if g.GetLayer() == pcbnew.B_CrtYd]
+
+    def sin_patios(mc, mo):
+        return not any(c.toca(p) for c in mc for p in patios) and \
+            not any(SG.circulo_toca(p, x, y, r) for x, y, r in mo for p in patios)
+
+    xy = abajo.busca_forma("logo GuilleMaker", cx, cy, cajas, circulos, LAY.LOGO_GUILLEMAKER["radio"], valido=sin_patios)
+    if xy:
+        fp.SetPosition(pt(*xy))
+        print("Logo GuilleMaker en (%.1f, %.1f)" % xy)
+    else:
+        board.Remove(fp)
 
 
 def contorno_muestreado(paso=0.5):
@@ -609,6 +644,7 @@ def rotulos(board):
         fp = board.FindFootprintByReference(ref)
         pon(board, abajo, "B", "titulo " + ref, caja_pads(fp), txt, "UD", anillo=False)
     silk_abajo(board, abajo)
+    logo_guillemaker(board, abajo)
     if arriba.reducidos + abajo.reducidos:
         print("Rótulos a %.1f mm (a %.1f no caben):" % (SG.TEXTO_MIN, SG.TEXTO), ", ".join(arriba.reducidos + abajo.reducidos))
     if abajo.aparte:

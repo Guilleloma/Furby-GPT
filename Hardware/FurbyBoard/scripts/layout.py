@@ -28,6 +28,11 @@ ANTENA_SIN_COBRE = {"x": (-85.0, -61.0), "y": (-62.0, -50.0)}
 # Logo en la cara inferior (sin vías ni pads), bajo la zona trasera izquierda de la batería,
 # entre J_EXP, el buck-boost y el micro: sin piezas arriba y pocas vías previstas. Subordinado al diseño.
 LOGO_INFERIOR = {"x": (-100.0, -90.0), "y": (-118.0, -108.0)}
+# Logo de GuilleMaker (scripts/logo_guillemaker.py, 11 mm), cara inferior: gen_pcb.py lo pone tras los
+# rótulos en el sitio libre más cercano a este centro. Junto al logo del Furby no queda sitio ni para
+# 8 mm tras el cosido de GND; aquí, a la izquierda del agujero del mecanismo, cabe sin vías dentro de
+# su silueta (2026-10-25).
+LOGO_GUILLEMAKER = {"centro": (-75.9, -88.3), "radio": 3.0}
 # Franja del flex de la cámara entre J6 y la pared: sin piezas (el flex pasa por encima).
 FLEX_SIN_PIEZAS = {"x": (-46.0, -39.0), "y": (-88.0, -72.0)}
 CALZOS = [(-75.0, -105.8, "E1"), (-99.5, -113.0, "E2"), (-90.5, -112.5, "E3")]

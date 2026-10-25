@@ -268,6 +268,46 @@ class Colocador:
         self.fallos.append(nombre)
         return None
 
+    def libre_circulo(self, cx, cy, r, limpio=False):
+        """Como libre, para un círculo (la caja de un círculo grande taparía sus esquinas libres)."""
+        cajas = [p.crece(MARGEN_PAD) for p in self.pads] + [s.crece(MARGEN_SILK) for s in self.silk]
+        cajas += [s.crece(MARGEN_ROTULO) for s in self.rotulos] + [c for _, c in self.cuerpos]
+        if any(circulo_toca(c, cx, cy, r) for c in cajas):
+            return False
+        if any(math.hypot(vx - cx, vy - cy) < r + rv + MARGEN_VIA for vx, vy, rv in self.vias):
+            return False
+        if any(math.hypot(hx - cx, hy - cy) < r + rh + MARGEN_BORDE for hx, hy, rh in self.circulos):
+            return False
+        for k in range(48):
+            p = (cx + r * math.cos(k * math.pi / 24), cy + r * math.sin(k * math.pi / 24))
+            if not dentro(self.contorno, p) or dist_borde(self.contorno, p) < MARGEN_BORDE:
+                return False
+        if limpio:
+            for x0, y0, x1, y1, sa in self.pistas:
+                n = max(1, int(math.hypot(x1 - x0, y1 - y0) / 0.1))
+                if any(math.hypot(x0 + (x1 - x0) * k / n - cx, y0 + (y1 - y0) * k / n - cy) < r + sa + MARGEN_PISTA
+                       for k in range(n + 1)):
+                    return False
+        return True
+
+    def busca_forma(self, nombre, cx, cy, cajas, circulos, radio=3.0, paso=0.1, valido=None):
+        """Como busca, para una forma de cajas y círculos (x, y, r) relativos a su centro: todo libre.
+        valido(cajas, circulos) descarta posiciones (ya movidas) por otros motivos."""
+        n = int(radio / paso)
+        ofs = sorted(((i * paso, j * paso) for i in range(-n, n + 1) for j in range(-n, n + 1)),
+                     key=lambda d: math.hypot(*d))
+        for limpio in (True, False):
+            for dx, dy in ofs:
+                if math.hypot(dx, dy) > radio:
+                    break
+                mc = [c.mueve(cx + dx, cy + dy) for c in cajas]
+                mo = [(x + cx + dx, y + cy + dy, r) for x, y, r in circulos]
+                if (valido is None or valido(mc, mo)) and all(self.libre(c, limpio=limpio) for c in mc) \
+                        and all(self.libre_circulo(*o, limpio=limpio) for o in mo):
+                    self.rotulos += mc + [centrada(x, y, 2 * r, 2 * r) for x, y, r in mo]
+                    return cx + dx, cy + dy
+        self.fallos.append(nombre)
+        return None
 
 class Medida:
     """Ancho y alto de un texto según su alto de letra (lo mide KiCad)."""
