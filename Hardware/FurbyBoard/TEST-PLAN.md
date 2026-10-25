@@ -118,7 +118,7 @@ Medidor USB-C en línea, con un cargador de 5 V. Se quita la fuente del paso 3: 
 | `lsusb` (macOS: `system_profiler SPUSBDataType`) | Aparece «USB JTAG/serial debug unit» (VID 303A) | D+ y D− (¿cruzados?), U1 y el cable de datos. Probar con BOOT (SW2) pulsado al enchufar |
 | `esptool.py chip_id` y `flash_id` | ESP32-S3, 16 MB de flash; PSRAM de 8 MB en el log de arranque | Modo descarga a mano: mantener BOOT, pulsar y soltar RST, soltar BOOT |
 | Flashear el firmware de prueba (`furbyboard-test`) | Se graba y arranca | Ver el log por J11 pin 7 |
-| LED RUN (D5) | Parpadea a 1 Hz (latido del firmware de prueba, P16 de U10) | I2C a U10 (escaneo: 0x20), R36/R37 |
+| LED RUN (D5) | Parpadea a 1 Hz (latido del firmware de prueba, P03 de U10) | I2C a U10 (escaneo: 0x20), R36/R37 |
 
 ## 6. LED
 
@@ -209,11 +209,11 @@ Pads en la cara inferior: barriga «BAR» y espalda «ESP» en J9, lengua «LNG�
 
 | Sensor | Procedimiento | PASS |
 |--------|---------------|------|
-| Barriga, espalda, lengua, inclinación A y B | Puentear cada pad a su «G» con unas pinzas y leer U10 | Cambia el bit correcto (P00–P04) y salta la INT en GPIO21. Despierta del sueño profundo |
+| Barriga, espalda, lengua, inclinación A y B | Puentear cada pad a su «G» con unas pinzas y leer U10 | Cambia el bit correcto (P00 TLA, P01 TLB, P02 LNG, P13 BAR, P14 ESP) y salta la INT en GPIO21. Despierta del sueño profundo |
 | Leva | Puentear «LEVA» a «G» en J9 | GPIO47 a 0 |
 | Encoder | Girar el mecanismo a mano con el elevador encendido | Pulsos limpios en GPIO14 (osciloscopio en JP4: flancos < 1 µs tras U11) |
 | Luz | Tapar el sensor e iluminarlo con una linterna | La lectura del ADC (GPIO2, LDR en J7 «3V3»/«LDR» con R53 de 470 kΩ) cambia más de 1 V |
-| IR | Mando de TV hacia el receptor (J7, GPIO42) y emisión por RMT (GPIO45, Q3) hacia un receptor conocido | Se decodifican tramas en los dos sentidos |
+| IR | Mando de TV hacia el receptor (J7, GPIO42; alimentado desde J7.8 «RXV», P17 de U10 a 1) y emisión por RMT (GPIO45, Q3) hacia un receptor conocido | Se decodifican tramas en los dos sentidos; con P17 a 0, J7.8 a 0 V y el receptor calla |
 
 Si falla, se revisa por este orden: la soldadura del cable, el pull-up (R39/R41/R43 de 47 kΩ; R45/R47 de 220 kΩ en la inclinación), la serie de 1 kΩ (R40–R48), el condensador (C33–C37) y la dirección de U10.
 
