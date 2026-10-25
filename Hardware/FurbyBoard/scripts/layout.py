@@ -85,7 +85,7 @@ P = {
     "C4": (-63.9, -114.55, 0), "R12": (-59.4, -115.9, 0),
     "R9": (-59.6, -107.8, 0), "R8": (-59.6, -109.4, 0), "R6": (-60.4, -111, 0), "R7": (-60.4, -112.6, 0),
     # LED CHG y PG al norte del cargador (visibles); sus resistencias, en VBUS bajo la batería
-    "D1": (-59.5, -104, 0), "D2": (-59.5, -106, 0),
+    "D1": (-59.5, -103.9, 0), "D2": (-59.5, -106, 0),
     # Divisor de VBAT (ADC) y resistencias de los LED: columna bajo la batería, junto al cargador
     "R13": (-71.2, -105.7, 90), "R14": (-71.2, -108.9, 90), "C5": (-71.2, -112.1, 90),
     "R10": (-70.8, -115.3, 90), "R11": (-70.8, -118.5, 270),
