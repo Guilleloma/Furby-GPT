@@ -83,13 +83,20 @@ USB-C (J1) ─ ESD USBLC6 (U1) ─ PTC 1,5 A (F1) ─ VBUS ─┐
 | L3 In2 | Señales (I2S, sensado, señales lentas bajo el módulo) con relleno de VSYS | prepreg 0,21 mm |
 | L4 In3 | Señales lentas: autopistas este-oeste y norte-sur (expansor, J9, UART, IR, I2C a J_EXP) | núcleo 0,40 mm |
 | L5 In4 | **GND continuo** (referencia de In3 y de B.Cu) | prepreg 0,21 mm |
-| L6 B.Cu | Señales, TP, pads de cable y relleno de GND; logo y rótulos | — |
+| L6 B.Cu | Señales, TP, pads de cable y relleno de GND; logos y rótulos | — |
 
 Vías pasantes de 0,6/0,3 mm (0,45/0,2 solo en el par USB); sin ciegas ni enterradas. Las vías térmicas de los pads expuestos (U2, U4, U6, U7) van rellenas y tapadas (POFV, de serie en 6 capas en JLCPCB). Toda la placa está cosida a GND entre In1, In4 y las caras exteriores (paso de ≈ 4 mm en el borde).
 
 **Por qué 6 y no 4:** con 4 capas, el rutado crítico (lazos de los convertidores, par USB, bus de la cámara, I2S) y la colocación aprobada dejaban encerrado al expansor: 57 conexiones no tenían camino. Pasar a 6 capas (In3 de señal e In4 de GND) conservó todo lo rutado y abrió los pasillos; cuesta del orden de 15–30 USD más por pedido de 5 placas (decisión del autor del proyecto, 2026-10-24).
 
 **Cómo está rutada:** a mano, por bloques de señales, en [`scripts/rutas_fijas.py`](scripts/rutas_fijas.py): cada pista, vía y polígono está escrito con su red, su capa y su ancho, y `gen_pcb.py` lo resuelve contra los pads reales. **No hay autorrutador** (Freerouting se probó con la colocación de 4 capas y se descartó). Lo primero fueron los lazos de potencia según el layout de referencia de cada chip, el par USB, la cámara y el I2S; después, las señales lentas por bloques (A1…U2), los arreglos de la simulación (bloque F), el cosido de GND (bloque E) y la serigrafía (bloque S). Anchos mínimos por red (tabla de raíles de `NOTAS.md`) comprobados por el DRC y por `revisar-rutado`.
+
+## Serigrafía
+
+- **Cara superior:** qué es cada LED, botón y puente, y «FURBYBOARD V1.0».
+- **Cara inferior:** la función de cada pad de cable y los GPIO de J_EXP, el nombre de cada TP, «FurbyBoard», versión y fecha, el recuadro PLACA para numerarla y dos logos: el Furby en pixel art (esquina trasera, junto a J_EXP) y el de **@GuilleMaker** (11,0 × 10,7 mm, sobre el nombre de la placa, junto al agujero del mecanismo).
+- Los rótulos y el logo de GuilleMaker se colocan por script **después del rutado**, sin pisar vías (≥ 0,15 mm), pads ni otros rótulos; el logo va el último porque es decoración. Letra de 1,0 mm (0,8 donde no cabe, ver «Limitaciones conocidas») y trazo de 0,15 mm, los mínimos de JLCPCB.
+- Logo de GuilleMaker: [`scripts/logo_guillemaker.py`](scripts/logo_guillemaker.py) lo vectoriza desde [`serigrafia/logo-guillemaker.png`](serigrafia/logo-guillemaker.png); el texto mide 1,48 mm de alto con trazo de 0,18 mm. Vista de la cara inferior: [`render/serigrafia-logo-guillemaker.png`](render/serigrafia-logo-guillemaker.png).
 
 ## Conectores y pads
 
@@ -372,6 +379,7 @@ python3 scripts/gen_lib.py                       # símbolos y huellas propias (
 python3 scripts/gen_sch.py                       # esquema jerárquico desde design.py
 for f in FurbyBoard.kicad_sch hojas/*.kicad_sch; do $KC sch upgrade "$f"; done
 python3 scripts/gen_pro.py                       # proyecto, clases de red, reglas y .kicad_dru
+python3 scripts/logo_guillemaker.py              # huella del logo de GuilleMaker (lib/; numpy, Pillow y matplotlib)
 $KP scripts/gen_pcb.py                           # coloca, ruta (rutas_fijas.py), rotula y rellena
 python3 scripts/gen_pro.py                       # otra vez: guardar el PCB reescribe el .kicad_pro
 $KC pcb drc --refill-zones --save-board --schematic-parity --severity-all --exit-code-violations \
@@ -392,6 +400,7 @@ scripts/make_fab.sh                              # BOM, CPL, Gerber y renders (s
 | `layout.py` | Posición y giro de cada pieza (coordenadas de la base), zonas y pasillos |
 | `rutas_fijas.py` | Todo el rutado: pistas, vías y polígonos por bloques, con el motivo de cada decisión |
 | `serigrafia.py` | Rótulos y su colocación automática (sin pisar vías, pads ni otros rótulos) |
+| `logo_guillemaker.py` | Huella del logo de GuilleMaker desde `serigrafia/logo-guillemaker.png` (contornos rellenos en serigrafía) |
 | `gen_lib.py`, `gen_sch.py`, `gen_pro.py`, `gen_pcb.py` | Generadores de librería, esquema, proyecto y PCB |
 | `comprobar_colocacion.py` | Comprobaciones mecánicas que el DRC no ve |
 | `jlc_post.py`, `make_fab.sh` | BOM y CPL en formato de JLCPCB (giros corregidos) y ficheros de fabricación |
@@ -405,7 +414,8 @@ scripts/make_fab.sh                              # BOM, CPL, Gerber y renders (s
 | `FurbyBoard.kicad_pro`, `FurbyBoard.kicad_sch`, `hojas/` | Proyecto y esquema jerárquico (usb, alimentación, mcu, motor, audio, cámara, sensores, led_tp) |
 | `FurbyBoard.kicad_pcb`, `FurbyBoard.kicad_dru` | PCB de 6 capas y reglas a medida (anchos por red, vías del par USB, pads del USB-C y del FPC) |
 | `pcb-toolkit.toml` | Configuración de las comprobaciones: redes críticas, anchos, zonas calientes, grupos de buses |
-| `lib/` | Símbolos, huellas y modelos 3D propios (USB-C, FPC, TPS63802, SI7615ADN, pads de cable y de batería, logo) |
+| `lib/` | Símbolos, huellas y modelos 3D propios (USB-C, FPC, TPS63802, SI7615ADN, pads de cable y de batería, logos) |
+| `serigrafia/` | Fuente del logo de GuilleMaker (PNG en gris, sin metadatos) |
 | `scripts/` | Generadores (ver arriba) |
 | `sim/` | Simulaciones ngspice, modelos, `analiza.py` y [`RESULTADOS.md`](sim/RESULTADOS.md) |
 | `revisiones/` | Informes de las puertas de revisión |
