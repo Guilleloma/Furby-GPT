@@ -22,6 +22,7 @@ Convenciones: «peor caso» = tolerancias, DC bias de los cerámicos y tensión 
 | Elevador de 6 V (TPS61089) | `elevador_6v.cir` | PASS (Isat de L2 por verificar) |
 | 3V3 (TPS63802) | `tps63802_3v3.cir`, `tps63802_rizado.cir` | PASS |
 | Batería y Q1 | `bateria_q1.cir` | PASS (con USB y batería al revés, en la esquina mala el BQ entra en precarga: 0,32 W en Q1) |
+| Puente H y motor | `drv8231a_motor.cir` | PASS (θJA del DSG mal copiada en NOTAS: 66,5 °C/W, no 42,8) |
 | Power path (BQ24073) | `bq24073_powerpath.cir` | **2 FAIL** (pico de 2,9 A con USB en USB500 en el peor caso; enchufe con ≥ 4,3 W en modo ILIM): propuestas de firmware |
 
 ## Elevador de 6 V (TPS61089 + FHD4020S-1R0MT) — `elevador_6v.cir`
@@ -125,7 +126,36 @@ Observaciones:
 
 Figuras: `png/q1_reves_con_usb.png`, `png/q1_conexion.png`.
 
+## Puente H y motor (DRV8231A + TPS61089) — `drv8231a_motor.cir`
+
+Supuestos:
+
+- **DRV8231A de comportamiento** con la lógica IN/IN y la regulación de corriente de la sección 7.4.2.2: comparador IPROPI frente a VREF con tBLK 1,4 µs y tDEG 0,7 µs, freno de tOFF 25 µs que termina antes si cambia una entrada, IPROPI = 1500 µA/A sobre R28 (1,5 kΩ) y VREF del divisor R26/R27 con C23. RDS(on) por lado 0,33 Ω (27 °C) o 0,45 Ω (en caliente, figuras 6-5 y 6-6). No se modelan el reposo (tSLEEP) ni tWAKE: con PWM a 20 kHz no se duerme.
+- **Elevador** con el modelo promediado `TPS61089_AVG` (control de pico de corriente, GEA 190 µS, Rsense 0,08 Ω, compensación real R24/C14/C15) y ≈ 53 µF efectivos en V6.
+- **Motor estimado** (el bobinado no está medido, `ARQUITECTURA.md` §6): 5 Ω (1,2 A bloqueado, por encima de ITRIP: el caso que regula), 0,5 mH, KE = KT = 5 mV·s/rad; 0,2 A y 1000 rad/s en vacío; constante mecánica ≈ 30 ms.
+- Batería a media carga (3,7 V) con 0,21 Ω hasta VSYS. Con la batería baja, ver «Arranque y caída de batería».
+
+| Magnitud | Resultado | Criterio | PASS/FAIL |
+|----------|-----------|----------|-----------|
+| ITRIP con las tolerancias (cálculo) | 0,91–1,10 A (nominal 1,00 A) | Informativo: AERR (±6 %) solo está garantizado con VM ≥ 6,5 V y V6 es 5,94 V; se mide | — |
+| Arranque al 100 % desde parado: pico del motor | 1,00 A | ≤ ITRIP + 10 % y < 3,7 A (OCP) | PASS |
+| Arranque: V6 y VSYS mínimos (batería 3,7 V) | V6 5,87 V; VSYS 3,31 V | V6 > 4,45 V (UVLO del DRV8231A); VSYS > 2,7 V (UVLO del TPS61089) | PASS |
+| Bloqueado al 100 %: corriente regulada (media / pico / valle) | 0,93 / 1,00 / 0,74 A | pico ≤ ITRIP + 10 % | PASS |
+| Bloqueado: IPROPI en el pico frente a VREF | 2,246 V frente a 2,246 V | ≤ 3,0 V (rango de AERR) y ≤ 3,1 V (ADC del ESP32-S3 a 12 dB) | PASS |
+| Bloqueado: disipación del DRV8231A (RDS(on) 0,45 Ω por lado en caliente) | 0,79 W → Tj ≈ 103 °C (θJA 66,5 °C/W del DSG) | Tj ≤ 110 °C con Ta 50 °C | PASS |
+| Bloqueado: rizado y mínimo de V6 | 137 mV pp; mín. 5,91 V | V6 > 4,45 V | PASS |
+| PWM 20 kHz al 70 % (decaimiento lento) a 700 rad/s: corriente y rizado | 0,12 A medios, 124 mA pp; V6 37 mV pp | Informativo (motor estimado) | — |
+| Inversión a toda velocidad sin freno: pico | 1,01 A; V6 5,83–5,97 V | < 3,7 A (OCP) y V6 < 6,5 V | PASS |
+
+Observaciones:
+
+- La regulación funciona como dice la hoja: el pico se queda en ITRIP en el arranque, bloqueado y al invertir sin freno, lejos del OCP (3,7 A). Con el motor bloqueado la corriente oscila entre 0,74 y 1,0 A (0,93 A de media) con un periodo de ≈ 230 µs (≈ 4 kHz): **se oirá un pitido** mientras regula. Si molesta al micro, el firmware evita sostener la regulación (rampa de PWM y detección de bloqueo).
+- **θJA del DRV8231A**: `NOTAS.md` («Tabla de raíles», «Cálculos») y `ARQUITECTURA.md` §6 usan 42,8 °C/W, que es la del encapsulado DDA (HSOP). U6 es el **DSG (WSON 2 × 2)**: 66,5 °C/W (tabla 6.4). Con el motor bloqueado de forma continua y RDS(on) en caliente, Tj ≈ 103 °C (PASS justo); con 0,6 W, 90 °C en vez de 76 °C. El firmware limita el bloqueo a ≤ 150 ms (encoder), así que en uso real no se llega al régimen. Corregir el dato en `NOTAS.md` al cerrar el rutado.
+- **ITRIP**: el ±6 % de AERR solo está garantizado con VM ≥ 6,5 V y V6 es 5,94 V. Con el resto de tolerancias, 0,91–1,10 A. Se mide en el bring-up (TEST-PLAN §11, IPROPI en TP8 con el motor bloqueado: 2,25 V ± 10 %).
+- V6 no baja de 5,83 V en ningún caso (UVLO del DRV8231A 4,05–4,35 V). El rizado de V6 con el motor bloqueado (137 mV pp) viene de la carga a golpes de la regulación; el lazo del elevador (fc ≈ 20 kHz) lo sigue sin problemas.
+
+Figuras: `png/drv_arranque.png`, `png/drv_bloqueo.png`, `png/drv_inversion.png`.
+
 ## Lo que no se simula y por qué
 
 - **TPS63802 (3,3 V):** el modo PFM y la zona de transición buck-boost (control propietario); se miden en el bring-up.
-- **Compensación del TPS61089:** valores de la nota de aplicación del datasheet (R24 30 kΩ, C14 4,7 nF, C15 10 pF); se mide el escalón de carga en el bring-up.

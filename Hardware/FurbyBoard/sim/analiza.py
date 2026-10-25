@@ -268,10 +268,64 @@ def bloque_bateria():
     return t
 
 
+def recorte(d, desde, hasta):
+    k = (d["time"] >= desde) & (d["time"] <= hasta)
+    return {c: x[k] for c, x in d.items()}
+
+
+def bloque_drv8231a():
+    t = Tabla("DRV8231A y motor")
+    m = correr("drv8231a_motor.cir")
+    # ITRIP con tolerancias: 3V3 ±2 %, R26/R27/R28 1 %, AERR ±6 % (garantizado solo con VM >= 6,5 V)
+    vref = 3.302 * 10 / 14.7
+    i_max = vref * 1.02 * (10.1 / (10.1 + 4.653)) / (10 / 14.7) / (1500e-6 * 0.94 * 1.5e3 * 0.99)
+    i_min = vref * 0.98 * (9.9 / (9.9 + 4.747)) / (10 / 14.7) / (1500e-6 * 1.06 * 1.5e3 * 1.01)
+    t.fila("ITRIP con las tolerancias (cálculo)", f"{v(i_min)}–{v(i_max)} A (nominal {v(vref/2.25)} A)",
+           "Informativo: AERR (±6 %) solo está garantizado con VM ≥ 6,5 V y V6 es 5,94 V; se mide", None)
+    t.fila("Arranque al 100 % desde parado: pico del motor", f"{v(m['s_ipk'])} A", "≤ ITRIP + 10 % y < 3,7 A (OCP)",
+           m["s_ipk"] <= 1.1)
+    t.fila("Arranque: V6 y VSYS mínimos (batería 3,7 V)", f"V6 {v(m['s_v6min'])} V; VSYS {v(m['s_vsysmin'])} V",
+           "V6 > 4,45 V (UVLO del DRV8231A); VSYS > 2,7 V (UVLO del TPS61089)",
+           m["s_v6min"] > 4.45 and m["s_vsysmin"] > 2.7)
+    t.fila("Bloqueado al 100 %: corriente regulada (media / pico / valle)",
+           f"{v(m['b_iavg'])} / {v(m['b_ipk'])} / {v(m['b_imin'])} A", "pico ≤ ITRIP + 10 %", m["b_ipk"] <= 1.1)
+    t.fila("Bloqueado: IPROPI en el pico frente a VREF", f"{v(m['b_vip'], 3)} V frente a {v(m['b_vref'], 3)} V",
+           "≤ 3,0 V (rango de AERR) y ≤ 3,1 V (ADC del ESP32-S3 a 12 dB)", m["b_vip"] <= 3.0)
+    p = m["b_irms"] ** 2 * 0.9
+    t.fila("Bloqueado: disipación del DRV8231A (RDS(on) 0,45 Ω por lado en caliente)",
+           f"{v(p)} W → Tj ≈ {v(50 + p*66.5, 0)} °C (θJA 66,5 °C/W del DSG)", "Tj ≤ 110 °C con Ta 50 °C", 50 + p * 66.5 <= 110)
+    t.fila("Bloqueado: rizado y mínimo de V6", f"{v(m['b_v6pp']*1e3, 0)} mV pp; mín. {v(m['b_v6min'])} V",
+           "V6 > 4,45 V", m["b_v6min"] > 4.45)
+    t.fila("PWM 20 kHz al 70 % (decaimiento lento) a 700 rad/s: corriente y rizado",
+           f"{v(m['p_iavg'])} A medios, {v(m['p_ipp']*1e3, 0)} mA pp; V6 {v(m['p_v6pp']*1e3, 0)} mV pp",
+           "Informativo (motor estimado)", None)
+    t.fila("Inversión a toda velocidad sin freno: pico", f"{v(abs(m['i_ipk']))} A; V6 {v(m['i_v6min'])}–{v(m['i_v6max'])} V",
+           "< 3,7 A (OCP) y V6 < 6,5 V", abs(m["i_ipk"]) < 3.7 and m["i_v6max"] < 6.5)
+
+    a = leer("drv_arranque.dat")
+    figura("drv_arranque.png", "Motor: arranque al 100 % desde parado (motor estimado de 5 Ω, 0,5 mH)", [
+        ("corriente del motor (A)", [(a["time"], a["i(Vm)"], "motor")], [(1.0, "ITRIP 1,0 A")]),
+        ("tensión (V)", [(a["time"], a["v(v6)"], "V6"), (a["time"], a["v(vsys)"], "VSYS")], [(4.45, "UVLO DRV8231A 4,45 V")]),
+    ])
+    b = recorte(leer("drv_bloqueo.dat"), 3.0e-3, 3.4e-3)
+    figura("drv_bloqueo.png", "Motor bloqueado: regulación de corriente con tOFF de 25 µs", [
+        ("corriente del motor (A)", [(b["time"], b["i(Vm)"], "motor")], [(1.0, "ITRIP 1,0 A")]),
+        ("IPROPI y VREF (V)", [(b["time"], b["v(ipropi)"], "IPROPI"), (b["time"], b["v(vref)"], "VREF")], []),
+        ("V6 (V)", [(b["time"], b["v(v6)"], "V6")], []),
+    ], escala_x=1e6, etiqueta_x="tiempo (µs)")
+    i = recorte(leer("drv_inversion.dat"), 1.9e-3, 3.5e-3)
+    figura("drv_inversion.png", "Motor: inversión a toda velocidad sin freno", [
+        ("corriente del motor (A)", [(i["time"], i["i(Vm)"], "motor")], [(-1.0, "−ITRIP")]),
+        ("V6 (V)", [(i["time"], i["v(v6)"], "V6")], []),
+    ])
+    return t
+
+
 BLOQUES = {
     "tps63802": bloque_tps63802,
     "bq24073": bloque_bq24073,
     "bateria": bloque_bateria,
+    "drv8231a": bloque_drv8231a,
 }
 
 if __name__ == "__main__":
