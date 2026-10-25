@@ -12,8 +12,8 @@ Este documento es la referencia para quien coja la placa sin contexto: qué hace
 | Rama | `feature/electronica-v1` |
 | Esquema | 8 hojas, 150 referencias (124 piezas montadas por el fabricante, 51 códigos LCSC). ERC 0 errores y 0 avisos |
 | PCB | 6 capas, **rutada al completo** (0 conexiones sin unir). DRC con paridad esquema-PCB: 0 errores, 0 avisos. `pcb-toolkit revisar-rutado`: PASS, 0 errores |
-| Puertas pasadas | A (arquitectura), B (esquema), C (colocación, con revisión independiente), D (rutado, propia), S (serigrafía) y **E1 propia** (diseño listo para fabricar: pasa con 13 mejoras, sin críticos ni importantes abiertos). Informes en [`revisiones/`](revisiones/) y tabla «Revisiones» de `NOTAS.md` |
-| Falta antes de pedirla | Revisión independiente del diseño; después, en la puerta E2, **rellenar las zonas con kicad-cli** (paso en «Cómo regenerar»), BOM, CPL y Gerber. Lista en `NOTAS.md`, «Pendiente» |
+| Puertas pasadas | A (arquitectura), B (esquema), C (colocación, con revisión independiente), D (rutado, propia), S (serigrafía), **E1** (diseño listo para fabricar, con revisión independiente) y **E2** (ficheros de fabricación). Informes en [`revisiones/`](revisiones/) y tabla «Revisiones» de `NOTAS.md` |
+| Ficheros de fabricación | Gerber, taladros, BOM y CPL de JLCPCB en [`fabricacion/`](fabricacion/README.md), con la puerta E2 pasada (2026-10-25). Antes de pedir: lista «Confirmar antes de pedir» de [`fabricacion/README.md`](fabricacion/README.md) |
 | Fabricada | No. Nadie ha medido todavía una placa real: todo lo que sigue es diseño y simulación |
 | Firmware | No existe. Las reglas que debe cumplir están en «Reglas para el firmware» |
 
@@ -361,7 +361,7 @@ La v1.0 depende del firmware para no pasar de estos límites (`NOTAS.md`, «Regl
 - **Agujero del mecanismo dado por bueno sin medir** (Ø11,3 mm, decisión del autor del 2026-10-24). El cobre más cercano a su borde es MOT_IN2 a 0,34 mm, IPROPI a 0,43, HOME a 0,63 y MOT_IN1 a 0,64 (medido en el PCB, 2026-10-25): cumple el mínimo del fabricante (0,2 mm), pero agrandar el agujero cortaría pistas.
 - **Rizado de VDD del amplificador:** 70 mV pp simulados (87 en el peor caso): C41 no cabe pegado a los pines 7/8 (con él pegado serían 25 mV pp).
 - **Pinout de la cámara de facto:** el FPC sigue el pinout habitual de los módulos para ESP32; hay que comprobarlo con el módulo comprado.
-- **Piezas por confirmar antes del pedido:** C22962 (220 Ω, R51) como básica en la API de JLCPCB e Isat de la bobina FHD4020S-1R0MT.
+- **Antes del pedido:** lista «Confirmar antes de pedir» de [`fabricacion/README.md`](fabricacion/README.md); la NTC RT1 (C13564) es NRND, con alternativa C440252 en la misma huella.
 - **Sin GPIO libres:** solo J_EXP (I2C, UART, P04 y alimentaciones); los puentes JP1–JP4 liberan GPIO9, GPIO46, GPIO3 y GPIO8 si se renuncia a su función.
 - **Serigrafía:** la leyenda de J9 está aparte (22 mm por encima de sus pads), «IO8» de JP4 solo en la cara inferior, J5 sin título y 12 textos a 0,8 mm de letra, en cuatro grupos (nombre de la cara superior, leyenda de J7, «I2S» de TP9, «BAT» de TP4 y «BAT-» de J3), por debajo del 1,0 mm recomendado por JLCPCB.
 - **Pendiente para la v1.1:** TVS en VBUS, agujeros para atar los cables de la batería, PTC de 2 A, pull-ups de I2C según la medida, RC de VBAT_SNS y LIGHT junto al módulo, F1 entre J1 y U2, leer CC, NTC de B 3950–4100 K si la celda pide 0–45 °C, R54 en 1206, sitio para la leyenda de J9 junto a sus pads y un header de GPIO libres.
@@ -388,7 +388,7 @@ $KC pcb drc --schematic-parity --severity-all --exit-code-violations FurbyBoard.
 pcb-toolkit revisar-rutado FurbyBoard.kicad_pcb --ancho VSYS:0.6,BAT:0.8,…   # anchos de params.ANCHOS_MINIMOS
 $KP scripts/comprobar_colocacion.py              # TP accesibles, calzos de la batería libres, alturas
 
-scripts/make_fab.sh                              # BOM, CPL, Gerber y renders (solo tras la puerta E1)
+scripts/make_fab.sh                              # BOM, CPL, Gerber, renders y STEP (solo tras la puerta E1)
 ```
 
 | Script | Qué hace |
@@ -403,7 +403,8 @@ scripts/make_fab.sh                              # BOM, CPL, Gerber y renders (s
 | `comprobar_colocacion.py` | Comprobaciones mecánicas que el DRC no ve |
 | `jlc_post.py`, `make_fab.sh` | BOM y CPL en formato de JLCPCB (giros corregidos) y ficheros de fabricación |
 | `gen_modelos3d.py`, `render_montaje.py` | Modelos 3D propios (FreeCAD) y render de la placa montada en la base (Blender) |
-| `exportar_dsn.py`, `ensanchar_potencia.py`, `vias_extra.py`, `router/`, `rutado.dsn`, `rutado.ses` | Del intento de 4 capas con autorrutador: **no se usan** |
+| `rellenar.sh` | Rellena las zonas con las reglas del proyecto (kicad-cli) y pasa el DRC; va después de `gen_pro.py` |
+| `exportar_dsn.py`, `ensanchar_potencia.py`, `vias_extra.py`, `router/` | Del intento de 4 capas con autorrutador: **no se usan** |
 
 ## Estructura de la carpeta
 
