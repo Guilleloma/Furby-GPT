@@ -50,9 +50,8 @@ USB-C (J1) ─ ESD USBLC6 (U1) ─ PTC 1,5 A (F1) ─ VBUS ─┐
   buck-boost      elevador          clase D → J8        por R54 y Q3
   3V3, 2 A        V6 5,94 V         (altavoz)
         │              │
-        │              ├─► DRV8231A (U6) → motor (J9 M1/M2)
-        │              └─► LED del encoder (J9 EN+, por R51)
-        ├─► ESP32-S3-WROOM-1 (U4) ── I2C ── TCA9535 (U10) ── sensores (J8, J9), LED RUN, control de la potencia
+        │              └─► DRV8231A (U6) → motor (J9 M1/M2)
+        ├─► ESP32-S3-WROOM-1 (U4) ── I2C ── TCA9535 (U10) ── sensores (J8, J9), LED RUN, LED del encoder (EN_6V por R51), control de la potencia
         │                         ├─ I2S ── U7 y micro (J5)
         │                         ├─ DVP ── cámara (J6)
         │                         └─ USB ── J1
@@ -184,7 +183,7 @@ Las salidas del altavoz son las del clase D en puente (BTL): ninguna de las dos 
 |-----|--------|-----|----------------|
 | 1 | ENF | ENC_PT (10 kΩ a 3V3, Schmitt U11 → GPIO8) | Colector del fototransistor del encoder |
 | 2 | G | GND | Emisor del fototransistor |
-| 3 | EN+ | ENC_LED_A (V6 por R51 de 470 Ω, ≈ 10 mA) | Ánodo del LED IR del encoder (solo luce con el elevador encendido) |
+| 3 | EN+ | ENC_LED_A (EN_6V, P12 del TCA9535, por R51 de 220 Ω: 5,4–10 mA, ≈ 8 mA típico) | Ánodo del LED IR del encoder. Luce solo con EN_6V = 1 (elevador encendido); apagado no gasta nada. No cuelga de V6 porque el elevador apagado deja V6 ≈ VSYS − 0,4 V |
 | 4 | G | GND | Cátodo del LED del encoder |
 | 5 | LEVA | HOME_PAD (GPIO18, 100 kΩ de pull-up) | Interruptor de la leva (posición de reposo) |
 | 6 | G | GND | Otro lado de la leva |
@@ -263,7 +262,7 @@ GPIO3, GPIO45 y GPIO46 son pines de arranque: el firmware no los debe forzar dur
 | P07 | 11 | CHG | Entrada | 0 = cargando |
 | P10 | 13 | BQ_EN1 | Salida | Modo de entrada del cargador (con P11) |
 | P11 | 14 | BQ_EN2 | Salida | EN2 = 0, EN1 = 1: USB500 (arranque); EN2 = 1, EN1 = 0: ILIM (1,34 A) |
-| P12 | 15 | EN_6V | Salida | 1 = elevador de 6 V encendido (motor y LED del encoder) |
+| P12 | 15 | EN_6V | Salida | 1 = elevador de 6 V encendido y LED del encoder (R51, ≤ 10 mA desde el puerto) |
 | P13 | 16 | TUMMY | Entrada | Barriga (J9 «BAR») |
 | P14 | 17 | BACK | Entrada | Espalda (J9 «ESP») |
 | P15 | 18 | CAM_PWDN | Salida | 1 = cámara en reposo (pull-up R34 al arrancar) |
@@ -356,7 +355,7 @@ La v1.0 depende del firmware para no pasar de estos límites (`NOTAS.md`, «Regl
 - **Rizado de VDD del amplificador:** 70 mV pp simulados (87 en el peor caso): C41 no cabe pegado a los pines 7/8 (con él pegado serían 25 mV pp).
 - **Pinout de la cámara de facto:** el FPC sigue el pinout habitual de los módulos para ESP32; hay que comprobarlo con el módulo comprado.
 - **Rellenos de cobre:** `gen_pcb.py` rellena con el margen a borde por defecto de KiCad (0,5 mm) en vez del del proyecto (0,3). Antes de exportar los Gerber hay que rellenar con kicad-cli (paso en «Cómo regenerar»). Ese relleno se comprobó en la puerta E1: DRC limpio y sin trozos sueltos.
-- **Piezas por confirmar antes del pedido:** C23179 (470 Ω) en la API de JLCPCB e Isat de la bobina FHD4020S-1R0MT.
+- **Piezas por confirmar antes del pedido:** C22962 (220 Ω, R51) como básica en la API de JLCPCB e Isat de la bobina FHD4020S-1R0MT.
 - **Sin GPIO libres:** solo J_EXP (I2C, UART, P04 y alimentaciones); los puentes JP1–JP4 liberan GPIO9, GPIO46, GPIO3 y GPIO8 si se renuncia a su función.
 - **Serigrafía:** la leyenda de J9 está aparte (22 mm por encima de sus pads), «IO8» de JP4 solo en la cara inferior, J5 sin título y cuatro rótulos a 0,8 mm de letra (por debajo del 1,0 mm recomendado por JLCPCB).
 - **Pendiente para la v1.1:** TVS en VBUS, agujeros para atar los cables de la batería, PTC de 2 A, pull-ups de I2C según la medida, RC de VBAT_SNS y LIGHT junto al módulo, F1 entre J1 y U2, leer CC, NTC de B 3950–4100 K si la celda pide 0–45 °C, R54 en 1206, sitio para la leyenda de J9 junto a sus pads y un header de GPIO libres.

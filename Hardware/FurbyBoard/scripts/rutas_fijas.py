@@ -116,8 +116,10 @@ pista("GND", "F.Cu", 0.4, "C16.2", (-46.1, -117.15))
 via("GND", (-46.1, -117.15))
 pista("GND", "F.Cu", 0.6, "C16.2", (-47.3, -118.4))
 via("GND", (-47.3, -118.4))
-pista("EN_6V", "F.Cu", 0.25, "U5.7", (-49.33, -117.0), (-48.49, -117.0), (-48.49, -119.35))
-via("EN_6V", (-48.49, -119.35))
+# EN_6V baja a una vía entre C18.1 y C16.2 (x -48,4, a 0,24 y 0,41 de los pads): deja el sitio junto al
+# borde, al este de la vía de V6 de C18, a la segunda vía de V6 (revisión E independiente, I1)
+pista("EN_6V", "F.Cu", 0.25, "U5.7", (-49.33, -117.0), (-48.4, -117.0), (-48.4, -118.25))
+via("EN_6V", (-48.4, -118.25))
 pista("BST_ILIM", "F.Cu", 0.25, "U5.8", (-48.83, -115.75), (-48.38, -116.2), "R23.1")
 # V6: vía junto a C18.1; por B.Cu, toma Kelvin hacia R21 (TP7 sobre esa pista) y tronco al puente H
 via("V6", (-49.44, -119.5))
@@ -127,8 +129,8 @@ via("V6", (-57.9, -117.06))
 pista("V6", "F.Cu", 0.5, (-57.9, -117.06), "R21.1")
 pista("V6", "B.Cu", 0.5, (-49.44, -119.5), (-49.44, -108.0), (-49.44, -107.85), (-49.0, -107.41), (-46.55, -107.41))
 via("V6", (-46.55, -107.41))
-# EN_6V sigue por In2 hasta R25 (pull-down); de ahí a U10 lo remata el autorrutado
-pista("EN_6V", "In2.Cu", 0.2, (-48.49, -119.35), (-52.54, -115.3), (-61.22, -115.3))
+# EN_6V sigue por In2 hasta R25 (pull-down) y de ahí por In3 a U10
+pista("EN_6V", "In2.Cu", 0.2, (-48.4, -118.25), (-51.35, -115.3), (-61.22, -115.3))
 via("EN_6V", (-61.22, -115.3))
 pista("EN_6V", "F.Cu", 0.2, (-61.22, -115.3), "R25.1")
 # GND de la columna oeste: vías en el hueco entre columnas (x -55,55)
@@ -139,14 +141,20 @@ pista("GND", "F.Cu", 0.3, (-54.62, -117.1), (-55.55, -117.1))
 via("GND", (-55.55, -117.1))
 stub("GND", "C14.2", (-0.97, 0.0), 0.3)
 stub("GND", "R23.2", (0.9, 0.0), 0.3)
-# ---------------------------------------------------------------- V6 hacia el puente H y el LED del encoder
-# Tronco F.Cu por y -105,4 (C19.1, C21.1, U6.5) hasta la vertical x -46,8 que une C22.1 y C20.1;
-# en esa vertical, la vía del tronco de B.Cu (desde C18) y la vía del ramal de B.Cu a R51 (junto a J9).
+# ---------------------------------------------------------------- V6 hacia el puente H
+# La vertical x -46,55 une C22.1 y C20.1 y baja a B.Cu por dos vías (tronco de B.Cu desde C18).
 pista("V6", "F.Cu", 0.5, "C22.1", "C20.1")
 via("V6", (-46.55, -106.3))
-pista("V6", "B.Cu", 0.5, (-46.55, -106.3), (-45.8, -105.55), (-45.8, -89.6))
-via("V6", (-45.8, -89.6))
-pista("V6", "F.Cu", 0.5, (-45.8, -89.6), "R51.1")
+pista("V6", "B.Cu", 0.5, (-46.55, -106.3), (-46.55, -107.41))
+# ---------------------------------------------------------------- LED del encoder desde EN_6V
+# R51 cuelga de EN_6V (P12 del TCA9535), no de V6: el TPS61089 no desconecta la carga y con EN bajo
+# V6 = VSYS - 0,4 V, así que el LED lucía también dormido (revisión E independiente, I3). Desde la
+# vía de EN_6V junto a U5 por B.Cu: al norte por x -48,4 (a 1 mm del tronco de V6), al este por
+# y -108,4 (bajo la fila de V6 de y -107,41) y al norte por el pasillo de x -45,8 que ocupaba el
+# ramal de V6, entre las vías de C20/C22 y la columna de J9, hasta la vía junto a R51.
+pista("EN_6V", "B.Cu", 0.2, (-48.4, -118.25), (-48.4, -108.4), (-45.8, -108.4), (-45.8, -89.6))
+via("EN_6V", (-45.8, -89.6))
+pista("EN_6V", "F.Cu", 0.2, (-45.8, -89.6), "R51.1")
 # ---------------------------------------------------------------- buck-boost de 3,3 V (TPS63802)
 # Cin (C6) sobre VIN (pines 1/10) con dos vías de VSYS; L1 al este con los nodos SW de 0,6; Cout
 # (C7) bajo VOUT (pin 6) y C8 en paralelo; FB (R16/R15) al oeste. GND de los pines 2/3/8 unidos

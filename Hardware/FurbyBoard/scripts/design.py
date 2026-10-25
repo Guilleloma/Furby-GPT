@@ -316,11 +316,14 @@ def build():
     R("R49", s, "100k", "HOME", "3V3", "Pull-up de la leva")
     R("R50", s, "1k", "HOME", "HOME_PAD", "Serie de la leva")
     C("C38", s, "10n", "HOME", "GND", "Filtro de la leva (τ = 1 ms)")
-    # Encoder: el LED IR del engranaje se alimenta del raíl de 6 V, así solo luce con el elevador
-    # encendido (EN_6V) y sin transistor: (5,94 − 1,3) / 470 ≈ 9,9 mA, 46 mW en 0603 (≤ 50 %).
-    # Antes iba a 3V3 con un AO3400A gobernado por EN_6V (replanteo del 2026-10-24: sin sitio).
-    # C23179 (470 Ω UNI-ROYAL 0603): código por confirmar en la API de JLCPCB antes del pedido.
-    R("R51", s, "470", "V6", "ENC_LED_A", "LED del encoder ≈ 10 mA con el elevador encendido")
+    # Encoder: el LED IR del engranaje cuelga de EN_6V (P12 del TCA9535, salida push-pull), así solo
+    # luce con el elevador encendido y se apaga dormido. No va a V6: el TPS61089 no desconecta la
+    # carga (con EN bajo, V6 = VSYS − 0,4 V por el diodo del FET alto) y el LED gastaba 2,8–5,3 mA
+    # siempre (revisión E independiente, I3). TCA9535 (SCPS201F): VOH ≥ 2,6 V a −8 mA con VCC 3 V,
+    # IOH recomendada ≤ 10 mA. Con 220 Ω: (2,6 − 1,4) / 222 = 5,4 mA en el peor caso bajo, ≈ 8 mA
+    # típico, ≤ 10,4 mA con VOH = VCC y VF 1,1 V (cota sin la caída de salida). EN_6V ≥ 2,6 V con
+    # esa carga, muy por encima de VEN_H 1,2 V del TPS61089 (SLVSD38C).
+    R("R51", s, "220", "EN_6V", "ENC_LED_A", "LED del encoder ≈ 8 mA solo con EN_6V = 1")
     R("R52", s, "10k", "ENC_PT", "3V3", "Pull-up del fototransistor (4,7k–47k)")
     part("U11", s, "74xGxx:74LVC1G17", "SN74LVC1G17DBVR", "Package_TO_SOT_SMD:SOT-23-5",
          {"1": "", "2": "ENC_PT", "3": "GND", "4": "ENC", "5": "3V3"}, "C7836", "ext",

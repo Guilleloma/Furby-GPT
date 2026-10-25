@@ -202,6 +202,7 @@ Con la batería real, ya soldada (8.2).
 | Con 10 Ω entre TP7 y GND (≈ 0,6 A) | ≥ 5,80 V, rizado < 150 mVpp | L2, C18–C21, R20 (fSW) |
 | Con 4,7 Ω (≈ 1,26 A), 10 s | ≥ 5,70 V; U5 < 80 °C; corriente de la batería ≈ 2,3 A a 3,7 V | R23 (ILIM 270 kΩ) o protección de la batería |
 | Con EN_6V = 0 | ≈ VSYS − 0,4 V (diodo del FET alto de U5); U6 en reposo | Normal en este elevador |
+| LED del encoder (J9 EN+), polímetro entre los pads de R51 | EN_6V = 1: 1,1–2,3 V en R51 (5–10 mA); EN_6V = 0: 0 V (LED apagado) | Con EN_6V = 0 y tensión en R51: R51 no va a EN_6V (esquema); con EN_6V = 1 y < 1,1 V: LED en corto o al revés en el cable, o P12 sin configurar como salida |
 
 ## 11. Motor
 
@@ -215,7 +216,7 @@ Con el motor del Furby y el mecanismo montado, o con un motor de prueba de la mi
 | Corriente en marcha | TP8 (IPROPI) / 2,25 V por A | Anotar el valor (se esperan 0,1–0,3 A) | — |
 | Bloqueo | Frenar el eje con cuidado 200 ms | TP8 ≈ 2,25 V (≈ 1,0 A, regulado con ITRIP); el ESP no se reinicia y el PCM no corta | Bajar ITRIP subiendo R26 (4,7 kΩ → 6,8 kΩ: VREF 1,96 V, 0,87 A). Para subirla, R26 = 3,3 kΩ (1,10 A) |
 | Inversiones | Bucle de 5 min alternando cada 0,4 s, con freno de 20–30 ms y rampa | Sin reinicios; U6 < 80 °C | Alargar el freno o la rampa, o bajar ITRIP |
-| Posición | Ir al final de carrera (GPIO18, J9 «LEVA») y contar pulsos del encoder (GPIO8) en un ciclo completo | Mismo número de pulsos (± 1) en 10 ciclos | U11 (Schmitt), R52 (pull-up del fototransistor, 10 kΩ, ajustable de 4,7 a 47 kΩ), LED del encoder (R51 de 470 Ω desde V6: solo luce con EN_6V = 1, ≈ 10 mA) |
+| Posición | Ir al final de carrera (GPIO18, J9 «LEVA») y contar pulsos del encoder (GPIO8) en un ciclo completo | Mismo número de pulsos (± 1) en 10 ciclos | U11 (Schmitt), R52 (pull-up del fototransistor, 10 kΩ, ajustable de 4,7 a 47 kΩ), LED del encoder (R51 de 220 Ω desde EN_6V, P12 de U10: solo luce con EN_6V = 1, ≈ 8 mA) |
 
 ## 12. Sensores del Furby
 

@@ -4672,7 +4672,7 @@
 			)
 		)
 	)
-	(global_label "V6"
+	(global_label "EN_6V"
 		(shape passive)
 		(at 48.26 229.87 90)
 		(fields_autoplaced yes)
@@ -6672,7 +6672,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "470"
+		(property "Value" "220"
 			(at 49.76 233.41 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6707,7 +6707,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "LED del encoder ≈ 10 mA con el elevador encendido"
+		(property "Description" "LED del encoder ≈ 8 mA solo con EN_6V = 1"
 			(at 48.26 236.22 0)
 			(hide yes)
 			(show_name no)
@@ -6719,7 +6719,7 @@
 				(justify left)
 			)
 		)
-		(property "LCSC" "C23179"
+		(property "LCSC" "C22962"
 			(at 48.26 236.22 0)
 			(hide yes)
 			(show_name no)
