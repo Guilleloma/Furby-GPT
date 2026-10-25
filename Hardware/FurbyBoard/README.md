@@ -12,8 +12,8 @@ Este documento es la referencia para quien coja la placa sin contexto: qué hace
 | Rama | `feature/electronica-v1` |
 | Esquema | 8 hojas, 150 referencias (124 piezas montadas por el fabricante, 51 códigos LCSC). ERC 0 errores y 0 avisos |
 | PCB | 6 capas, **rutada al completo** (0 conexiones sin unir). DRC con paridad esquema-PCB: 0 errores, 0 avisos. `pcb-toolkit revisar-rutado`: PASS, 0 errores |
-| Puertas pasadas | A (arquitectura), B (esquema), C (colocación, con revisión independiente), D (rutado, propia) y S (serigrafía). Informes en [`revisiones/`](revisiones/) y tabla «Revisiones» de `NOTAS.md` |
-| Falta antes de pedirla | Revisión independiente del diseño (puerta E1), relleno de zonas en un proceso aparte, BOM, CPL y Gerber (puerta E2). Lista en `NOTAS.md`, «Pendiente» |
+| Puertas pasadas | A (arquitectura), B (esquema), C (colocación, con revisión independiente), D (rutado, propia), S (serigrafía) y **E1 propia** (diseño listo para fabricar: pasa con 13 mejoras, sin críticos ni importantes abiertos). Informes en [`revisiones/`](revisiones/) y tabla «Revisiones» de `NOTAS.md` |
+| Falta antes de pedirla | Revisión independiente del diseño; después, en la puerta E2, **rellenar las zonas con kicad-cli** (paso en «Cómo regenerar»), BOM, CPL y Gerber. Lista en `NOTAS.md`, «Pendiente» |
 | Fabricada | No. Nadie ha medido todavía una placa real: todo lo que sigue es diseño y simulación |
 | Firmware | No existe. Las reglas que debe cumplir están en «Reglas para el firmware» |
 
@@ -352,10 +352,10 @@ La v1.0 depende del firmware para no pasar de estos límites (`NOTAS.md`, «Regl
 - **Picos de potencia con la batería baja:** con VBAT < 3,7 V el firmware tiene que repartir la potencia (regla 4) o el elevador se corta en los picos.
 - **VO(SC2) con USB500:** un pico de 2,9 A con el USB enchufado puede apagar VSYS 60 ms (regla 1).
 - **DRV8231A con el motor bloqueado:** 103 °C de unión en régimen; depende del corte por firmware a 150 ms.
-- **Agujero del mecanismo sin medir:** se ha supuesto Ø11,3 mm. El cobre más cercano a su borde es MOT_IN2 a 0,34 mm, IPROPI a 0,43, HOME a 0,63 y MOT_IN1 a 0,64 (medido en el PCB, 2026-10-25). Hay que medir el agujero real del Furby antes de pedir la placa.
+- **Agujero del mecanismo dado por bueno sin medir** (Ø11,3 mm, decisión del autor del 2026-10-24). El cobre más cercano a su borde es MOT_IN2 a 0,34 mm, IPROPI a 0,43, HOME a 0,63 y MOT_IN1 a 0,64 (medido en el PCB, 2026-10-25): cumple el mínimo del fabricante (0,2 mm), pero agrandar el agujero cortaría pistas.
 - **Rizado de VDD del amplificador:** 70 mV pp simulados (87 en el peor caso): C41 no cabe pegado a los pines 7/8 (con él pegado serían 25 mV pp).
 - **Pinout de la cámara de facto:** el FPC sigue el pinout habitual de los módulos para ESP32; hay que comprobarlo con el módulo comprado.
-- **Rellenos de cobre:** el relleno guardado por `gen_pcb.py` no coincide del todo con el que calcula `kicad-cli` al rellenar de nuevo; ambos dan DRC limpio, pero antes de exportar los Gerber hay que rellenar en un proceso aparte y volver a comprobar.
+- **Rellenos de cobre:** `gen_pcb.py` rellena con el margen a borde por defecto de KiCad (0,5 mm) en vez del del proyecto (0,3). Antes de exportar los Gerber hay que rellenar con kicad-cli (paso en «Cómo regenerar»). Ese relleno se comprobó en la puerta E1: DRC limpio y sin trozos sueltos.
 - **Piezas por confirmar antes del pedido:** C23179 (470 Ω) en la API de JLCPCB e Isat de la bobina FHD4020S-1R0MT.
 - **Sin GPIO libres:** solo J_EXP (I2C, UART, P04 y alimentaciones); los puentes JP1–JP4 liberan GPIO9, GPIO46, GPIO3 y GPIO8 si se renuncia a su función.
 - **Serigrafía:** la leyenda de J9 está aparte (22 mm por encima de sus pads), «IO8» de JP4 solo en la cara inferior, J5 sin título y cuatro rótulos a 0,8 mm de letra (por debajo del 1,0 mm recomendado por JLCPCB).
@@ -375,6 +375,8 @@ for f in FurbyBoard.kicad_sch hojas/*.kicad_sch; do $KC sch upgrade "$f"; done
 python3 scripts/gen_pro.py                       # proyecto, clases de red, reglas y .kicad_dru
 $KP scripts/gen_pcb.py                           # coloca, ruta (rutas_fijas.py), rotula y rellena
 python3 scripts/gen_pro.py                       # otra vez: guardar el PCB reescribe el .kicad_pro
+$KC pcb drc --refill-zones --save-board --schematic-parity --severity-all --exit-code-violations \
+    -o /tmp/drc-relleno.rpt FurbyBoard.kicad_pcb  # relleno con las reglas del proyecto (obligatorio antes de make_fab.sh)
 
 $KC sch erc --severity-all --exit-code-violations FurbyBoard.kicad_sch
 $KC pcb drc --schematic-parity --severity-all --exit-code-violations FurbyBoard.kicad_pcb
