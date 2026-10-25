@@ -19,10 +19,10 @@
 * --- buck (VSYS 4,4 V, 1,6 MHz)
 .param FB=1.6e6 DB={3.3/4.4}
 Vinb inb 0 4.4
-B1b inb swb I = V(inb,swb)*(V(gb)/0.03+1e-6)
+B1b inb swb I = V(inb,swb)*(max(0,min(1,(V(gb)-0.55)/0.4))/0.03+1e-6)
 Vgb gb 0 pulse(0 1 0 2n 2n {DB/FB} {1/FB})
 Dhb swb inb DIDEAL
-B2b swb 0 I = V(swb)*((1-V(gb))/0.03+1e-6)
+B2b swb 0 I = V(swb)*(max(0,min(1,(0.45-V(gb))/0.4))/0.03+1e-6)
 Dlb 0 swb DIDEAL
 Lb swb outb {L} ic=0.7
 C7b outb c7b {COEF}
@@ -39,9 +39,9 @@ Rlb modb 0 {RLOAD}
 .param FS=2.1e6 DS={1-3.0/3.3}
 Vins ins 0 3.0
 Ls ins sws {L} ic=0.77
-B1s sws 0 I = V(sws)*(V(gs)/0.03+1e-6)
+B1s sws 0 I = V(sws)*(max(0,min(1,(V(gs)-0.55)/0.4))/0.03+1e-6)
 Vgs gs 0 pulse(0 1 0 2n 2n {DS/FS} {1/FS})
-B2s sws outs I = V(sws,outs)*((1-V(gs))/0.03+1e-6)
+B2s sws outs I = V(sws,outs)*(max(0,min(1,(0.45-V(gs))/0.4))/0.03+1e-6)
 Dls sws outs DIDEAL
 Dhs 0 sws DIDEAL
 C7s outs c7s {COEF}
@@ -55,7 +55,8 @@ R9s c9s 0 3m
 Rls mods 0 {RLOAD}
 
 * interruptores como conductancias gobernadas por la puerta (30 mohm encendidos, rectificación
-* síncrona complementaria: conduce en los dos sentidos, PWM forzado por encima de ≈ 1 A de pico)
+* síncrona complementaria con tiempo muerto: conduce en los dos sentidos, PWM forzado por encima de
+* ≈ 1 A de pico)
 * medida con 20 MHz de ancho de banda, como en el bring-up (filtro RC de 1 polo en cada punto)
 Rfob outb fob 1k
 Cfob fob 0 8p

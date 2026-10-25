@@ -23,6 +23,7 @@ Convenciones: «peor caso» = tolerancias, DC bias de los cerámicos y tensión 
 | 3V3 (TPS63802) | `tps63802_3v3.cir`, `tps63802_rizado.cir` | PASS |
 | Batería y Q1 | `bateria_q1.cir` | PASS (con USB y batería al revés, en la esquina mala el BQ entra en precarga: 0,32 W en Q1) |
 | Puente H y motor | `drv8231a_motor.cir` | PASS (θJA del DSG mal copiada en NOTAS: 66,5 °C/W, no 42,8) |
+| Amplificador (MAX98357A) | `max98357_vsys.cir` | **FAIL**: 257 mV pp en VDD por el puente de B.Cu; propuesta: 10 µF junto a los pines 7/8 (25 mV pp) |
 | Power path (BQ24073) | `bq24073_powerpath.cir` | **2 FAIL** (pico de 2,9 A con USB en USB500 en el peor caso; enchufe con ≥ 4,3 W en modo ILIM): propuestas de firmware |
 
 ## Elevador de 6 V (TPS61089 + FHD4020S-1R0MT) — `elevador_6v.cir`
@@ -54,11 +55,11 @@ Supuestos:
 | 3V3 en el módulo, peor caso (C −20 %, GT/2) | mín. 3,20 V | ≥ 3,00 V | PASS |
 | 3V3 en el módulo con 0,55 A en régimen (caída de la pista de 58 mΩ) | 3,270 V | 3,30 V ± 3 % (3,20–3,40) | PASS |
 | VSYS en la entrada de U3 con 0,55 A, batería 3,0 V | mín. 2,69 V | ≥ 2,3 V (VIN;LOAD para 2 A) | PASS |
-| Desenchufe del USB (4,4 → 3,0 V en 10 µs, 0,55 A) | VSYS mín. 2,69 V; 3V3 3,27 V | VSYS ≥ 2,3 V; el modelo promediado no tiene paso de línea: la figura 10-28 da < 0,1 V con 2,2 → 4,2 V en 1 µs | PASS |
+| Desenchufe del USB (4,4 → 3,0 V en 10 µs, 0,55 A) | VSYS mín. 2,69 V; 3V3 3,27–3,27 V | VSYS ≥ 2,3 V; el modelo no tiene paso de línea: la figura 10-28 da < 0,1 V con 2,2 → 4,2 V | PASS |
 | Pico de L1, buck (VSYS 4,4 V, 0,7 A, L −20 %) | 1,37 A | < 3,8 A con margen ≥ 20 % | PASS |
-| Pico de L1, boost (VSYS 3,0 V, 0,7 A, L −20 %) | 1,09 A | < 4,0 A (mín.) con margen ≥ 20 % | PASS |
-| Rizado de 3V3 en C7/C8, buck / boost (20 MHz) | 5,5 / 9,8 mV pp | ≤ 33 mV pp (1 %) | PASS |
-| Rizado de 3V3 en el módulo (C9), buck / boost | 0,4 / 0,3 mV pp | ≤ 33 mV pp | PASS |
+| Pico de L1, boost (VSYS 3,0 V, 0,7 A, L −20 %) | 0,94 A | < 4,0 A (mín.) con margen ≥ 20 % | PASS |
+| Rizado de 3V3 en C7/C8, buck / boost (20 MHz) | 5,8 / 2,7 mV pp | ≤ 33 mV pp (1 %) | PASS |
+| Rizado de 3V3 en el módulo (C9), buck / boost | 0,6 / 0,1 mV pp | ≤ 33 mV pp | PASS |
 
 Observaciones:
 
@@ -140,21 +141,47 @@ Supuestos:
 | ITRIP con las tolerancias (cálculo) | 0,91–1,10 A (nominal 1,00 A) | Informativo: AERR (±6 %) solo está garantizado con VM ≥ 6,5 V y V6 es 5,94 V; se mide | — |
 | Arranque al 100 % desde parado: pico del motor | 1,00 A | ≤ ITRIP + 10 % y < 3,7 A (OCP) | PASS |
 | Arranque: V6 y VSYS mínimos (batería 3,7 V) | V6 5,87 V; VSYS 3,31 V | V6 > 4,45 V (UVLO del DRV8231A); VSYS > 2,7 V (UVLO del TPS61089) | PASS |
-| Bloqueado al 100 %: corriente regulada (media / pico / valle) | 0,93 / 1,00 / 0,74 A | pico ≤ ITRIP + 10 % | PASS |
+| Bloqueado al 100 %: corriente regulada (media / pico / valle) | 0,94 / 1,00 / 0,74 A | pico ≤ ITRIP + 10 % | PASS |
 | Bloqueado: IPROPI en el pico frente a VREF | 2,246 V frente a 2,246 V | ≤ 3,0 V (rango de AERR) y ≤ 3,1 V (ADC del ESP32-S3 a 12 dB) | PASS |
 | Bloqueado: disipación del DRV8231A (RDS(on) 0,45 Ω por lado en caliente) | 0,79 W → Tj ≈ 103 °C (θJA 66,5 °C/W del DSG) | Tj ≤ 110 °C con Ta 50 °C | PASS |
-| Bloqueado: rizado y mínimo de V6 | 137 mV pp; mín. 5,91 V | V6 > 4,45 V | PASS |
-| PWM 20 kHz al 70 % (decaimiento lento) a 700 rad/s: corriente y rizado | 0,12 A medios, 124 mA pp; V6 37 mV pp | Informativo (motor estimado) | — |
-| Inversión a toda velocidad sin freno: pico | 1,01 A; V6 5,83–5,97 V | < 3,7 A (OCP) y V6 < 6,5 V | PASS |
+| Bloqueado: rizado y mínimo de V6 | 130 mV pp; mín. 5,92 V | V6 > 4,45 V | PASS |
+| PWM 20 kHz al 70 % (decaimiento lento) a 700 rad/s: corriente y rizado | 0,12 A medios, 125 mA pp; V6 19 mV pp | Informativo (motor estimado) | — |
+| Inversión a toda velocidad sin freno: pico | 1,01 A; V6 5,85–5,97 V | < 3,7 A (OCP) y V6 < 6,5 V | PASS |
 
 Observaciones:
 
 - La regulación funciona como dice la hoja: el pico se queda en ITRIP en el arranque, bloqueado y al invertir sin freno, lejos del OCP (3,7 A). Con el motor bloqueado la corriente oscila entre 0,74 y 1,0 A (0,93 A de media) con un periodo de ≈ 230 µs (≈ 4 kHz): **se oirá un pitido** mientras regula. Si molesta al micro, el firmware evita sostener la regulación (rampa de PWM y detección de bloqueo).
 - **θJA del DRV8231A**: `NOTAS.md` («Tabla de raíles», «Cálculos») y `ARQUITECTURA.md` §6 usan 42,8 °C/W, que es la del encapsulado DDA (HSOP). U6 es el **DSG (WSON 2 × 2)**: 66,5 °C/W (tabla 6.4). Con el motor bloqueado de forma continua y RDS(on) en caliente, Tj ≈ 103 °C (PASS justo); con 0,6 W, 90 °C en vez de 76 °C. El firmware limita el bloqueo a ≤ 150 ms (encoder), así que en uso real no se llega al régimen. Corregir el dato en `NOTAS.md` al cerrar el rutado.
 - **ITRIP**: el ±6 % de AERR solo está garantizado con VM ≥ 6,5 V y V6 es 5,94 V. Con el resto de tolerancias, 0,91–1,10 A. Se mide en el bring-up (TEST-PLAN §11, IPROPI en TP8 con el motor bloqueado: 2,25 V ± 10 %).
-- V6 no baja de 5,83 V en ningún caso (UVLO del DRV8231A 4,05–4,35 V). El rizado de V6 con el motor bloqueado (137 mV pp) viene de la carga a golpes de la regulación; el lazo del elevador (fc ≈ 20 kHz) lo sigue sin problemas.
+- V6 no baja de 5,85 V en ningún caso (UVLO del DRV8231A 4,05–4,35 V). El rizado de V6 con el motor bloqueado (130 mV pp) viene de la carga a golpes de la regulación; el lazo del elevador (fc ≈ 20 kHz) lo sigue sin problemas.
 
 Figuras: `png/drv_arranque.png`, `png/drv_bloqueo.png`, `png/drv_inversion.png`.
+
+## Amplificador MAX98357A sobre VSYS — `max98357_vsys.cir`
+
+Supuestos:
+
+- **Clase D conmutado**: modulación BD de 3 niveles a 300 kHz, 0,25 Ω por interruptor (estimado del 92 % de rendimiento de la hoja), flancos de 15 ns con tiempo muerto, altavoz de 4 Ω + 33 µH (la carga de prueba de la hoja) y tono de 1 kHz con m = 0,9 (≈ 1 W con VSYS a 3,6 V). El ensanchado de espectro (± 20 kHz) no se modela.
+- **Puente de VSYS** (rutado del bloque C, `NOTAS.md`): los pines 7/8 y C26 (100 nF) cuelgan del relleno de In2 a través de 2 vías, 6,5 mm de B.Cu de 0,6 mm y otras 2 vías; C24 y C25 (22 µF) están del lado del relleno. Estimado: 10 mΩ y 3 nH (peor caso 5 nH).
+- Batería a media carga (3,7 V) con 0,21 Ω; ≈ 58 µF en el resto de VSYS.
+
+| Magnitud | Resultado | Criterio | PASS/FAIL |
+|----------|-----------|----------|-----------|
+| Potencia en el altavoz (tono de 1 kHz, m = 0,9, VSYS ≈ 3,6 V) | 1,01 W; 0,71 A de pico en 4 Ω | Informativo | — |
+| Corriente por el puente de B.Cu (media / pico) | 0,32 / 1,52 A | ≤ 0,7 A por vía en continua (2 vías por extremo: 1,4 A) | PASS |
+| VDD en los pines 7/8 con el puente (3 nH, 10 mΩ): mínimo | 3,42 V | ≥ 2,5 V | PASS |
+| Rizado de conmutación en los pines 7/8, puente de 3 nH / 5 nH | 257 / 240 mV pp | ≤ 200 mV pp (rizado de la prueba de PSRR) | **FAIL** |
+| Rizado en los pines con los 22 µF pegados (referencia sin puente) | 40 mV pp | ≤ 200 mV pp | PASS |
+| Propuesta: puente de 3 nH + 10 µF junto a los pines 7/8 | 25 mV pp; mín. 3,55 V | ≤ 200 mV pp | PASS |
+| VSYS en el relleno de In2 (lo que ve U3) | mín. 3,53 V | ≥ 2,3 V (VIN;LOAD del TPS63802) | PASS |
+
+Observaciones y propuesta:
+
+- **FAIL — rizado en VDD de U7.** Con solo 100 nF junto a los pines 7/8 y el bulk al otro lado del puente, cada flanco de la salida excita la resonancia de C26 con la inductancia del puente (≈ 9 MHz): **257 mV pp en los pines** (40 mV pp si los 22 µF estuvieran pegados). VDD no baja de 3,42 V, así que el amplificador funciona; el riesgo es de calidad (rizado por encima del que caracteriza su PSRR, ruido de 9 MHz hacia el micro y EMI). La hoja pide 0,1 µF **y 10 µF** junto a VDD («Power-Supply Input»).
+- **Propuesta (sin cambiar la v1.0 si no cabe; recomendada si cabe en el rutado):** un 10 µF 10 V X5R 0603 (C19702, el mismo que C1/C3/C4/C6) junto a los pines 7/8, en paralelo con C26, con su vía de GND: 25 mV pp en la simulación. Alternativa sin pieza nueva: mover C24 (o C25) del lado de los pines del puente.
+- El puente aguanta la corriente (0,32 A medios, 1,5 A de pico con el anillo; 2 vías por extremo) y VSYS en el relleno apenas se mueve (mín. 3,53 V): **3V3 no se entera** (U3 regula con VIN ≥ 2,3 V; la figura 10-29 del TPS63802 da < 0,1 V para escalones de entrada de 0,6 V en 1 µs).
+
+Figuras: `png/max98357_vdd.png` (VDD en los pines: puente actual, propuesta y referencia), `png/max98357_vsys.png`.
 
 ## Lo que no se simula y por qué
 

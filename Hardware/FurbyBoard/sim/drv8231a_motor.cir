@@ -75,7 +75,8 @@ Rq qr qd 1k
 Cq qd 0 10p
 Bto 0 to I = V(qd) > 0.5 ? (V(to) < 2 ? 1/25u : 0) : -V(to)/20n
 Cto to 0 1
-* puertas (1 = encendido), con ≈ 100 ns de pendiente (tRISE 220 ns)
+* puertas (1 = encendido), con ≈ 100 ns de pendiente (tRISE 220 ns); cada interruptor conduce solo
+* con su puerta por encima de 0,55: al cambiar de lado hay tiempo muerto, sin conducción cruzada
 Bh1 h1r 0 V = (V(qd) < 0.5 && V(a1) > 0.5 && V(a2) < 0.5) ? 1 : 0
 Bl1 l1r 0 V = (V(qd) > 0.5 || V(a2) > 0.5) ? 1 : 0
 Bh2 h2r 0 V = (V(qd) < 0.5 && V(a2) > 0.5 && V(a1) < 0.5) ? 1 : 0
@@ -90,10 +91,10 @@ Rl2 l2r l2 1k
 Cl2 l2 0 100p
 
 * --- etapa de potencia (conductancias gobernadas por las puertas) y diodos internos
-Bhs1 v6 out1 I = V(v6,out1)*(V(h1)/{RDSP} + 1e-7)
-Bls1 out1 0 I = V(out1)*(V(l1)/{RDSP} + 1e-7)
-Bhs2 v6 out2 I = V(v6,out2)*(V(h2)/{RDSP} + 1e-7)
-Bls2 out2 0 I = V(out2)*(V(l2)/{RDSP} + 1e-7)
+Bhs1 v6 out1 I = V(v6,out1)*(max(0,min(1,(V(h1)-0.55)/0.4))/{RDSP} + 1e-7)
+Bls1 out1 0 I = V(out1)*(max(0,min(1,(V(l1)-0.55)/0.4))/{RDSP} + 1e-7)
+Bhs2 v6 out2 I = V(v6,out2)*(max(0,min(1,(V(h2)-0.55)/0.4))/{RDSP} + 1e-7)
+Bls2 out2 0 I = V(out2)*(max(0,min(1,(V(l2)-0.55)/0.4))/{RDSP} + 1e-7)
 Dh1 out1 v6 DB
 Dl1 0 out1 DB
 Dh2 out2 v6 DB
