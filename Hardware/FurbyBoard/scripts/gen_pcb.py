@@ -11,7 +11,7 @@ Se ejecuta con el Python de KiCad:
 - Rutado: lo crítico va escrito en scripts/rutas_fijas.py (bloqueado); con --ses <fichero>
   se importa además el resultado de Freerouting sobre esas rutas; con --sin-rutado el PCB
   queda colocado y sin rutar (puerta C).
-- Serigrafía: nombre y versión, logo y rótulos colocados solos (scripts/serigrafia.py).
+- Serigrafía: nombre y versión, logo y rótulos colocados solos tras el rutado (scripts/serigrafia.py).
 - Planos (6 capas, params.STACKUP): GND en In1 (L2) e In4 (L5) enteros; In2 (L3) es capa de señal
   con relleno de VSYS; In3 (L4) señal; relleno de GND en F.Cu y B.Cu tras el rutado.
 - Áreas de reglas: sin cobre bajo la antena (todas las capas) y sin vías ni pads
@@ -260,21 +260,31 @@ def zones(board, netmap, exteriores):
     text(board, pcbnew.Cmts_User, "flex", (fl["x"][0] + fl["x"][1]) / 2, (fl["y"][0] + fl["y"][1]) / 2, 0.8, 0.1)
 
 
-def silk(board):
-    F, B = pcbnew.F_SilkS, pcbnew.B_SilkS
-    # Franja entre el módulo y el borde delantero: la única cara superior que no tapa la batería
-    # y donde no hay cobre (zona de la antena).
-    text(board, F, "FurbyBoard %s" % P.BOARD_REV, -73.0, -54.45, 0.8, 0.15)
-    # Nombre y versión a la derecha del logo (zona trasera izquierda, bajo la batería, sin pads en la cara B)
+def silk_abajo(board, abajo):
+    """Nombre, versión y recuadro para numerar la placa, junto al logo y sin pisar vías."""
+    B = pcbnew.B_SilkS
     lx, ly = LAY.LOGO_INFERIOR["x"], LAY.LOGO_INFERIOR["y"]
-    tx = lx[1] + 6.0
-    text(board, B, "FurbyBoard", tx, -106.6, 1.2, 0.15, mirror=True)
-    text(board, B, "%s · %s" % (P.BOARD_REV, P.BOARD_DATE), tx, -104.9, 1.0, 0.15, mirror=True)
-    # Recuadro en blanco para numerar la placa a rotulador (TEST-PLAN.md), a la derecha del logo
-    x0, x1, y0, y1 = lx[1] + 1.5, lx[1] + 9.5, -117.0, -113.0
-    for a, b in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
-        shape(board, B, pcbnew.SHAPE_T_SEGMENT, a=a, b=b, width=0.15)
-    text(board, B, "PLACA", (x0 + x1) / 2, y1 + 0.8, 0.8, 0.15, mirror=True)
+    lineas = [("FurbyBoard", 1.2), ("%s · %s" % (P.BOARD_REV, P.BOARD_DATE), SG.TEXTO)]
+    medidas = [medir(board, "B", t, a) for t, a in lineas]
+    w, h = max(m[0] for m in medidas), sum(m[1] for m in medidas) + 0.3
+    xy = abajo.busca("nombre y versión", lx[1] + 6.0, -105.75, w, h, radio=20.0)
+    if xy:
+        y = xy[1] + h / 2
+        for (t, a), (_, hl) in zip(lineas, medidas):
+            rotulo(board, "B", t, (xy[0], y - hl / 2), a)
+            y -= hl + 0.3
+    # Recuadro en blanco para numerar la placa a rotulador (TEST-PLAN.md), con su título encima;
+    # dentro no puede haber vías (se escribe encima y la serigrafía no se recortaría).
+    bw, bh = 7.0, 3.5
+    tw, th = medir(board, "B", "PLACA", SG.TEXTO)
+    xy = abajo.busca("recuadro PLACA", lx[1] + 5.5, -114.0, bw, bh + th + 0.3, radio=20.0)
+    if xy:
+        x0, x1 = xy[0] - bw / 2, xy[0] + bw / 2
+        y0 = xy[1] - (bh + th + 0.3) / 2
+        y1 = y0 + bh
+        for a, b in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
+            shape(board, B, pcbnew.SHAPE_T_SEGMENT, a=a, b=b, width=SG.GROSOR)
+        rotulo(board, "B", "PLACA", (xy[0], y1 + 0.3 + th / 2))
 
 
 def contorno_muestreado(paso=0.5):
@@ -304,7 +314,7 @@ def caja_stl(bb):
 
 
 def colocador(board, cara):
-    """Obstáculos para rotular una cara: pads, serigrafía y cuerpos de las piezas montadas."""
+    """Obstáculos para rotular una cara: pads, vías, pistas, serigrafía y cuerpos de las piezas montadas."""
     silk_capa = pcbnew.F_SilkS if cara == "F" else pcbnew.B_SilkS
     cu = pcbnew.F_Cu if cara == "F" else pcbnew.B_Cu
     montadas = {p["ref"] for p in D.parts() if p["in_pos"]}
@@ -327,20 +337,48 @@ def colocador(board, cara):
     for d in board.GetDrawings():
         if d.GetLayer() == silk_capa:
             silk.append(caja_stl(d.GetBoundingBox()))
+    # Las vías son pasantes: obstáculo en las dos caras. Las pistas, solo en la suya.
+    vias, pistas = [], []
+    for t in board.GetTracks():
+        if t.GetClass() == "PCB_VIA":
+            x, y = pcbnew.ToMM(t.GetPosition().x) - P.STL_OX, P.STL_OY - pcbnew.ToMM(t.GetPosition().y)
+            vias.append((x, y, pcbnew.ToMM(t.GetWidth(pcbnew.F_Cu)) / 2))
+        elif t.GetLayer() == cu:
+            a, b = t.GetStart(), t.GetEnd()
+            pistas.append((pcbnew.ToMM(a.x) - P.STL_OX, P.STL_OY - pcbnew.ToMM(a.y),
+                           pcbnew.ToMM(b.x) - P.STL_OX, P.STL_OY - pcbnew.ToMM(b.y), pcbnew.ToMM(t.GetWidth()) / 2))
     mec = GEO["mecanismo"]
     circulos = [(mec["centro"][0], mec["centro"][1], mec["exclusion_diametro"] / 2)]
     circulos += [(x, y, GEO["taladro_diametro"] / 2 + 0.8) for x, y in GEO["taladros"]]
-    return SG.Colocador(contorno_muestreado(), circulos, pads, silk, cuerpos)
+    return SG.Colocador(contorno_muestreado(), circulos, pads, silk, cuerpos, vias, pistas)
 
 
-def rotulo(board, cara, txt, xy=None):
-    t = text(board, pcbnew.F_SilkS if cara == "F" else pcbnew.B_SilkS, txt, *(xy or (0, 0)),
-             SG.TEXTO, SG.GROSOR, mirror=(cara == "B"))
-    if xy is None:
-        bb = t.GetBoundingBox()
-        board.Remove(t)
-        return pcbnew.ToMM(bb.GetWidth()), pcbnew.ToMM(bb.GetHeight())
-    return t
+TINTA = {}   # (cara, texto, alto) -> desplazamiento del centro de la tinta respecto al punto del texto
+
+
+def medir(board, cara, txt, alto):
+    """Ancho y alto de la tinta del texto (la caja de KiCad lleva el interlineado: 1,7 mm de alto
+    para letras de 1,0). Guarda dónde cae el centro de la tinta para colocarlo luego con precisión."""
+    t = text(board, pcbnew.F_SilkS if cara == "F" else pcbnew.B_SilkS, txt, 0, 0, alto, SG.GROSOR,
+             mirror=(cara == "B"))
+    bb = t.GetEffectiveTextShape().BBox()
+    c = bb.GetCenter()
+    TINTA[(cara, txt, alto)] = (pcbnew.ToMM(c.x) - P.STL_OX, P.STL_OY - pcbnew.ToMM(c.y))
+    board.Remove(t)
+    return pcbnew.ToMM(bb.GetWidth()), pcbnew.ToMM(bb.GetHeight())
+
+
+def medida(board, cara, txt, alto=SG.TEXTO):
+    return SG.Medida(lambda a: medir(board, cara, txt, a), alto)
+
+
+def rotulo(board, cara, txt, xy, alto=SG.TEXTO):
+    """Texto con el centro de su tinta en xy (medido antes con medir())."""
+    if (cara, txt, alto) not in TINTA:
+        medir(board, cara, txt, alto)
+    ox, oy = TINTA[(cara, txt, alto)]
+    return text(board, pcbnew.F_SilkS if cara == "F" else pcbnew.B_SilkS, txt, xy[0] - ox, xy[1] - oy,
+                alto, SG.GROSOR, mirror=(cara == "B"))
 
 
 def caja_pads(fp, numeros=None, silk=None):
@@ -351,66 +389,285 @@ def caja_pads(fp, numeros=None, silk=None):
     return SG.Caja(min(c.x0 for c in cajas), min(c.y0 for c in cajas), max(c.x1 for c in cajas), max(c.y1 for c in cajas))
 
 
+def celdas_leyenda(board, _ref, etiquetas, alto, sep, lado, caja, xy, xs):
+    """Celdas de una leyenda con la disposición de los pads: mismas filas que los pads y columnas
+    separadas por el rótulo más ancho, a la derecha (R) o a la izquierda (L) de la caja."""
+    med = {n: medir(board, "B", t, alto) for n, t in etiquetas.items()}
+    w_max = max(w for w, _ in med.values())
+    paso = w_max + sep
+    celdas = {}
+    for n in etiquetas:
+        col = xs.index(round(xy[n][0], 2))
+        k = len(xs) - 1 - col if lado == "L" else col
+        x = caja.x0 - SG.HUECO - w_max / 2 - k * paso if lado == "L" else caja.x1 + SG.HUECO + w_max / 2 + k * paso
+        celdas[n] = SG.centrada(x, xy[n][1], *med[n])
+    return celdas
+
+
+def leyenda_al_lado(board, abajo, etiquetas, alto, sep, lado, caja, xy, xs, ys):
+    """Celdas de la leyenda junto a los pads. Primero toda con el mismo desplazamiento (columnas
+    alineadas); si no cabe, fila a fila. Cada fila puede subir o bajar ≤ 0,6 mm y se reserva
+    entera (ningún otro rótulo se mete entre sus celdas). Devuelve (celdas puestas, reservas,
+    pads sin sitio); no deja nada reservado si falta alguna fila."""
+    signo = -1 if lado == "L" else 1
+    dys = (0, 0.15, -0.15, 0.3, -0.3, 0.45, -0.45, 0.6, -0.6)
+    dxs = [k * 0.25 for k in range(int(SG.DESPLAZA_MAX / 0.25) + 1)]
+    celdas = celdas_leyenda(board, None, etiquetas, alto, sep, lado, caja, xy, xs)
+    filas = [{n: c for n, c in celdas.items() if round(xy[n][1], 2) == y} for y in ys]
+
+    def prueba(fila, dx, dy):
+        movidas = {n: c.mueve(signo * dx, dy) for n, c in fila.items()}
+        if not all(abajo.libre(c) for c in movidas.values()):
+            return None
+        # La reserva va del borde de los pads a la última celda: nada se mete entre ellos
+        x0 = min([c.x0 for c in movidas.values()] + ([caja.x1] if lado == "R" else []))
+        x1 = max([c.x1 for c in movidas.values()] + ([caja.x0] if lado == "L" else []))
+        return movidas, SG.Caja(x0, min(c.y0 for c in movidas.values()), x1, max(c.y1 for c in movidas.values()))
+
+    def suelta(reservas):
+        for r in reservas:
+            abajo.rotulos.remove(r)
+
+    for dx in dxs:
+        puestas, reservas = [], []
+        for fila in filas:
+            r = next((r for r in (prueba(fila, dx, dy) for dy in dys) if r), None)
+            if r is None:
+                break
+            puestas += list(r[0].items())
+            reservas.append(r[1])
+            abajo.rotulos.append(r[1])
+        if len(reservas) == len(filas):
+            return puestas, reservas, []
+        suelta(reservas)
+    puestas, reservas, sin_sitio = [], [], []
+    for fila in filas:
+        r = next((r for r in (prueba(fila, dx, dy) for dx in dxs for dy in dys) if r), None)
+        if r is None:
+            sin_sitio += list(fila)
+            continue
+        puestas += list(r[0].items())
+        reservas.append(r[1])
+        abajo.rotulos.append(r[1])
+    if sin_sitio:
+        suelta(reservas)
+    return puestas, reservas, sin_sitio
+
+
+def leyenda_aparte(board, abajo, ref, etiquetas, sep, lado, caja, xy, xs, ys):
+    """Leyenda aparte con el título del conector y la misma disposición que los pads, en filas
+    compactas, en el sitio libre más cercano (primero a ≤ 12 mm, aunque sea a 0,8 mm de letra).
+    El rótulo del pad 1 va recuadrado, como su pad. Devuelve True si cabe."""
+    ccx, ccy = (caja.x0 + caja.x1) / 2, (caja.y0 + caja.y1) / 2
+    for radio, alto in ((12.0, SG.TEXTO), (12.0, SG.TEXTO_MIN), (25.0, SG.TEXTO), (25.0, SG.TEXTO_MIN)):
+        # Separación extra para el recuadro del pad 1 (0,3 mm alrededor de su rótulo)
+        celdas = celdas_leyenda(board, None, etiquetas, alto, sep + 0.4, lado, caja, xy, xs)
+        tw, th = medir(board, "B", SG.TITULOS[ref], alto)
+        paso_y = alto * 1.3 + 0.6
+        cx = (min(c.x0 for c in celdas.values()) + max(c.x1 for c in celdas.values())) / 2
+        compactas = {n: SG.centrada((c.x0 + c.x1) / 2 - cx, ys.index(round(xy[n][1], 2)) * paso_y,
+                                    c.x1 - c.x0, c.y1 - c.y0) for n, c in celdas.items()}
+        cy_titulo = (len(ys) - 1) * paso_y + alto + 0.8
+        todo = [c.crece(0.3) for c in compactas.values()] + [SG.centrada(0, cy_titulo, tw, th)]
+        bloque = SG.Caja(min(c.x0 for c in todo), min(c.y0 for c in todo), max(c.x1 for c in todo), max(c.y1 for c in todo))
+        sitio = abajo.busca("leyenda aparte " + ref, ccx, ccy, bloque.x1 - bloque.x0, bloque.y1 - bloque.y0, radio=radio)
+        if not sitio:
+            abajo.fallos.remove("leyenda aparte " + ref)
+            continue
+        ox, oy = sitio[0] - (bloque.x0 + bloque.x1) / 2, sitio[1] - (bloque.y0 + bloque.y1) / 2
+        for n, c in compactas.items():
+            c = c.mueve(ox, oy)
+            rotulo(board, "B", etiquetas[n], ((c.x0 + c.x1) / 2, (c.y0 + c.y1) / 2), alto)
+            if n == "1":
+                r = c.crece(0.3)
+                for a, b in (((r.x0, r.y0), (r.x1, r.y0)), ((r.x1, r.y0), (r.x1, r.y1)),
+                             ((r.x1, r.y1), (r.x0, r.y1)), ((r.x0, r.y1), (r.x0, r.y0))):
+                    shape(board, pcbnew.B_SilkS, pcbnew.SHAPE_T_SEGMENT, a=a, b=b, width=0.12)
+        rotulo(board, "B", SG.TITULOS[ref], (ox, cy_titulo + oy), alto)
+        abajo.aparte.append("%s (a %.0f mm, letra de %.1f mm)" % (ref, math.hypot(sitio[0] - ccx, sitio[1] - ccy), alto))
+        return True
+    return False
+
+
+def leyenda(board, abajo, ref, etiquetas):
+    """Rótulos de un grupo de pads de dos filas o columnas, en este orden de preferencia:
+
+    1. Leyenda al lado, con la misma disposición que los pads (leyenda_al_lado), a 1,0 mm y, si
+       alguna fila no cabe, toda a 0,8 mm.
+    2. Si ni así: leyenda aparte con el título del conector (leyenda_aparte).
+    3. Si tampoco: las filas que caben al lado a 0,8 mm y aviso de las que faltan."""
+    lado, sep = SG.LEYENDA[ref]
+    fp = board.FindFootprintByReference(ref)
+    xy = {p.GetNumber(): (pcbnew.ToMM(p.GetPosition().x) - P.STL_OX, P.STL_OY - pcbnew.ToMM(p.GetPosition().y))
+          for p in fp.Pads()}
+    xs = sorted({round(x, 2) for x, _ in xy.values()})
+    ys = sorted({round(y, 2) for _, y in xy.values()})
+    caja = caja_pads(fp)
+    for alto in (SG.TEXTO, SG.TEXTO_MIN):
+        puestas, reservas, sin_sitio = leyenda_al_lado(board, abajo, etiquetas, alto, sep, lado, caja, xy, xs, ys)
+        if not sin_sitio:
+            break
+    if sin_sitio:
+        if leyenda_aparte(board, abajo, ref, etiquetas, sep, lado, caja, xy, xs, ys):
+            return
+        # Lo que quepa al lado, fila a fila, sin exigir todas
+        filas_ok = []
+        for y in ys:
+            fila = {n: t for n, t in etiquetas.items() if round(xy[n][1], 2) == y}
+            p, r, f = leyenda_al_lado(board, abajo, fila, alto, sep, lado, caja, xy, xs, [y])
+            filas_ok += p
+            abajo.fallos += ["%s.%s" % (ref, n) for n in f]
+        puestas = filas_ok
+    for n, c in puestas:
+        rotulo(board, "B", etiquetas[n], ((c.x0 + c.x1) / 2, (c.y0 + c.y1) / 2), alto)
+    if alto < SG.TEXTO:
+        abajo.reducidos.append(ref)
+
+
+def centro_pads(board, ref):
+    c = caja_pads(board.FindFootprintByReference(ref))
+    return (c.x0 + c.x1) / 2, (c.y0 + c.y1) / 2
+
+
+def hueco_cajas(a, b):
+    return math.hypot(max(a.x0 - b.x1, b.x0 - a.x1, 0), max(a.y0 - b.y1, b.y0 - a.y1, 0))
+
+
+def sin_ambiguedad(board, ref):
+    """Rótulo inequívoco: claramente más cerca de su pieza que de las otras de su grupo
+    (SG.GRUPOS_AMBIGUOS) y, si no es de un conector de cable, lejos de los pads de cable."""
+    grupo = next((g for g in SG.GRUPOS_AMBIGUOS if ref in g), ())
+    ax, ay = centro_pads(board, ref)
+    otras = [centro_pads(board, r) for r in grupo if r != ref]
+    cables = [] if ref in SG.CONECTORES_CABLE else [
+        caja_stl(p.GetBoundingBox()) for r in SG.CONECTORES_CABLE for p in board.FindFootprintByReference(r).Pads()]
+
+    def valido(caja):
+        x, y = (caja.x0 + caja.x1) / 2, (caja.y0 + caja.y1) / 2
+        if any(math.hypot(x - ax, y - ay) > SG.AMBIGUEDAD * math.hypot(x - bx, y - by) for bx, by in otras):
+            return False
+        return all(hueco_cajas(caja, c) >= SG.HUECO_CABLE for c in cables)
+    return valido
+
+
+def pon(board, col, cara, nombre, ancla, txt, lados, ref_propia=None, alto=SG.TEXTO, valido=None,
+        limpio_primero=True, anillo=True):
+    """Coloca un rótulo (o la primera de sus alternativas que quepa)."""
+    textos = txt if isinstance(txt, tuple) else (txt,)
+    for i, t in enumerate(textos):
+        r = col.coloca(nombre, ancla, medida(board, cara, t, alto), lados, ref_propia, valido, limpio_primero,
+                       avisa=(i == len(textos) - 1), anillo=anillo)
+        if r:
+            rotulo(board, cara, t, *r)
+            if i:
+                col.reducidos.append("%s «%s»" % (nombre, t))
+            return
+
+
 def rotulos(board):
-    """Rótulos de serigrafía (scripts/serigrafia.py). Devuelve los que no caben."""
-    fallos = []
+    """Rótulos de serigrafía (scripts/serigrafia.py), sobre la placa ya rutada. Devuelve los que no caben."""
     arriba = colocador(board, "F")
+    # Nombre y versión arriba, en la franja entre el módulo y el borde delantero: la única de la
+    # cara superior que no tapa la batería y donde no hay cobre (zona de la antena). En mayúsculas:
+    # la «y» de «FurbyBoard» baja de la línea y el texto ya no cabe entre el módulo y el borde.
+    nombre = "FURBYBOARD %s" % P.BOARD_REV.upper()
+    for alto in (SG.TEXTO, SG.TEXTO_MIN):
+        xy = arriba.busca("nombre arriba", -73.0, -54.6, *medir(board, "F", nombre, alto), radio=3.0)
+        if xy:
+            rotulo(board, "F", nombre, xy, alto)
+            arriba.fallos = [f for f in arriba.fallos if f != "nombre arriba"]
+            if alto < SG.TEXTO:
+                arriba.reducidos.append("nombre arriba")
+            break
     for ref, txt in SG.ARRIBA.items():
         fp = board.FindFootprintByReference(ref)
         lados = SG.LADO_ARRIBA.get(ref, "") + "RLUD"
-        xy = arriba.coloca(ref, caja_pads(fp, silk=pcbnew.F_SilkS), rotulo(board, "F", txt), lados, ref)
-        if xy:
-            rotulo(board, "F", txt, xy)
+        pon(board, arriba, "F", ref, caja_pads(fp, silk=pcbnew.F_SilkS), txt, lados, ref, SG.TAMANO.get(ref, SG.TEXTO),
+            sin_ambiguedad(board, ref))
     abajo = colocador(board, "B")
+    # Primero lo que tiene menos sitio: las leyendas de los conectores de cable y sus pads sueltos
     for ref, etiquetas in SG.PADS.items():
-        fp = board.FindFootprintByReference(ref)
-        pads = {p.GetNumber(): p for p in fp.Pads()}
         if ref in SG.LEYENDA:
-            # Leyenda al lado con la disposición de los pads (mismas filas, columnas más anchas)
-            lado, paso = SG.LEYENDA[ref]
-            xs = sorted({round(pcbnew.ToMM(p.GetPosition().x) - P.STL_OX, 2) for p in pads.values()})
-            caja = caja_pads(fp)
-            w_max = max(rotulo(board, "B", t)[0] for t in etiquetas.values())
-            for num, txt in etiquetas.items():
-                col = xs.index(round(pcbnew.ToMM(pads[num].GetPosition().x) - P.STL_OX, 2))
-                if lado == "L":
-                    x = caja.x0 - SG.HUECO - w_max / 2 - (len(xs) - 1 - col) * paso
-                else:
-                    x = caja.x1 + SG.HUECO + w_max / 2 + col * paso
-                y = P.STL_OY - pcbnew.ToMM(pads[num].GetPosition().y)
-                w, h = rotulo(board, "B", txt)
-                hueco = SG.Caja(x - w / 2, y - h / 2, x + w / 2, y + h / 2)
-                if abajo.libre(hueco):
-                    abajo.silk.append(hueco)
-                    rotulo(board, "B", txt, (x, y))
-                else:
-                    abajo.fallos.append("%s.%s" % (ref, num))
+            leyenda(board, abajo, ref, etiquetas)
             continue
+        fp = board.FindFootprintByReference(ref)
         for num, txt in etiquetas.items():
-            lados = SG.LADO_PADS.get(ref, "RLUD")
-            xy = abajo.coloca("%s.%s" % (ref, num), caja_pads(fp, [num]), rotulo(board, "B", txt), lados + "RLUD")
-            if xy:
-                rotulo(board, "B", txt, xy)
+            lados = SG.LADO_PADS.get(ref, "") + "RLUD"
+            # Pads de cable: manda el lado (todos los rótulos del conector al mismo lado), no las pistas
+            pon(board, abajo, "B", "%s.%s" % (ref, num), caja_pads(fp, [num]), txt, lados,
+                alto=SG.TAMANO_PADS.get(ref, SG.TEXTO), valido=sin_ambiguedad(board, ref), limpio_primero=False)
     # Nombre de cada TP en la cara inferior (preferencia: TEST-PLAN sobre la placa sin plano)
     for ref, txt in SG.TP_ABAJO.items():
         fp = board.FindFootprintByReference(ref)
-        xy = abajo.coloca(ref, caja_pads(fp, silk=pcbnew.B_SilkS), rotulo(board, "B", txt), SG.LADO_TP)
-        if xy:
-            rotulo(board, "B", txt, xy)
+        pon(board, abajo, "B", ref, caja_pads(fp, silk=pcbnew.B_SilkS), txt, SG.LADO_TP, valido=sin_ambiguedad(board, ref))
     for ref, txt in SG.PUENTES_ABAJO.items():
         fp = board.FindFootprintByReference(ref)
-        xy = abajo.coloca("abajo " + ref, caja_pads(fp), rotulo(board, "B", txt), "CUDLR")
-        if xy:
-            rotulo(board, "B", txt, xy)
+        pon(board, abajo, "B", "abajo " + ref, caja_pads(fp), txt, "CUDLR", valido=sin_ambiguedad(board, ref))
     for ref, txt in SG.TITULOS.items():
+        if any(a.startswith(ref + " ") for a in abajo.aparte):
+            continue   # la leyenda aparte ya lleva el título
         fp = board.FindFootprintByReference(ref)
-        xy = abajo.coloca("titulo " + ref, caja_pads(fp), rotulo(board, "B", txt), "UDLR")
-        if xy:
-            rotulo(board, "B", txt, xy)
+        pon(board, abajo, "B", "titulo " + ref, caja_pads(fp), txt, "UD", anillo=False)
+    silk_abajo(board, abajo)
+    if arriba.reducidos + abajo.reducidos:
+        print("Rótulos a %.1f mm (a %.1f no caben):" % (SG.TEXTO_MIN, SG.TEXTO), ", ".join(arriba.reducidos + abajo.reducidos))
+    if abajo.aparte:
+        print("Leyendas aparte (no caben junto a sus pads):", ", ".join(abajo.aparte))
     fallos = arriba.fallos + abajo.fallos
     if fallos:
         print("Rótulos sin sitio:", ", ".join(fallos))
     return fallos
+
+
+def recorta_serigrafia(board):
+    """Corta los trazos de serigrafía de las huellas que pasan a < MARGEN_VIA de una vía (el
+    fabricante los recorta igual; así los Gerber dicen lo que se imprimirá). Solo segmentos rectos;
+    devuelve cuántos tramos se han cortado y de qué piezas."""
+    vias = [(pcbnew.ToMM(t.GetPosition().x), pcbnew.ToMM(t.GetPosition().y), pcbnew.ToMM(t.GetWidth(pcbnew.F_Cu)) / 2)
+            for t in board.GetTracks() if t.GetClass() == "PCB_VIA"]
+    cortes = {}
+    for fp in board.GetFootprints():
+        for g in list(fp.GraphicalItems()):
+            if g.GetLayer() not in (pcbnew.F_SilkS, pcbnew.B_SilkS) or g.GetClass() != "PCB_SHAPE" \
+                    or g.GetShape() != pcbnew.SHAPE_T_SEGMENT:
+                continue
+            ax, ay = pcbnew.ToMM(g.GetStart().x), pcbnew.ToMM(g.GetStart().y)
+            bx, by = pcbnew.ToMM(g.GetEnd().x), pcbnew.ToMM(g.GetEnd().y)
+            largo = math.hypot(bx - ax, by - ay)
+            if largo < 1e-6:
+                continue
+            ux, uy = (bx - ax) / largo, (by - ay) / largo
+            fuera = []   # intervalos [t0, t1] del segmento que pisan una vía
+            for vx, vy, r in vias:
+                lim = r + SG.MARGEN_VIA + pcbnew.ToMM(g.GetWidth()) / 2
+                t = (vx - ax) * ux + (vy - ay) * uy
+                d = abs((vx - ax) * uy - (vy - ay) * ux)
+                if d < lim and -lim < t < largo + lim:
+                    m = math.sqrt(lim * lim - d * d)
+                    fuera.append((t - m, t + m))
+            if not fuera:
+                continue
+            tramos, t = [], 0.0
+            for t0, t1 in sorted(fuera):
+                if t0 > t:
+                    tramos.append((t, t0))
+                t = max(t, t1)
+            if t < largo:
+                tramos.append((t, largo))
+            tramos = [(t0, t1) for t0, t1 in tramos if t1 - t0 >= 0.1]
+            for t0, t1 in tramos:
+                n = pcbnew.PCB_SHAPE(fp)
+                n.SetShape(pcbnew.SHAPE_T_SEGMENT)
+                n.SetLayer(g.GetLayer())
+                n.SetWidth(g.GetWidth())
+                n.SetStart(pcbnew.VECTOR2I(mm(ax + ux * t0), mm(ay + uy * t0)))
+                n.SetEnd(pcbnew.VECTOR2I(mm(ax + ux * t1), mm(ay + uy * t1)))
+                fp.Add(n)
+            fp.Remove(g)
+            cortes[fp.GetReference()] = cortes.get(fp.GetReference(), 0) + 1
+    if cortes:
+        print("Serigrafía de huellas cortada junto a vías:", ", ".join("%s (%d)" % kv for kv in sorted(cortes.items())))
+    return cortes
 
 
 def rutas_fijas(board, netmap):
@@ -512,8 +769,6 @@ def main():
     outline(board)
     place(board, netmap)
     mechanical(board)
-    silk(board)
-    rotulos(board)
     board.SetFileName(P.PCB)
     pcbnew.SaveBoard(P.PCB, board)
     board = pcbnew.LoadBoard(P.PCB)
@@ -526,6 +781,9 @@ def main():
     if rutado:
         rutas_fijas(board, netmap)
         import_ses(board)
+    # Rótulos después del cobre: así no pisan vías y prefieren sitios sin pistas debajo
+    recorta_serigrafia(board)
+    rotulos(board)
     zones(board, netmap, exteriores=rutado)
     pcbnew.SaveBoard(P.PCB, board)
     if rutado or "--rellenar" in sys.argv:
