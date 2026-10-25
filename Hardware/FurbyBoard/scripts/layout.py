@@ -61,7 +61,9 @@ P = {
     "J9": (-41.8, -92.0, 270),
     "U6": (-49.5, -103.7, 0),
     "C22": (-46.55, -104.1, 90), "C20": (-46.55, -109.6, 270), "C21": (-48.49, -106.7, 0),
-    "R28": (-52.65, -102.95, 180), "C23": (-52.65, -104.45, 180),
+    # R28 0,17 al norte y C23 0,30 al sur (bloque M): el hueco entre ellos pasa de 0,55 a 0,80 para que
+    # MOT_IN1 y MOT_IN2 salgan juntas de los pines 2 y 3 de U6
+    "R28": (-52.65, -102.78, 180), "C23": (-52.65, -104.75, 180),
     "R26": (-56.1, -103, 0), "R27": (-56.1, -104.6, 180),
     "R29": (-65.5, -87.25, 0), "R30": (-69.3, -87.25, 0), "R25": (-60.5, -114.2, 0),
     # Series de barriga, espalda y leva y resistencia del LED del encoder, junto a J9

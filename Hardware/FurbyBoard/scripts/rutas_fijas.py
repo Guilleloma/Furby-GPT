@@ -480,7 +480,7 @@ pista("MOT_OUT1", "In2.Cu", 0.5, (-47.55, -103.95), (-46.8, -104.7), "J9.12")
 pista("GND", "F.Cu", 0.25, "U6.7", (-49.5, -103.45))
 via("GND", (-49.5, -103.3))
 via("GND", (-49.5, -104.1))
-pista("IPROPI", "F.Cu", 0.25, "U6.1", "R28.1")
+pista("IPROPI", "F.Cu", 0.25, "U6.1", ("R28.1", 0.0, -0.17))   # recto: R28 está 0,17 al norte del pin 1 (bloque M)
 pista("IPROPI", "F.Cu", 0.25, "R28.1", (-51.825, -102.0))
 via("IPROPI", (-51.825, -102.0))
 pista("IPROPI", "B.Cu", 0.2, (-51.825, -102.0), (-51.3, -101.475), "TP8.1")
@@ -489,13 +489,15 @@ via("GND", (-59.95, -87.55))
 via("GND", (-50.95, -102.2))
 via("IPROPI", (-58.95, -87.55))
 pista("IPROPI", "F.Cu", 0.2, (-58.95, -87.55), "JP3.2")
-pista("MOT_VREF", "F.Cu", 0.25, "U6.4", "C23.1")
-pista("MOT_VREF", "F.Cu", 0.25, "C23.1", (-51.875, -105.3), (-55.275, -105.3), "R27.1")
+pista("MOT_VREF", "F.Cu", 0.25, "U6.4", ("C23.1", 0.0, 0.3))   # recto: C23 está 0,30 al sur del pin 4 (bloque M)
+pista("MOT_VREF", "F.Cu", 0.25, "C23.1", (-51.875, -105.55), (-55.275, -105.55), "R27.1")
 pista("MOT_VREF", "F.Cu", 0.2, "R27.1", "R26.2")
-stub("GND", "R28.2", (-0.825, 0.0), 0.3)
-# C23.2 a una vía 0,1 al sur del eje del pad: deja sitio a la vía de MOT_IN2 entre las de GND de R28.2 y C23.2 (bloque C)
-pista("GND", "F.Cu", 0.3, "C23.2", (-53.525, -104.55), (-54.3, -104.55))
-via("GND", (-54.3, -104.55))
+# Vías de GND de R28.2 y C23.2 en los extremos de la columna x -54,375 (paso 0,75); entre ellas, las de MOT_IN2 y
+# MOT_IN1 (bloque M). La de R28.2 no sube más: IPROPI va por In2 en y -102,0 (0,25 de margen).
+pista("GND", "F.Cu", 0.3, "R28.2", (-53.605, -102.65), (-54.375, -102.65))
+via("GND", (-54.375, -102.65))
+pista("GND", "F.Cu", 0.3, "C23.2", (-54.225, -104.75), (-54.375, -104.9))
+via("GND", (-54.375, -104.9))
 stub("GND", "R27.2", (0.0, -0.8), 0.3)
 stub("GND", "C19.2", (1.0, 0.0), 0.3)
 stub("GND", "C21.2", (0.0, 1.2), 0.3)
@@ -819,7 +821,7 @@ pista("CAM_PWDN", "B.Cu", 0.2, (-50.08, -86.6), (-46.85, -86.6), (-43.9, -83.65)
 pista("CAM_EN", "F.Cu", 0.2, "U10.19", (-88.4, -80.675))
 via("CAM_EN", (-88.4, -80.675))
 pista("CAM_EN", "In3.Cu", 0.2, (-88.4, -80.675), (-86.0, -80.675), (-85.325, -81.35), (-53.5, -81.35),
-      (-53.5, -89.012), (-53.8, -89.312), (-54.0, -89.512), (-54.0, -101.5), (-56.8, -104.3), (-57.8, -104.3))
+      (-53.5, -89.012), (-53.8, -89.312), (-54.0, -89.512), (-54.0, -101.15), (-57.15, -104.3), (-57.8, -104.3))
 via("CAM_EN", (-57.8, -104.3))
 pista("CAM_EN", "F.Cu", 0.2, (-57.8, -104.3), (-57.8, -106.4), "R33.1")
 pista("CAM_EN", "B.Cu", 0.2, (-53.8, -89.312), (-50.3, -89.312), (-49.7, -89.912), (-49.7, -91.6), (-48.25, -91.6))
@@ -880,20 +882,29 @@ pista("ENC_IO", "In3.Cu", 0.2, (-79.6, -75.3), (-46.5, -75.3), (-46.5, -80.5), (
 via("ENC_IO", (-41.6, -108.0))
 pista("ENC_IO", "F.Cu", 0.2, "JP4.2", (-41.6, -108.0))
 # ---------------------------------------------------------------- bloque C: MOT_IN2, UART0, EXP_P07 e I2C a J11
-# MOT_IN2: los pines 1 (IPROPI a R28.1) y 4 (MOT_VREF a C23.1) de U6 encierran a los pines 2 y 3; su única salida en F.Cu
-# es el hueco de 0,55 mm entre R28 y C23 (una sola pista). Vía entre las de GND de R28.2/C23.2 (0,15 local), B.Cu al este
-# por debajo de U6 y al norte por la ranura entre TP8 y TP11, al oeste en y -94,5 hasta el borde del agujero y al norte
-# hasta una vía al SE de la de IPROPI; In3 rodea esa vía por el norte (y -86,6) hasta la vía de MOT_IN2 (en In2 cerraba el
-# paso del relleno de VSYS entre la fila MOT de In2 y la diagonal de IPROPI y se perdía el relleno del cuadrante NE).
-# Codo de 0,3 en x -51,15 (fuera del patio de U6, a 0,15 de R28.1); 0,0001 de más para que revisar-rutado no lo mida
-# por debajo de 2 x ancho por el redondeo de coma flotante.
-pista("MOT_IN2", "F.Cu", 0.25, "U6.2", (-51.15, -103.4499))   # 0,25 dentro del patio de U6
-pista("MOT_IN2", "F.Cu", 0.15, (-51.15, -103.4499), (-51.15, -103.75), (-54.3, -103.75))
-via("MOT_IN2", (-54.3, -103.75))
-pista("MOT_IN2", "B.Cu", 0.2, (-54.3, -103.75), (-50.25, -103.75), (-50.25, -99.7), (-51.3, -99.7), (-51.3, -94.5),
-      (-54.5, -94.5), (-54.5, -89.7), (-55.0, -89.2), (-56.3, -89.2))
-via("MOT_IN2", (-56.3, -89.2))
-pista("MOT_IN2", "In3.Cu", 0.2, (-56.3, -89.2), (-56.3, -87.0), (-56.7, -86.6), (-61.05, -86.6), (-61.35, -86.3))
+# MOT_IN2 y MOT_IN1 (bloques C y M): los pines 1 (IPROPI a R28.1) y 4 (MOT_VREF a C23.1) de U6 encierran a los pines 2 y
+# 3; las dos salen juntas por el hueco entre R28 y C23 (0,80 tras mover R28 y C23) a dos vías de la columna x -54,375 y
+# van en pareja por B.Cu (0,15, PWM lógico): al este por debajo de U6, al norte entre la vía de GND (-50,95; -102,2) y los
+# pads inferiores de U6, entre TP8 y TP11, al oeste, al norte por el este de las vías de ENC_PT y GND y al oeste otra vez
+# hasta el borde este del agujero. Allí MOT_IN2 baja a In3 (por su recorrido anterior hasta JP2) y MOT_IN1 sigue en B.Cu
+# por encima de su vía y entre IPROPI_IO y el agujero hasta una vía al sur de R29.1.
+# Dentro del patio de U6, 0,25 hasta x -51,15; MOT_IN2 entra 0,05 por debajo del eje del pad para dejar 0,15 a R28.
+pista("MOT_IN2", "F.Cu", 0.25, ("U6.2", 0.0, -0.05), (-51.15, -103.5))   # 0,25 dentro del patio de U6
+pista("MOT_IN2", "F.Cu", 0.15, (-51.15, -103.5), (-54.275, -103.5), (-54.375, -103.4))
+via("MOT_IN2", (-54.375, -103.4))
+pista("MOT_IN1", "F.Cu", 0.25, "U6.3", (-51.15, -103.95))   # 0,25 dentro del patio de U6
+pista("MOT_IN1", "F.Cu", 0.15, (-51.15, -103.95), (-54.175, -103.95), (-54.375, -104.15))
+via("MOT_IN1", (-54.375, -104.15))
+pista("MOT_IN2", "B.Cu", 0.15, (-54.375, -103.4), (-50.41, -103.4), (-50.41, -101.75), (-50.06, -101.4),
+      (-50.06, -99.875), (-51.45, -99.875), (-51.45, -94.65), (-54.85, -94.65), (-54.85, -90.6), (-55.1, -90.35))
+pista("MOT_IN1", "B.Cu", 0.15, (-54.375, -104.15), (-50.1, -104.15), (-50.1, -102.75), (-49.73, -102.38),
+      (-49.73, -99.525), (-51.1, -99.525), (-51.1, -94.3), (-54.5, -94.3), (-54.5, -89.6), (-56.4, -89.6),
+      (-57.05, -88.95), (-66.325, -88.95))
+via("MOT_IN2", (-55.1, -90.35))
+via("MOT_IN1", (-66.325, -88.95))
+pista("MOT_IN1", "F.Cu", 0.15, (-66.325, -88.95), "R29.1")
+pista("MOT_IN2", "In3.Cu", 0.2, (-55.1, -90.35), (-56.25, -89.2), (-56.25, -87.05),
+      (-56.7, -86.6), (-61.05, -86.6), (-61.35, -86.3))
 # EXP_P07: el pin 7 de U10 queda encerrado por TONGUE (pines 6 y 8 al oeste); vía bajo el cuerpo y por In3, al oeste entre
 # las vías de x -97,15 y al sur por el este de J8 y J5, hasta la fila entre las dos primeras de J11 y J11.7 desde arriba.
 pista("EXP_P07", "F.Cu", 0.2, "U10.7", (-91.45, -81.325))
