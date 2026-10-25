@@ -57,3 +57,17 @@ Las piezas, redes y LCSC están en `scripts/design.py`; la colocación, en `scri
 ## Rutado
 
 Proceso de `layout-pcb.md` §13 (Cerebro): lo crítico (lazos de los convertidores, par USB, bus de la cámara, I2S, realimentaciones) se escribe explícito y bloqueado; lo lento, con **una** ejecución acotada de Freerouting 1.9.0 y post-proceso con `pcb-toolkit limpiar-pistas`. Antes de cada commit de rutado: `pcb-toolkit revisar-rutado --ancho …` sin errores, PNG leídos y DRC con paridad 0/0. `scripts/rutado.dsn` y `rutado.ses` son de la colocación anterior y no sirven.
+
+## Reglas para el firmware
+
+La placa v1.0 depende del firmware para no pasarse de algunos límites. Salen de las simulaciones de `sim/RESULTADOS.md`; el detalle, con el porqué de cada una, está en `NOTAS.md` («Reglas para el firmware»).
+
+| Regla | Simulación |
+|-------|------------|
+| Con USB enchufado (PGOOD a 0, P06 del TCA9535): motor con PWM ≤ 50 % y audio ≤ −12 dBFS mientras se mueve; VSYS ≤ ≈ 2,0 A en total | `bq24073_powerpath.cir` |
+| Al enchufar el USB (flanco de PGOOD): pausar motor y audio ≈ 5 ms | `bq24073_powerpath.cir` |
+| Cargador en modo ILIM (EN2 = 1, EN1 = 0) en cuanto se sepa que la fuente da ≥ 1,5 A y con la placa fría; si no, USB500. La placa no lee CC: la fuente se declara, no se detecta | `bq24073_powerpath.cir`, revisión B8 |
+| Motor y audio a plena potencia a la vez solo con VBAT ≥ 3,7 V (VBAT_SNS en carga); por debajo, PWM ≤ 60 % y audio ≤ −12 dBFS | `arranque_brownout.cir` |
+| Celda con resistencia interna (con PCM) ≤ 100 mΩ, medida en el bring-up | `arranque_brownout.cir` |
+| VBAT_SNS y LIGHT en lecturas sueltas a ≤ 1 kHz de media | `senales_sensores_adc.cir` |
+| Bloqueo del motor ≤ 150 ms; portadora IR continua ≤ 50 ms; antirrebote ≥ 30 ms en la INT del TCA9535; reset de la cámara por SCCB | `drv8231a_motor.cir`, `senales_*.cir`, `ldo_camara.cir` |
