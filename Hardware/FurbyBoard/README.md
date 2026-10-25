@@ -1,5 +1,7 @@
 # FurbyBoard v1.0: hoja de datos
 
+> **Explicación interactiva de cada bloque, con señales y diagnóstico:** [makerisland.es/projects/furby-gpt/placa](https://makerisland.es/projects/furby-gpt/placa)
+
 Placa principal del Furby-GPT: va atornillada en el suelo de la base de un Furby de 1998 y sustituye a su electrónica. Lleva un ESP32-S3 con WiFi, cámara, micro y altavoz, mueve el motor original del mecanismo, lee los sensores del muñeco y se alimenta de una LiPo de una celda que se carga por USB-C.
 
 Este documento es la referencia para quien coja la placa sin contexto: qué hace cada bloque, qué hay en cada conector, qué pin usa el firmware, dónde se mide y qué límites tiene. El porqué de cada decisión está en [`NOTAS.md`](NOTAS.md); el plan de pruebas, en [`TEST-PLAN.md`](TEST-PLAN.md); las simulaciones, en [`sim/RESULTADOS.md`](sim/RESULTADOS.md). Si este documento y el esquema no coinciden, manda el esquema (`scripts/design.py`).

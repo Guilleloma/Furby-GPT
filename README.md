@@ -8,6 +8,8 @@ https://github.com/Guilleloma/Furby-GPT/assets/115458145/2f7d8e4b-0d95-4262-baf4
 ## Description
 This project transforms a 1998 Furby into an interactive and advanced desktop assistant using a Raspberry Pi W. It incorporates OpenAI and Google Speech to text for natural language processing, primarily relying on Google Cloud Text to Speech for voice generation. It uses Picovoice's Porcupine library for voice activation and controls the Furby's motor for a dynamic user experience.
 
+> **More on the web:** the [project page](https://makerisland.es/projects/furby-gpt) tells the full story, and [FurbyBoard por dentro](https://makerisland.es/projects/furby-gpt/placa) (in Spanish) is an interactive walkthrough of the custom board: every block animated, simulated signals and how to diagnose faults. The board's design files and datasheet live in [`Hardware/FurbyBoard/`](Hardware/FurbyBoard/README.md).
+
 ## Features
 - **Function:** Designed to act as an interactive desktop assistant.
 - **Platform:** Operates on a Raspberry Pi W.
