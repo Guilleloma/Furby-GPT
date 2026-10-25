@@ -22,12 +22,26 @@ Convenciones: «peor caso» = tolerancias, DC bias de los cerámicos y tensión 
 | Elevador de 6 V (TPS61089) | `elevador_6v.cir` | PASS (Isat de L2 por verificar) |
 | 3V3 (TPS63802) | `tps63802_3v3.cir`, `tps63802_rizado.cir` | PASS |
 | Batería y Q1 | `bateria_q1.cir` | PASS (con USB y batería al revés, en la esquina mala el BQ entra en precarga: 0,32 W en Q1) |
+| Power path (BQ24073) | `bq24073_powerpath.cir` | **2 FAIL** (pico de 2,9 A con USB en USB500 en el peor caso; enchufe con ≥ 4,3 W en modo ILIM): propuestas de firmware |
 | Puente H y motor | `drv8231a_motor.cir` | PASS (θJA del DSG mal copiada en NOTAS: 66,5 °C/W, no 42,8) |
 | Amplificador (MAX98357A) | `max98357_vsys.cir` | **FAIL**: 257 mV pp en VDD por el puente de B.Cu; propuesta: 10 µF junto a los pines 7/8 (25 mV pp) |
 | LDO de la cámara (ME6211) | `ldo_camara.cir`, `ldo_camara_psrr.cir` | PASS (RESETB sin reset por hardware al encender: el firmware usa el reset por SCCB) |
 | NTC en TS | `ntc_ts.cir` | PASS frente a 0–51 °C (nominal 0,2–51,2 °C; con tolerancias −2,2–56,4 °C); frente a 0–45 °C, pendiente de la hoja de la celda |
 | Señales | `senales_i2c_led_ir.cir`, `senales_sensores_adc.cir` | **FAIL** menores: D4/D5 tenues (verdes InGaN; R57/R58 a 1 kΩ) y ADC solo con muestreo ≤ 1 kHz (regla de firmware); I2C a 400 kHz PASS |
-| Power path (BQ24073) | `bq24073_powerpath.cir` | **2 FAIL** (pico de 2,9 A con USB en USB500 en el peor caso; enchufe con ≥ 4,3 W en modo ILIM): propuestas de firmware |
+| Arranque y caída de batería | `arranque_brownout.cir` | Arranque PASS; **FAIL**: el pico de 10,2 W hunde VSYS bajo 2,5 V con la batería < 3,36 V (0,21 Ω) o < 4,0 V (0,37 Ω); 3V3 se mantiene. Propuesta: presupuesto de potencia en firmware y celda de baja resistencia |
+
+### Propuestas que salen de las simulaciones (ninguna aplicada al esquema)
+
+| Prioridad | Propuesta | Por qué | Dónde |
+|-----------|-----------|---------|-------|
+| Alta (firmware) | Presupuesto de potencia: con USB presente (PGOOD) o con VBAT en carga < ≈ 3,7 V, no sumar motor bloqueado + audio a plena potencia + TX (PWM del motor ≤ 50–60 %, audio a −12 dBFS mientras se mueve) | VO(SC2) del BQ24073 con USB500 y caída de VSYS bajo el UVLO del elevador con la batería baja | «Power path», «Arranque» |
+| Alta (firmware) | Al subir PGOOD, pausar motor y audio ≈ 5 ms | Biestabilidad del power path con cargas de potencia constante | «Power path» |
+| Media (pieza, si cabe en el rutado) | 10 µF 10 V 0603 (C19702) junto a los pines 7/8 de U7 | 257 → 25 mV pp de rizado en VDD del amplificador | «Amplificador» |
+| Media (compra) | Celda con resistencia interna (con PCM) ≤ 100 mΩ; medirla en el bring-up | El pico de 10,2 W se sostiene hasta 3,07 V en vez de 3,36–4,0 V | «Arranque» |
+| Baja (BOM) | R57 y R58 de 1 kΩ (C21190) | Los LED verdes son de InGaN (VF ≈ 2,8 V): D4 se queda en 0,24 mA | «Señales» |
+| Baja (firmware) | ADC de VBAT_SNS y LIGHT en lecturas sueltas a ≤ 1 kHz de media; antirrebote ≥ 30 ms en la INT del TCA9535; reset de la cámara por SCCB | Impedancia de 235 kΩ, entradas sin histéresis, RESETB sin flanco al encender | «Señales», «LDO de la cámara» |
+| Baja (documentación) | θJA del DRV8231A en `NOTAS.md`: 66,5 °C/W (DSG), no 42,8 | Tj con el motor bloqueado 103 °C, no 76 °C | «Puente H» |
+| v1.1 | NTC de B ≈ 3950–4100 K si la celda pide 0–45 °C; R54 en 1206; PTC de 2 A + modo ILIM | Ventana de carga, potencia de R54 con portadora continua, margen de VO(SC2) | «NTC», «Señales», «Power path» |
 
 ## Elevador de 6 V (TPS61089 + FHD4020S-1R0MT) — `elevador_6v.cir`
 
@@ -272,6 +286,45 @@ Observaciones y propuestas:
 
 Figuras: `png/sensores_rc.png`, `png/adc_vbat_sns.png`.
 
+## Arranque y caída de batería — `arranque_brownout.cir`
+
+Supuestos: batería conectada sin USB, a 3,0 V (agotada) con 0,37 Ω para el arranque; TPS63802 con su modelo (retardo de 321 µs y rampa de 224 µs); EN con R17/C11; ESP32 con 1 mA en reset, 50 mA al arrancar y 0,4 A durante 5 ms de calibración del WiFi. Para la caída de batería, cargas de potencia constante en VSYS: elevador + motor bloqueado 6,6 W (con la histéresis de UVLO del TPS61089, 2,5/2,7 V), 3V3 2,0 W y amplificador 1,6 W, y la batería bajando de 4,2 a 2,8 V; resistencia de la celda a VSYS de 0,21 Ω (nominal) o 0,37 Ω (celda vieja o fría y BAT-FET caliente).
+
+| Magnitud | Resultado | Criterio | PASS/FAIL |
+|----------|-----------|----------|-----------|
+| Arranque con batería a 3,0 V y 0,37 Ω: 3V3 llega a 3,0 V | a 0,49 ms; sobreimpulso a 3,33 V | ≤ 3,6 V (máx. del ESP32-S3) | PASS |
+| VSYS mínimo durante el arranque suave de U3 | 2,43 V | > 1,25 V (UVLO de U3 bajando) | PASS |
+| EN del ESP32 (10 kΩ, 1 µF) cruza 0,75 · 3V3 | a 14,3 ms: 13,8 ms después de 3V3 ≥ 3,0 V | ≥ 50 µs (tSTBL) | PASS |
+| 3V3 durante la calibración del WiFi (0,4 A, 5 ms) con la batería a 3,0 V | mín. 3,24 V | ≥ 3,0 V | PASS |
+| Pico de 10,2 W (motor bloqueado + TX + audio) con 0,21 Ω (nominal): batería mínima | VSYS cae por debajo de 2,5 V con la batería a 3,36 V (cálculo: 3,36 V) | ≤ 3,0 V para sostener el pico en todo el rango de la batería | **FAIL** |
+| Pico de 10,2 W (motor bloqueado + TX + audio) con 0,37 Ω (peor caso): batería mínima | VSYS cae por debajo de 2,5 V con la batería a 4,01 V (cálculo: 4,01 V) | ≤ 3,0 V para sostener el pico en todo el rango de la batería | **FAIL** |
+| 3V3 mientras el elevador entra y sale por UVLO | mín. 3,27 V | ≥ 3,0 V (el ESP32 no se reinicia) | PASS |
+
+Observaciones y propuesta:
+
+- **El arranque es limpio**: EN se libera 13,8 ms después de que 3V3 esté estable (el mínimo es 50 µs), sin sobreimpulso en 3V3, y la calibración del WiFi con la batería agotada deja 3V3 en 3,24 V. Durante el arranque suave de U3, VSYS baja un instante a 2,43 V por la resistencia de la celda; U3 sigue funcionando (UVLO 1,25 V).
+- **FAIL — el pico simultáneo de 2,9 A (10,2 W) no se sostiene en todo el rango de la batería.** Con cargas de potencia constante, VSYS = (VOC + raíz(VOC² − 4·R·P)) / 2: con 10,2 W y 0,21 Ω, VSYS cae por debajo del UVLO del elevador (2,5 V) cuando la batería baja de **3,36 V**; con 0,37 Ω, ya por debajo de **4,0 V**. A partir de ahí el elevador entra y sale por UVLO (el motor da tirones y el audio se corta), aunque **3V3 se mantiene** (U3 regula hasta VIN ≈ 1,3 V) y el ESP32 no se reinicia. Es el mismo límite que el del power path (pico de 2,9 A con USB): el presupuesto de pico de `ARQUITECTURA.md` §11 supone una fuente ideal.
+- **Propuestas** (sin tocar el esquema): (1) **firmware**: presupuesto de potencia según VBAT_SNS: por debajo de ≈ 3,7 V en carga, no mover el motor con el audio a plena potencia (limitador a −12 dBFS mientras se mueve) y PWM del motor ≤ 60 %; detección de bloqueo por el encoder ya prevista; (2) **batería**: elegir una celda con resistencia interna (con PCM) ≤ 100 mΩ y medirla en el bring-up (escalón de 1 A en TP4); con 0,14 Ω en total el pico se sostiene hasta 3,07 V; (3) v1.1: ITRIP de 0,87 A (R26 de 6,8 kΩ) si el motor lo permite.
+- **Medida en el bring-up (propuesta para TEST-PLAN §6 «Estrés»)**: fuente en los pads de la batería con 0,2 Ω en serie, bajando de 4,2 a 3,0 V con el motor bloqueado, el WiFi transmitiendo y audio al máximo: anotar la tensión de la fuente a la que el elevador empieza a cortar (VSYS en TP5 < 2,5 V) y comprobar que el ESP32 no se reinicia.
+
+Figuras: `png/arranque.png`, `png/caida_bateria.png`.
+
 ## Lo que no se simula y por qué
 
-- **TPS63802 (3,3 V):** el modo PFM y la zona de transición buck-boost (control propietario); se miden en el bring-up.
+| Qué | Por qué no | Qué lo cubre |
+|-----|-----------|--------------|
+| Modo PFM y zona de transición buck-boost del TPS63802 | Control propietario sin modelo; el modelo promediado no tiene rizado ni paso de línea | TEST-PLAN §7: rizado de TP6 < 50 mV pp con el WiFi transmitiendo; §8.3: enchufar y desenchufar con carga |
+| Lazo real del TPS61089 (polo RHP, límites de COMP, PFM a poca carga) | El modelo promediado lo aproxima con la ecuación 11 de la hoja; sin modelo del fabricante | TEST-PLAN §10: escalones con 10 Ω y 4,7 Ω en TP7 |
+| Saturación de L1 y L2 (FHD4020S) | Hoja de la bobina sin Isat verificado | Comprobar Isat ≥ 3,4 A (L2) y ≥ 1,7 A (L1) en la hoja antes del pedido; TEST-PLAN §10 con 4,7 Ω |
+| Retardo real de entrada en supplement y apagado por VO(SC2) del BQ24073 | La hoja no da el retardo; el apagado de 60 ms no se modela | TEST-PLAN §8.3 y el paso propuesto en «Power path» (USB500 + motor bloqueado + TX + audio, VBAT − VSYS < 150 mV) |
+| Regulación térmica del BQ24073 (TJ(REG), TJ(OFF)) | Modelo eléctrico, sin térmico | TEST-PLAN §17 (U2 < 85 °C cargando) |
+| PCM de la celda (disparo por cortocircuito y resistencia interna) | Celda sin hoja | TEST-PLAN §8.2 (TP4 tras soldar) y medida de la resistencia de la celda con un escalón de 1 A (propuesta en «Arranque») |
+| Motor real (R, L, constante de par) | Bobinado sin medir | TEST-PLAN §11 (bobinado y bloqueo con TP8) |
+| Temperaturas de unión | Solo cálculo con θJA en régimen; la placa no es la JEDEC | TEST-PLAN §17 con cámara térmica |
+| Integridad de señal del bus DVP (20 MHz) y del par USB | Sin modelos IBIS de la cámara ni del ESP32-S3; las reglas de rutado y la impedancia están en `NOTAS.md` | TEST-PLAN §5 (enumeración USB) y §14 (50 fotos seguidas) |
+| Calidad de audio del clase D (THD, ruido, PSRR real, espectro ensanchado) | Modelo de conmutación ideal | TEST-PLAN §13 |
+| RF, antena y EMI | Fuera del alcance de SPICE | TEST-PLAN §15 (RSSI frente a una placa de referencia) |
+| Condensador de muestreo y fugas reales del ADC del ESP32-S3 | Espressif no los publica | TEST-PLAN §9 (calibración de VBAT_SNS) y regla de firmware (≤ 1 kHz de media) |
+| Velocidad del fototransistor del encoder | Pieza del Furby sin hoja | TEST-PLAN §12 (flancos tras U11) |
+| Consumo en reposo | Depende del firmware y de las fugas reales | TEST-PLAN §16 |
+| DC bias de los MLCC | Capacidades efectivas estimadas con curvas típicas | Herramienta del fabricante (Samsung o Murata) si alguna conclusión queda justa |

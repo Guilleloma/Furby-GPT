@@ -466,7 +466,47 @@ def bloque_senales():
     return t
 
 
+def bloque_arranque():
+    t = Tabla("Arranque y caída de batería")
+    m = correr("arranque_brownout.cir")
+    t.fila("Arranque con batería a 3,0 V y 0,37 Ω: 3V3 llega a 3,0 V", f"a {v(m['a_t3']*1e3, 2)} ms; sobreimpulso a {v(m['a_v3max'], 2)} V",
+           "≤ 3,6 V (máx. del ESP32-S3)", m["a_v3max"] <= 3.6)
+    t.fila("VSYS mínimo durante el arranque suave de U3", f"{v(m['a_vsysmin'])} V", "> 1,25 V (UVLO de U3 bajando)", m["a_vsysmin"] > 1.25)
+    t.fila("EN del ESP32 (10 kΩ, 1 µF) cruza 0,75 · 3V3", f"a {v(m['a_ten']*1e3, 1)} ms: {v((m['a_ten']-m['a_t3'])*1e3, 1)} ms después de 3V3 ≥ 3,0 V",
+           "≥ 50 µs (tSTBL)", m["a_ten"] - m["a_t3"] >= 50e-6)
+    t.fila("3V3 durante la calibración del WiFi (0,4 A, 5 ms) con la batería a 3,0 V", f"mín. {v(m['a_v3wifi'])} V", "≥ 3,0 V",
+           m["a_v3wifi"] >= 3.0)
+    for clave, rb in (("b", "0,21 Ω (nominal)"), ("c", "0,37 Ω (peor caso)")):
+        voc = 4.2 - (m[clave + "_tcae"] - 10e-3) * 10
+        t.fila(f"Pico de 10,2 W (motor bloqueado + TX + audio) con {rb}: batería mínima",
+               f"VSYS cae por debajo de 2,5 V con la batería a {v(voc)} V (cálculo: {v(2.5 + float(rb.split()[0].replace(',', '.'))*10.2/2.5)} V)",
+               "≤ 3,0 V para sostener el pico en todo el rango de la batería", voc <= 3.0)
+    t.fila("3V3 mientras el elevador entra y sale por UVLO", f"mín. {v(min(m['b_v3min'], m['c_v3min']))} V", "≥ 3,0 V (el ESP32 no se reinicia)",
+           min(m["b_v3min"], m["c_v3min"]) >= 3.0)
+    a = recorte(leer("arranque.dat"), 0, 20e-3)
+    figura("arranque.png", "Arranque al conectar la batería (3,0 V, 0,37 Ω): VSYS, 3V3 y EN", [
+        ("tensión (V)", [(a["time"], a["v(vsys)"], "VSYS"), (a["time"], a["v(v3)"], "3V3"), (a["time"], a["v(en)"], "EN")],
+         [(2.475, "0,75 · 3,3 V")]),
+    ])
+    n, p = (recorte(leer(f), 10e-3, 1) for f in ("caida_nominal.dat", "caida_peor.dat"))
+    figura("caida_bateria.png", "Pico de 10,2 W con la batería bajando de 4,2 a 2,8 V", [
+        ("VSYS (V)", [(n["v(bat)"], n["v(vsys)"], "0,21 Ω (nominal)"), (p["v(bat)"], p["v(vsys)"], "0,37 Ω (peor caso)")],
+         [(2.5, "UVLO del TPS61089 2,5 V")]),
+        ("elevador encendido (1 = sí; entre 0 y 1: ciclos de UVLO)", [(n["v(bat)"], n["v(onq)"], "0,21 Ω (nominal)"), (p["v(bat)"], p["v(onq)"], "0,37 Ω (peor caso)")], []),
+    ], escala_x=1, etiqueta_x="tensión en vacío de la batería (V); 3V3 se mantiene en 3,27 V en todo el barrido")
+    return t
+
+
+def bloque_elevador():
+    t = Tabla("Elevador de 6 V (TPS61089)")
+    m = correr("elevador_6v.cir")
+    t.fila("Corriente de pico en la bobina (Vin 3,0 V, 1,0 A, L −20 %)", f"{v(m['ipk'])} A", "< ILIM 3,8 A con margen ≥ 20 %", m["ipk"] < 3.8 / 1.2)
+    t.fila("Rizado de salida", f"{v((m['vmax']-m['vmin'])*1e3, 0)} mV pp", "< 59 mV (1 %)", m["vmax"] - m["vmin"] < 0.059)
+    return t
+
+
 BLOQUES = {
+    "elevador": bloque_elevador,
     "tps63802": bloque_tps63802,
     "bq24073": bloque_bq24073,
     "bateria": bloque_bateria,
@@ -475,6 +515,7 @@ BLOQUES = {
     "ldo": bloque_ldo,
     "ntc": bloque_ntc,
     "senales": bloque_senales,
+    "arranque": bloque_arranque,
 }
 
 if __name__ == "__main__":
