@@ -25,6 +25,7 @@ Convenciones: «peor caso» = tolerancias, DC bias de los cerámicos y tensión 
 | Puente H y motor | `drv8231a_motor.cir` | PASS (θJA del DSG mal copiada en NOTAS: 66,5 °C/W, no 42,8) |
 | Amplificador (MAX98357A) | `max98357_vsys.cir` | **FAIL**: 257 mV pp en VDD por el puente de B.Cu; propuesta: 10 µF junto a los pines 7/8 (25 mV pp) |
 | LDO de la cámara (ME6211) | `ldo_camara.cir`, `ldo_camara_psrr.cir` | PASS (RESETB sin reset por hardware al encender: el firmware usa el reset por SCCB) |
+| NTC en TS | `ntc_ts.cir` | PASS frente a 0–51 °C (nominal 0,2–51,2 °C; con tolerancias −2,2–56,4 °C); frente a 0–45 °C, pendiente de la hoja de la celda |
 | Power path (BQ24073) | `bq24073_powerpath.cir` | **2 FAIL** (pico de 2,9 A con USB en USB500 en el peor caso; enchufe con ≥ 4,3 W en modo ILIM): propuestas de firmware |
 
 ## Elevador de 6 V (TPS61089 + FHD4020S-1R0MT) — `elevador_6v.cir`
@@ -208,6 +209,25 @@ Observaciones:
 - **CAM_RST (RESETB) no da un reset por hardware al encender la cámara**: R35/C31 cuelgan de 3V3, que ya está arriba cuando CAM_EN enciende AVDD y DVDD, así que RESETB está a 3,3 V desde antes de alimentar el sensor. No es un fallo si el firmware usa el reset por SCCB (en `esp32-camera`, `pin_reset = -1`) y PWDN (R34 lo deja en reposo al arrancar). Se anota para el firmware.
 
 Figuras: `png/ldo_arranque.png`, `png/ldo_psrr.png`.
+
+## NTC en TS (RT1, NCP18XH103F03RB) — `ntc_ts.cir`
+
+Supuestos: el pin TS del BQ24073 con su fuente de 72–78 µA y los umbrales VHOT 270–330 mV y VCOLD 2,0–2,2 V (tabla 8.5); el NTC de Murata con R25 10 kΩ ± 1 % y B25/50 3380 K ± 1 % (modelo B, exacto a 25 y 50 °C; ≈ 0,5 °C de error estimado a 0 °C). Se barre la temperatura del NTC y se toman los cruces en las esquinas que más ensanchan y más estrechan la ventana.
+
+| Magnitud | Resultado | Criterio | PASS/FAIL |
+|----------|-----------|----------|-----------|
+| Ventana de carga nominal (INTC 75 µA, VHOT 0,30 V, VCOLD 2,10 V) | 0,2 a 51,2 °C | 0–51 °C (la del encargo y la tabla 9-3 de TI: 28 kΩ y 4 kΩ) | PASS |
+| Ventana más ancha con tolerancias (INTC, VHOT/VCOLD, R25 ± 1 %, B ± 1 %) | -2,2 a 56,4 °C | Informativo: lo que puede llegar a cargar una placa concreta | — |
+| Ventana más estrecha con tolerancias | 2,6 a 46,5 °C | Informativo | — |
+| Reanudación de la carga (histéresis, nominal) | por debajo de 48,3 °C y por encima de 3,6 °C | Informativo | — |
+| Frente a la ventana de carga típica de una LiPo (0–45 °C) | carga hasta 51 °C (nominal) y 56 °C (peor caso) | ≤ 45 °C si la hoja de la celda lo pide (pendiente: celda sin hoja) | — |
+
+Observaciones:
+
+- La ventana nominal es la que se decidió (0–51 °C, la de la nota de la tabla 8.5 de TI). Con las tolerancias del cargador, una placa concreta puede cargar hasta 56 °C o cortar ya a 46,5 °C.
+- **Si la celda pide 0–45 °C** (lo habitual en LiPo), el corte en caliente queda 6–11 °C por encima. No es un fallo del circuito, sino del criterio: depende de la hoja de la celda, que no tenemos. Si la celda lo exige, la solución en la v1.1 es un NTC de 10 kΩ con B ≈ 3950–4100 K (ventana nominal ≈ 3–47 °C con los mismos umbrales); con la red Rs/Rp de la figura 9-9 no se puede bajar el corte en caliente sin bajar también el de frío por debajo de 0 °C. Recordatorio de `NOTAS.md`: el NTC mide la PCB bajo la celda, no la celda.
+
+Figura: `png/ntc_ts.png`.
 
 ## Lo que no se simula y por qué
 

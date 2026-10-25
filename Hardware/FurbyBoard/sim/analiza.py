@@ -389,6 +389,28 @@ def bloque_ldo():
     return t
 
 
+def bloque_ntc():
+    t = Tabla("NTC en TS (RT1)")
+    m = correr("ntc_ts.cir")
+    t.fila("Ventana de carga nominal (INTC 75 µA, VHOT 0,30 V, VCOLD 2,10 V)", f"{v(m['n_cold'], 1)} a {v(m['n_hot'], 1)} °C",
+           "0–51 °C (la del encargo y la tabla 9-3 de TI: 28 kΩ y 4 kΩ)", -1 <= m["n_cold"] <= 1 and 50 <= m["n_hot"] <= 52)
+    t.fila("Ventana más ancha con tolerancias (INTC, VHOT/VCOLD, R25 ± 1 %, B ± 1 %)", f"{v(m['w_cold'], 1)} a {v(m['w_hot'], 1)} °C",
+           "Informativo: lo que puede llegar a cargar una placa concreta", None)
+    t.fila("Ventana más estrecha con tolerancias", f"{v(m['s_cold'], 1)} a {v(m['s_hot'], 1)} °C",
+           "Informativo", None)
+    t.fila("Reanudación de la carga (histéresis, nominal)", f"por debajo de {v(m['h_hot'], 1)} °C y por encima de {v(m['h_cold'], 1)} °C",
+           "Informativo", None)
+    t.fila("Frente a la ventana de carga típica de una LiPo (0–45 °C)", f"carga hasta {v(m['n_hot'], 0)} °C (nominal) y {v(m['w_hot'], 0)} °C (peor caso)",
+           "≤ 45 °C si la hoja de la celda lo pide (pendiente: celda sin hoja)", None)
+    a, b = leer("ntc_nominal.dat"), leer("ntc_ancha.dat")
+    x = [c for c in a if c != "v(ts)"][0]
+    figura("ntc_ts.png", "TS del BQ24073 con el NTC NCP18XH103 (75 µA de polarización)", [
+        ("V(TS) (V)", [(a[x], a["v(ts)"], "nominal"), (b[x], b["v(ts)"], "INTC 78 µA, R25 +1 %, B −1 %")],
+         [(2.1, "VCOLD 2,1 V"), (0.3, "VHOT 0,3 V")]),
+    ], escala_x=1, etiqueta_x="temperatura del NTC (°C)")
+    return t
+
+
 BLOQUES = {
     "tps63802": bloque_tps63802,
     "bq24073": bloque_bq24073,
@@ -396,6 +418,7 @@ BLOQUES = {
     "drv8231a": bloque_drv8231a,
     "max98357": bloque_max98357,
     "ldo": bloque_ldo,
+    "ntc": bloque_ntc,
 }
 
 if __name__ == "__main__":
