@@ -102,8 +102,9 @@ P = {
     # Bloque RC de J8 (rutado, 2026-10-24): columna izquierda 0,3 mm al oeste para que entre una vía de 0,6
     # entre columnas (x -97,15); las series TILT_A/B_PAD y TONGUE_PAD salen por esas vías a B.Cu hacia J8,
     # y los 3V3 de R47/R43 por otras dos a In2. Filas: TILT_A arriba (R46, C36 | R45), TILT_B (R48, C37 | R47)
-    # y TONGUE a la derecha (C35, R43, R44, giradas 180°: su nodo hacia U10.6).
-    "R45": (-95.4, -77.4, 0), "R47": (-95.4, -79.1, 180), "C35": (-95.4, -80.8, 180), "R43": (-95.4, -82.5, 180),
+    # y TONGUE a la derecha (C35, R43, R44, giradas 180°: su nodo hacia U10.6). R43 0,13 al sur (bloque U2):
+    # deja sitio a la vía de EXP_P07 junto a U10.8 entre C35.1 y R43.1.
+    "R45": (-95.4, -77.4, 0), "R47": (-95.4, -79.1, 180), "C35": (-95.4, -80.8, 180), "R43": (-95.4, -82.63, 180),
     "R44": (-95.4, -84.2, 180),
     "R46": (-98.9, -77.4, 0), "C36": (-98.9, -79.1, 180), "R48": (-98.9, -80.8, 0), "C37": (-98.9, -82.5, 0),
     # Pull-ups y filtros de barriga, espalda y leva (sus series van junto a J9)

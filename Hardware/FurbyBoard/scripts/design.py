@@ -290,10 +290,11 @@ def build():
     part("U10", s, "Interface_Expansion:TCA9535PWR", "TCA9535PWR", "Package_SO:TSSOP-24_4.4x7.8mm_P0.65mm",
          # Puertos por geometría (2026-10-24): P0x (cara oeste) hacia J8, J11, J7 y el
          # amplificador; P1x (cara este) hacia el cargador, el elevador, J9, la cámara y el LED.
+         # Bloque U2 (2026-10-25): P03 LED_RUN_K, P04 EXP_P07 y P17 IR_PWR (ver NOTAS «Pines»).
          {"1": "EXP_INT", "2": "GND", "3": "GND", "4": "TILT_A", "5": "TILT_B", "6": "TONGUE",
-          "7": "EXP_P07", "8": "IR_PWR", "9": "AMP_SD", "10": "PGOOD", "11": "CHG", "12": "GND",
+          "7": "LED_RUN_K", "8": "EXP_P07", "9": "AMP_SD", "10": "PGOOD", "11": "CHG", "12": "GND",
           "13": "BQ_EN1", "14": "BQ_EN2", "15": "EN_6V", "16": "TUMMY", "17": "BACK",
-          "18": "CAM_PWDN", "19": "CAM_EN", "20": "LED_RUN_K", "21": "GND", "22": "I2C_SCL",
+          "18": "CAM_PWDN", "19": "CAM_EN", "20": "IR_PWR", "21": "GND", "22": "I2C_SCL",
           "23": "I2C_SDA", "24": "3V3"},
          "C130204", "ext", "TI TCA9535PWR", "Expansor I2C 0x20 (bus compartido con el SCCB)")
     C("C32", s, "100n", "3V3", "GND", "Desacoplo del TCA9535")
@@ -334,7 +335,8 @@ def build():
     R("R55", s, "100k", "IR_TX", "GND", "GPIO45 a 0 al arrancar (strapping VDD_SPI)")
     R("R56", s, "1k", "IR_RX", "IR_RX_PAD", "Serie del receptor IR")
     # Pads de cables (agrupados como en la planta)
-    pads("J7", s, ["IR_LED_A", "IR_LED_K", "IR_PWR", "IR_RX_PAD", "3V3", "LIGHT", "GND", "GND"],
+    # J7.3 y J7.8 permutados (bloque U2, 2026-10-25): IR_PWR sale por el sur de J7 hacia In2.
+    pads("J7", s, ["IR_LED_A", "IR_LED_K", "GND", "IR_RX_PAD", "3V3", "LIGHT", "GND", "IR_PWR"],
          "FurbyBoard:Pads_2x04_P2.54mm", "Frente: IR (emisor ×2, receptor ×3), luz ×2, GND")
     pads("J8", s, ["TILT_A_PAD", "TILT_B_PAD", "GND", "TONGUE_PAD", "GND", "SPK_P", "SPK_N"],
          "FurbyBoard:Pads_1x07_P2.54mm", "Inclinación ×3, lengua ×2, altavoz ×2")

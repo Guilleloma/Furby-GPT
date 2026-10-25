@@ -588,7 +588,8 @@ via("I2C_SDA", (-95.0, -74.2))
 pista("I2C_SDA", "F.Cu", 0.15, "R36.1", (-94.525, -74.675), (-95.0, -74.2))
 pista("I2C_SCL", "B.Cu", 0.2, (-79.5, -68.07), (-80.43, -69.0), (-91.325, -69.0), (-91.325, -74.2))
 via("I2C_SCL", (-91.325, -74.2))
-pista("I2C_SCL", "F.Cu", 0.15, "R37.1", (-91.325, -74.2))
+# Bloque U2: 0,3 para equilibrar con el 3V3 de 0,4 de R37.2 (antes R37.1 tenía dos pistas de 0,15).
+pista("I2C_SCL", "F.Cu", 0.3, "R37.1", (-91.325, -74.2))
 pista("EXP_INT", "In2.Cu", 0.2, (-78.7, -69.34), (-78.7, -66.2), (-84.8, -66.2), (-84.8, -75.5), (-86.0, -76.7), (-92.663, -76.7))
 via("EXP_INT", (-92.663, -76.7))
 pista("EXP_INT", "F.Cu", 0.15, "U10.1", (-92.663, -76.7))
@@ -689,7 +690,9 @@ pista("TILT_A", "F.Cu", 0.2, (-96.225, -78.25), (-93.85, -78.25), (-93.85, -79.0
 pista("TILT_B", "F.Cu", 0.2, "C37.1", "R48.1", (-99.725, -80.015), (-94.575, -80.015), "U10.5")
 pista("TILT_B", "F.Cu", 0.2, "R47.1", (-94.575, -80.015))
 pista("TONGUE", "F.Cu", 0.2, "C35.1", "R43.1", "R44.1")
-pista("TONGUE", "F.Cu", 0.2, (-94.575, -81.65), (-93.76, -81.65), (-93.76, -80.675), "U10.6")
+# Bloque U2: TONGUE recto de U10.6 a C35.1 por y -80,675 (entra 0,125 por encima del centro del pad); deja libre el
+# hueco junto a U10.8 para la vía de EXP_P07.
+pista("TONGUE", "F.Cu", 0.2, "U10.6", (-94.625, -80.675))
 stub("TILT_A_PAD", "R46.2", (0.925, 0.0), 0.2)
 pista("TILT_A_PAD", "B.Cu", 0.2, (-97.15, -77.4), (-99.5, -77.4), (-99.5, -70.6), "J8.1")
 stub("TILT_B_PAD", "R48.2", (0.925, 0.0), 0.2)
@@ -698,7 +701,8 @@ stub("TONGUE_PAD", "R44.2", (-0.925, 0.0), 0.2)
 pista("TONGUE_PAD", "B.Cu", 0.2, (-97.15, -84.2), (-100.3, -84.2), (-100.3, -78.22), "J8.4")
 pista("3V3", "F.Cu", 0.4, "R45.2", (-93.8, -77.4), (-93.8, -76.55), (-96.075, -76.55), "R38.2")
 stub("3V3", "R47.2", (-0.925, 0.0), 0.4)
-stub("3V3", "R43.2", (-0.925, 0.0), 0.4)
+pista("3V3", "F.Cu", 0.4, "R43.2", (-97.15, -82.5))
+via("3V3", (-97.15, -82.5))
 pista("3V3", "In2.Cu", 0.4, (-97.15, -79.1), (-97.85, -79.8), (-97.85, -81.8), (-97.15, -82.5), (-97.85, -83.2), (-97.85, -84.9), (-92.0, -84.9), (-90.6, -86.3), (-85.5, -86.3))
 via("3V3", (-85.5, -86.3))
 # ---------------------------------------------------------------- LED del frente, encoder, BAT_G y 3V3 locales
@@ -828,9 +832,11 @@ pista("CAM_EN", "B.Cu", 0.2, (-53.8, -89.312), (-50.3, -89.312), (-49.7, -89.912
 # LED_RUN_K: vía bajo U10 y por In3 al norte entre las vías de 3V3 (-92,875) e I2C_SCL (-91,325); cruza a 90° LIGHT (x -91,96) en
 # y -69,0, pasa a 45° entre las vías de I2C_SCL y EXP_INT del módulo, cruza VBAT_SNS (x -78) a 90° en y -68,0
 # y sube a una vía entre D5 y R58.
-pista("LED_RUN_K", "F.Cu", 0.2, "U10.20", (-91.4, -80.025))
-via("LED_RUN_K", (-91.4, -80.025))
-pista("LED_RUN_K", "In3.Cu", 0.2, (-91.4, -80.025), (-91.4, -78.6), (-92.1, -77.9), (-92.1, -72.5), (-92.7, -71.9),
+# Bloque U2: LED_RUN_K pasa a U10.7 (P03) y a la vía que era de EXP_P07; sube por In3 en x -92,1 y deja la columna
+# de x -91,4 a IR_PWR.
+pista("LED_RUN_K", "F.Cu", 0.2, "U10.7", (-91.45, -81.325))
+via("LED_RUN_K", (-91.45, -81.325))
+pista("LED_RUN_K", "In3.Cu", 0.2, (-91.45, -81.325), (-92.1, -80.675), (-92.1, -72.5), (-92.7, -71.9),
       (-92.7, -69.0), (-79.4, -69.0), (-78.4, -68.0), (-57.5, -68.0), (-57.5, -65.038), (-56.4, -63.938))
 via("LED_RUN_K", (-56.4, -63.938))
 pista("LED_RUN_K", "F.Cu", 0.2, "D5.1", (-56.4, -63.938))
@@ -908,15 +914,16 @@ pista("MOT_IN2", "In3.Cu", 0.2, (-55.1, -90.35), (-56.25, -89.2), (-56.25, -87.0
 # EXP_P07: el pin 7 de U10 queda encerrado por TONGUE (pines 6 y 8 al oeste); vía bajo el cuerpo y por In3, al oeste hasta
 # x -95,35 y al sur entre las vías del clase D y del I2S (quiebro al este de la vía de GND (-95,3; -94,7)), al oeste por
 # debajo de J11 (y -107,3) y a J11.10 desde abajo (bloque U: deja el oeste de J8/J5 a la UART).
-pista("EXP_P07", "F.Cu", 0.2, "U10.7", (-91.45, -81.325))
-via("EXP_P07", (-91.45, -81.325))
-pista("EXP_P07", "In3.Cu", 0.2, (-91.45, -81.325), (-91.775, -81.65), (-95.35, -81.65), (-95.35, -93.1), (-94.65, -93.8),
+# Bloque U2: EXP_P07 pasa a U10.8 (P04) con una vía al oeste del pin, entre C35.1 y R43.1, y sigue por In3 igual.
+pista("EXP_P07", "F.Cu", 0.2, "U10.8", (-93.655, -81.975), (-93.915, -81.715))
+via("EXP_P07", (-93.915, -81.715))
+pista("EXP_P07", "In3.Cu", 0.2, (-93.915, -81.715), (-95.35, -81.715), (-95.35, -93.1), (-94.65, -93.8),
       (-94.65, -105.86), "J11.5")
 # I2C_SCL a J11.6: de R37.1 al sur a una vía al sur de EXP_INT (In2) y entre LED_RUN_K y TUMMY (In3); por In2 al oeste
 # entre las vías de TILT_A_PAD y 3V3, por el hueco entre J8.4 y J8.5 y entre las columnas de J5 hasta J11.6.
-pista("I2C_SCL", "F.Cu", 0.15, ("R37.1", -0.075, 0.0), (-91.4, -77.3))
-via("I2C_SCL", (-91.4, -77.3))
-pista("I2C_SCL", "In2.Cu", 0.2, (-91.4, -77.3), (-92.35, -78.25), (-99.5, -78.25), (-100.74, -79.49), (-104.07, -79.49),
+# Bloque U2: el ramal de J11 ya no baja de R37.1 por la columna de x -91,4 (es de IR_PWR): sale de la vía de U10.22
+# por In2 bajo U10 (y -79,1, entre la vía de SDA y HOME) y empalma con el tramo de siempre.
+pista("I2C_SCL", "In2.Cu", 0.2, (-84.65, -79.1), (-91.5, -79.1), (-92.35, -78.25), (-99.5, -78.25), (-100.74, -79.49), (-104.07, -79.49),
       (-104.07, -95.7), "J11.6")
 # I2C_SDA a J11.5: por In3 (en In2 cerraba el relleno de VSYS de R54): desde la vía junto a R36 al oeste por el hueco entre
 # J8.2 y J8.3, a 1 mm al oeste de SCL (In2), por el oeste de J5 y J11 (x -106,8) hasta la fila entre J11.8 y J11.9 y por el
@@ -935,7 +942,11 @@ pista("VSYS", "B.Cu", 0.6, (-96.25, -85.7), (-92.4, -89.55), (-92.4, -89.85))
 # de x -83,1) y por debajo de LIGHT hasta la vía de SCL junto a R37. SDA por B.Cu: al norte por el este de las vías de J6,
 # al oeste por debajo de BOOT y EN y de las vías del EP del módulo, y al norte hasta la vía de SDA del pin 4.
 pista("I2C_SCL", "In3.Cu", 0.2, (-43.9, -84.65), (-44.45, -84.1), (-44.45, -74.525), (-81.8, -74.525), (-82.69, -73.635),
-      (-83.6, -73.635), (-85.065, -75.1), (-91.325, -75.1), (-91.325, -74.2))
+      (-84.185, -73.635), (-86.25, -71.57))
+# Bloque U2: SCL de J6 ya no llega a la vía de R37 por y -75,1 (paso de IR_PWR por In3): acaba en una vía al oeste del
+# 3V3 de B.Cu (x -85,5) y sube por B.Cu a la fila de SCL de y -69.
+via("I2C_SCL", (-86.25, -71.57))
+pista("I2C_SCL", "B.Cu", 0.2, (-86.25, -71.57), (-86.25, -69.0))
 pista("I2C_SDA", "B.Cu", 0.2, (-43.9, -85.65), (-43.25, -85.0), (-43.25, -74.1), (-70.0, -74.1), (-70.8, -73.3),
       (-77.3, -73.3), (-77.3, -66.8), (-80.3, -66.8))
 # U0TX local: U4.37 a una vía al este del pin (al norte de LED_RUN_K de In3, para que el tramo hacia J11 salga por la banda
@@ -1032,3 +1043,14 @@ pista("LED_PG_A", "In3.Cu", 0.2, (-58.562, -104.9), (-58.562, -109.4), (-57.75, 
       (-71.75, -119.325))
 via("LED_PG_A", (-71.75, -119.325))
 pista("LED_PG_A", "F.Cu", 0.2, (-71.75, -119.325), "R11.2")
+# ---------------------------------------------------------------- bloque U2: IR_PWR (U10.20, P17) a J7.8
+# J7.3 y J7.8 permutados (IR_PWR al sur de J7). Por la vía que era de LED_RUN_K y la columna de In3 de x -91,4 (entre
+# LED_RUN_K y TUMMY) al norte; al este bajo la vía de SCL de R37 (y -75,4, sobre TUMMY), por la bolsa de In3 entre las
+# vías de GND, LIGHT y EN hasta una vía al sur de LED_RUN_K bajo J7.8 (-86,88; -69,75); por In2 recto al norte hasta
+# J7.8, por el centro de la bolsa de VSYS para que el relleno la rodee por el sur y siga unido al resto.
+pista("IR_PWR", "F.Cu", 0.2, "U10.20", (-91.4, -80.025))
+via("IR_PWR", (-91.4, -80.025))
+pista("IR_PWR", "In3.Cu", 0.2, (-91.4, -80.025), (-91.4, -75.4), (-89.6, -75.4), (-88.4, -74.2), (-88.4, -70.5),
+      (-87.65, -69.75), (-86.88, -69.75))
+via("IR_PWR", (-86.88, -69.75))
+pista("IR_PWR", "In2.Cu", 0.2, (-86.88, -69.75), "J7.8")
