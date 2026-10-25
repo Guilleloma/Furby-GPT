@@ -1,0 +1,99 @@
+* FurbyBoard: batería, Q1 (SI7615ADN, P-MOSFET de polaridad) y nodo BAT del BQ24073.
+* Qué se mide:
+*  1) Caída y disipación de Q1 con 2,9 A (pico simultáneo) y batería a 3,0 V, VGS(th) en sus dos
+*     extremos (-0,4 y -1,5 V).
+*  2) Batería al revés sin USB: tensión del nodo BAT (no debe ser negativa) y corriente de fuga.
+*  3) Batería al revés con USB: el BQ24073 inyecta IBAT(SC) 4-11 mA en BAT mientras VBAT < VBAT(SC)
+*     (1,6-2,0 V) y pasa a precarga (ICHG/10, 44-54 mA) si la supera. Se mide dónde se queda el
+*     nodo BAT, si llega a VBAT(SC) y cuánto disipa Q1.
+*  4) Conexión de la batería (soldar el segundo cable con la placa vacía): corriente de pico por
+*     Q1 al cargar C4 y los condensadores de VSYS a través del BAT-FET del BQ24073.
+* Fuentes: SI7615ADN rev. B (https://www.vishay.com/docs/62667/si7615adn.pdf): VGS(th) -0,4/-1,5 V a
+* -250 uA, RDS(on) 9,8 mohm máx. a -2,5 V, VSD 0,72/1,1 V a 4 A; BQ24073 SLUS810N tabla 8.5: IBAT
+* 4/7,5/11 mA a VBAT 1,5 V, VBAT(SC) 1,6/1,8/2,0 V, KISET 797-975 (RISET 1,8 k), BAT-FET 50-100 mohm.
+* Supuestos: modelo EKV de Q1 (models/furby.lib); celda 1400 mAh con 0,15 ohm y 100 nH de cable;
+* C4 ≈ 5 uF y VSYS ≈ 58 uF efectivos; divisor R13/R14 (470 k + 470 k) en BAT; θJA de Q1 en
+* régimen 81 °C/W (ARQUITECTURA.md §7.1, placa sin cobre extra).
+* Criterios: Tj de Q1 <= 110 °C con Ta 50 °C; nodo BAT >= -0,3 V (máximo absoluto del BQ24073) con
+* la batería al revés; con USB, disipación de Q1 <= 0,5 W y sin tensión negativa en ningún nodo.
+* Ejecutar desde sim/: ngspice -b bateria_q1.cir
+
+.include models/furby.lib
+
+.param VOCP=3.0 VTHP=1.5 ILOAD=2.9 IBSC=11m VSC=1.6 IPRE=54m USB=0 TCON=0
+
+* batería (VOC negativo = al revés) conectada al pad BAT+ a TCON por un interruptor
+XB bp 0 BAT_LIPO params: VOC={VOCP} R0=0.15
+Bcon bp bpad I = V(bp,bpad)*((time >= {TCON} ? 1 : 0)/1m + 1e-9)
+XQ1 bpad g bat SI7615 params: VTH={VTHP}
+R12 g 0 10k
+C4 bat 0 5u
+R13 bat sns 470k
+R14 sns 0 470k
+C5 sns 0 100n
+* BQ24073 visto desde BAT: con USB, fuente de detección de cortocircuito o precarga según VBAT(SC)
+Bchg 0 bat I = {USB} * (V(bat) < {VSC} ? {IBSC} : {IPRE}) * (V(bat) < 4.2 ? 1 : 0)
+* sin USB: BAT-FET (100 mohm) hacia VSYS, con los condensadores de VSYS y la carga en VSYS
+Bfet bat vsys I = (1-{USB}) * max(V(bat,vsys),0)/0.1
+Cvs vsys 0 58u
+Bld vsys 0 I = (time > 1m ? {ILOAD} : 0) * min(1, max(V(vsys),0)/1.0)
+
+.tran 0.1u 3m
+.control
+set wr_singlescale
+set wr_vecnames
+* 1) 2,9 A con la batería a 3,0 V, VGS(th) -1,5 V y -0,4 V
+reset
+run
+let vsd = v(bat)-v(bpad)
+meas tran q_vds AVG vsd from=2m to=3m
+meas tran q_id AVG i(v.xb.v1) from=2m to=3m
+alterparam VTHP=0.4
+reset
+run
+let vsd = v(bat)-v(bpad)
+meas tran q2_vds AVG vsd from=2m to=3m
+* 2) batería al revés (-4,2 V) sin USB
+alterparam VTHP=1.5
+alterparam VOCP=-4.2
+alterparam ILOAD=0.1
+reset
+run
+meas tran r_vbat MIN v(bat) from=0.5m to=3m
+meas tran r_vsns MIN v(sns) from=0.5m to=3m
+meas tran r_ileak AVG i(v.xb.v1) from=2m to=3m
+wrdata datos/q1_reves_sin_usb.dat v(bat) v(bpad) v(sns)
+* 3) batería al revés con USB: esquina mala (VGS(th) -1,5 V, 11 mA, VBAT(SC) 1,6 V) y buena
+alterparam USB=1
+reset
+run
+meas tran u_vbat AVG v(bat) from=2.5m to=3m
+meas tran u_id AVG i(v.xb.v1) from=2.5m to=3m
+let vsd = v(bat)-v(bpad)
+meas tran u_vds AVG vsd from=2.5m to=3m
+wrdata datos/q1_reves_usb_mala.dat v(bat) v(bpad) v(sns)
+alterparam VTHP=0.4
+alterparam IBSC=4m
+alterparam VSC=2.0
+reset
+run
+meas tran u2_vbat AVG v(bat) from=2.5m to=3m
+meas tran u2_id AVG i(v.xb.v1) from=2.5m to=3m
+wrdata datos/q1_reves_usb_buena.dat v(bat) v(bpad) v(sns)
+* 4) conexión de la batería (4,2 V) a 0,5 ms con la placa descargada
+alterparam USB=0
+alterparam VTHP=1.5
+alterparam VOCP=4.2
+alterparam ILOAD=0
+alterparam TCON=0.5m
+reset
+tran 10n 0.7m
+meas tran c_ipk MIN i(v.xb.v1) from=0.4m to=0.7m
+let ib = -i(v.xb.v1)
+meas tran c_t10 WHEN ib=10 CROSS=LAST
+meas tran c_t10a WHEN ib=10 CROSS=1
+meas tran c_vsys AVG v(vsys) from=0.65m to=0.7m
+wrdata datos/q1_conexion.dat v(bat) v(vsys) i(v.xb.v1)
+quit
+.endc
+.end

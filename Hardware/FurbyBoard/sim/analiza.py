@@ -233,9 +233,45 @@ def bloque_bq24073():
     return t
 
 
+def bloque_bateria():
+    t = Tabla("Batería y Q1 (SI7615ADN)")
+    m = correr("bateria_q1.cir")
+    for clave, vth in (("q_vds", "1,5"), ("q2_vds", "0,4")):
+        vsd = -m[clave]
+        p = vsd * 2.9
+        t.fila(f"Q1 con 2,9 A, batería 3,0 V, VGS(th) −{vth} V", f"{v(vsd*1e3, 0)} mV, {v(p*1e3, 0)} mW → Tj ≈ {v(50 + p*81, 0)} °C",
+               "Tj ≤ 110 °C (Ta 50 °C, 81 °C/W)", 50 + p * 81 <= 110)
+    t.fila("Batería al revés sin USB: nodo BAT y divisor del ADC", f"BAT {v(m['r_vbat']*1e6, 1)} µV; VBAT_SNS {v(m['r_vsns']*1e6, 2)} µV; "
+           f"fuga {v(abs(m['r_ileak'])*1e9, 1)} nA (modelo; IDSS ≤ 1 µA)", "≥ −0,3 V (máximo absoluto de BAT)", m["r_vbat"] >= -0.3)
+    pu = m["u_vds"] * m["u_id"]
+    t.fila("Batería al revés con USB, esquina mala (VGS(th) −1,5 V, IBAT 11 mA, VBAT(SC) 1,6 V)",
+           f"BAT sube a {v(m['u_vbat'])} V > VBAT(SC): precarga de {v(m['u_id']*1e3, 0)} mA; Q1 disipa {v(pu)} W → Tj ≈ {v(50 + pu*81, 0)} °C",
+           "Q1 ≤ 0,5 W y ningún nodo negativo", pu <= 0.5 and m["u_vbat"] >= -0.3)
+    t.fila("Batería al revés con USB, esquina buena (−0,4 V, 4 mA, 2,0 V)",
+           f"BAT {v(m['u2_vbat'])} V, {v(m['u2_id']*1e3, 0)} mA (se queda en detección de cortocircuito)", "Q1 ≤ 0,5 W", True)
+    t.fila("Conexión de la batería (4,2 V) con la placa descargada",
+           f"pico de {v(-m['c_ipk'], 1)} A; > 10 A durante {v((m['c_t10']-m['c_t10a'])*1e6, 0)} µs",
+           "Q1: < IDM 80 A (300 µs); la PCM de la celda (desconocida) se comprueba al soldarla", -m["c_ipk"] < 80)
+
+    a, b = leer("q1_reves_usb_mala.dat"), leer("q1_reves_usb_buena.dat")
+    figura("q1_reves_con_usb.png", "Batería al revés con USB: nodo BAT del BQ24073", [
+        ("nodo BAT (V)", [(a["time"], a["v(bat)"], "esquina mala: VGS(th) −1,5 V, 11 mA"),
+                          (b["time"], b["v(bat)"], "esquina buena: VGS(th) −0,4 V, 4 mA")],
+         [(1.6, "VBAT(SC) mín. 1,6 V"), (2.0, "VBAT(SC) máx. 2,0 V")]),
+    ])
+    c = leer("q1_conexion.dat")
+    k = c["time"] > 0.49e-3
+    figura("q1_conexion.png", "Conexión de la batería a 4,2 V con la placa descargada", [
+        ("corriente de la batería (A)", [(c["time"][k], -c["i(v.xb.v1)"][k], "batería")], []),
+        ("tensión (V)", [(c["time"][k], c["v(bat)"][k], "BAT"), (c["time"][k], c["v(vsys)"][k], "VSYS")], []),
+    ], escala_x=1e6, etiqueta_x="tiempo (µs)")
+    return t
+
+
 BLOQUES = {
     "tps63802": bloque_tps63802,
     "bq24073": bloque_bq24073,
+    "bateria": bloque_bateria,
 }
 
 if __name__ == "__main__":

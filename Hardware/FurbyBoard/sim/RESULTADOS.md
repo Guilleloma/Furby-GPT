@@ -21,6 +21,7 @@ Convenciones: «peor caso» = tolerancias, DC bias de los cerámicos y tensión 
 |--------|---------|-----------|
 | Elevador de 6 V (TPS61089) | `elevador_6v.cir` | PASS (Isat de L2 por verificar) |
 | 3V3 (TPS63802) | `tps63802_3v3.cir`, `tps63802_rizado.cir` | PASS |
+| Batería y Q1 | `bateria_q1.cir` | PASS (con USB y batería al revés, en la esquina mala el BQ entra en precarga: 0,32 W en Q1) |
 | Power path (BQ24073) | `bq24073_powerpath.cir` | **2 FAIL** (pico de 2,9 A con USB en USB500 en el peor caso; enchufe con ≥ 4,3 W en modo ILIM): propuestas de firmware |
 
 ## Elevador de 6 V (TPS61089 + FHD4020S-1R0MT) — `elevador_6v.cir`
@@ -100,8 +101,31 @@ Observaciones y propuestas:
 
 Figuras: `png/bq24073_supplement.png`, `png/bq24073_desenchufe.png`, `png/bq24073_enchufe.png`.
 
+## Batería y Q1 (SI7615ADN) — `bateria_q1.cir`
+
+Supuestos:
+
+- **Q1 con un modelo EKV** (`SI7615` en `models/furby.lib`: subumbral, lineal y saturación, más 3 mΩ de encapsulado) ajustado a la hoja de Vishay: 250 µA a |VGS| = VGS(th) (0,4 o 1,5 V, las dos esquinas) y RDS(on) 9,8 mΩ a −2,5 V con VGS(th) = −1,5 V. La pendiente subumbral (89 mV/década) es un supuesto típico: decide dónde se queda el nodo BAT con la batería al revés y el USB puesto.
+- **BQ24073 visto desde BAT** con su tabla 8.5: con USB, fuente de detección de cortocircuito IBAT 4–11 mA mientras VBAT < VBAT(SC) (1,6–2,0 V) y precarga KISET/RISET/10 = 44–54 mA por encima; sin USB, BAT-FET de 100 mΩ hacia VSYS.
+- Celda con 0,15 Ω y 100 nH de cable; θJA de Q1 en régimen 81 °C/W (`ARQUITECTURA.md` §7.1; la hoja da 33 °C/W máx. solo para t ≤ 10 s sobre 1 pulgada cuadrada de cobre).
+
+| Magnitud | Resultado | Criterio | PASS/FAIL |
+|----------|-----------|----------|-----------|
+| Q1 con 2,9 A, batería 3,0 V, VGS(th) −1,5 V | 27 mV, 78 mW → Tj ≈ 56 °C | Tj ≤ 110 °C (Ta 50 °C, 81 °C/W) | PASS |
+| Q1 con 2,9 A, batería 3,0 V, VGS(th) −0,4 V | 16 mV, 47 mW → Tj ≈ 54 °C | Tj ≤ 110 °C (Ta 50 °C, 81 °C/W) | PASS |
+| Batería al revés sin USB: nodo BAT y divisor del ADC | BAT -0,6 µV; VBAT_SNS -0,02 µV; fuga 1,0 nA (modelo; IDSS ≤ 1 µA) | ≥ −0,3 V (máximo absoluto de BAT) | PASS |
+| Batería al revés con USB, esquina mala (VGS(th) −1,5 V, IBAT 11 mA, VBAT(SC) 1,6 V) | BAT sube a 1,72 V > VBAT(SC): precarga de 54 mA; Q1 disipa 0,32 W → Tj ≈ 76 °C | Q1 ≤ 0,5 W y ningún nodo negativo | PASS |
+| Batería al revés con USB, esquina buena (−0,4 V, 4 mA, 2,0 V) | BAT 0,51 V, 4 mA (se queda en detección de cortocircuito) | Q1 ≤ 0,5 W | PASS |
+| Conexión de la batería (4,2 V) con la placa descargada | pico de 14,6 A; > 10 A durante 9 µs | Q1: < IDM 80 A (300 µs); la PCM de la celda (desconocida) se comprueba al soldarla | PASS |
+
+Observaciones:
+
+- **Con la batería al revés y el USB puesto, en la esquina mala el nodo BAT sí pasa de VBAT(SC)** (1,72 V frente a 1,6 V mín.) y el BQ24073 entra en precarga (54 mA). `ARQUITECTURA.md` §7.1 decía que se quedaría por debajo «como mucho 1,5 V», pero ya preveía este caso: Q1 disipa 0,32 W (Tj ≈ 76 °C) durante el temporizador de precarga y luego el cargador marca fallo. No rompe nada y no llega tensión negativa a ningún nodo. La prueba de TEST-PLAN §8.1 (fuente limitada al revés, sin y con USB) lo confirma en la placa: anotar la tensión de BAT (TP4) y la corriente.
+- Al soldar la batería, el pico de 14,6 A (≈ 9 µs por encima de 10 A) carga C4 y los ≈ 58 µF de VSYS a través de Q1 y del BAT-FET. Q1 lo aguanta de sobra (IDM 80 A). Si la PCM de la celda tiene un disparo por cortocircuito muy rápido (algunas cortan en < 10 µs por encima de ≈ 10 A), la celda se desconectaría y no volvería hasta enchufar el USB: se comprueba al soldarla (TEST-PLAN §8.2: tras soldar, TP4 debe leer la tensión de la celda).
+
+Figuras: `png/q1_reves_con_usb.png`, `png/q1_conexion.png`.
+
 ## Lo que no se simula y por qué
 
 - **TPS63802 (3,3 V):** el modo PFM y la zona de transición buck-boost (control propietario); se miden en el bring-up.
-- **Polaridad inversa con USB (P-MOSFET + BQ24073):** depende de la detección de cortocircuito del cargador (4–11 mA, datasheet SLUS810); análisis en `ARQUITECTURA.md` §7.1 y prueba obligatoria en el bring-up con fuente limitada, sin y con USB.
 - **Compensación del TPS61089:** valores de la nota de aplicación del datasheet (R24 30 kΩ, C14 4,7 nF, C15 10 pF); se mide el escalón de carga en el bring-up.
