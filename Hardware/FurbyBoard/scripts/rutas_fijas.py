@@ -994,3 +994,13 @@ pista("3V3", "B.Cu", 0.4, (-57.9, -108.6), (-56.2, -108.6), (-56.2, -104.7), (-5
 # GND: el trozo de relleno de F.Cu de U10.12 y C34.2 (pads sin vía propia) quedaba sin unión al plano; vía de cosido en él,
 # entre PGOOD de In3 (x -90,4) y la vía de BQ_EN2.
 via("GND", (-89.75, -84.6))
+# LED_CHG_A (R10.2 a D1.2): D1.2 sale al norte en F.Cu a una vía entre el tronco de 3V3 de B.Cu (y -103,0) y HOME de In3
+# (y -101,7), a 0,2 de cada uno; por In3 al sur entre las vías de PGOOD y CAM_EN, al este de EN_6V y al oeste de la vía
+# de VSYS, por debajo de las vías de EN_6V y GND y por encima de J2, hasta una vía al oeste de R10 (al oeste del VBUS de
+# B.Cu y al sur de BQ_TS de In2).
+pista("LED_CHG_A", "F.Cu", 0.2, "D1.2", (-58.71, -102.89), (-59.3, -102.3))
+via("LED_CHG_A", (-59.3, -102.3))
+pista("LED_CHG_A", "In3.Cu", 0.2, (-59.3, -102.3), (-58.6, -103.0), (-58.6, -110.2), (-59.4, -111.0), (-59.4, -115.4),
+      (-60.2, -116.2), (-65.6, -116.2), (-66.6, -115.2), (-73.1, -115.2))
+via("LED_CHG_A", (-73.1, -115.2))
+pista("LED_CHG_A", "F.Cu", 0.2, (-73.1, -115.2), (-72.38, -114.48), "R10.2")
