@@ -116,18 +116,24 @@ pista("GND", "F.Cu", 0.4, "C16.2", (-46.1, -117.15))
 via("GND", (-46.1, -117.15))
 pista("GND", "F.Cu", 0.6, "C16.2", (-47.3, -118.4))
 via("GND", (-47.3, -118.4))
-# EN_6V baja a una vía entre C18.1 y C16.2 (x -48,4, a 0,24 y 0,41 de los pads): deja el sitio junto al
-# borde, al este de la vía de V6 de C18, a la segunda vía de V6 (revisión E independiente, I1)
+# EN_6V baja a una vía entre C18.1 y C16.2 (x -48,4; a 0,24 y 0,41 de los pads) y deja el sitio
+# junto al borde, al este de la vía de V6 de C18, a la segunda vía de V6 (revisión E, I1)
 pista("EN_6V", "F.Cu", 0.25, "U5.7", (-49.33, -117.0), (-48.4, -117.0), (-48.4, -118.25))
 via("EN_6V", (-48.4, -118.25))
 pista("BST_ILIM", "F.Cu", 0.25, "U5.8", (-48.83, -115.75), (-48.38, -116.2), "R23.1")
 # V6: vía junto a C18.1; por B.Cu, toma Kelvin hacia R21 (TP7 sobre esa pista) y tronco al puente H
-via("V6", (-49.44, -119.5))
-pista("V6", "F.Cu", 0.5, "C18.1", (-49.44, -119.5))
-pista("V6", "B.Cu", 0.5, (-49.44, -119.5), (-50.94, -118.0), (-56.96, -118.0), (-57.9, -117.06))
+# Dos vías junto a C18 (1,0 A; I1 de la revisión E: ⌈I / 0,7 A⌉ vías por cambio de capa, «Cálculos»
+# de NOTAS): bajo C18.1 y al este, donde estaba la de EN_6V
+via("V6", (-49.44, -119.35))
+via("V6", (-48.49, -119.35))
+pista("V6", "F.Cu", 0.5, "C18.1", (-49.44, -119.35), (-48.49, -119.35))
+pista("V6", "B.Cu", 0.5, (-48.49, -119.35), (-49.44, -119.35))
+pista("V6", "B.Cu", 0.5, (-49.44, -119.35), (-50.79, -118.0), (-56.96, -118.0), (-57.9, -117.06))
 via("V6", (-57.9, -117.06))
 pista("V6", "F.Cu", 0.5, (-57.9, -117.06), "R21.1")
-pista("V6", "B.Cu", 0.5, (-49.44, -119.5), (-49.44, -108.0), (-49.44, -107.85), (-49.0, -107.41), (-46.55, -107.41))
+# Tronco hasta una segunda vía al norte de C21.1 (y -105,3) y ramal a C20/C22 por y -107,41
+pista("V6", "B.Cu", 0.5, (-49.44, -119.35), (-49.44, -105.3))
+pista("V6", "B.Cu", 0.5, (-49.44, -107.41), (-46.55, -107.41))
 via("V6", (-46.55, -107.41))
 # EN_6V sigue por In2 hasta R25 (pull-down) y de ahí por In3 a U10
 pista("EN_6V", "In2.Cu", 0.2, (-48.4, -118.25), (-51.35, -115.3), (-61.22, -115.3))
@@ -199,6 +205,9 @@ pista("3V3", "F.Cu", 0.4, (-95.3, -101.65), "R15.1")
 pista("3V3", "B.Cu", 0.4, (-85.5, -107.3), (-85.5, -70.95))
 via("3V3", (-85.5, -70.95))
 pista("3V3", "F.Cu", 0.4, (-85.5, -70.95), "C9.1")
+# Segunda vía del tronco al módulo (0,55-0,7 A de pico; I1)
+via("3V3", (-85.5, -73.4))
+pista("3V3", "F.Cu", 0.4, (-85.5, -73.4), (-85.5, -70.95))
 pista("3V3", "F.Cu", 0.4, "C9.1", (-83.2, -69.85), (-83.2, -64.26), "U4.2")
 pista("3V3", "F.Cu", 0.4, (-83.2, -66.28), "C10.1")
 via("3V3", (-85.5, -77.42))
@@ -235,17 +244,31 @@ via("VSYS", (-65.25, -103.75))
 pista("VSYS", "F.Cu", 0.6, (-65.25, -103.75), (-66.45, -103.75))
 via("VSYS", (-66.45, -103.75))
 pista("VSYS", "B.Cu", 0.6, (-66.45, -103.75), "TP5.1")
+# Tres vías más de OUT al plano de In2, al oeste de TP5 bajo el tronco de 3V3 de B.Cu (y -103,0):
+# cinco para el pico de 2,9 A (I1); antes había dos (la de R6.2 no está unida a OUT por F.Cu)
+pista("VSYS", "F.Cu", 0.6, (-66.45, -103.75), (-68.7, -103.75))
+via("VSYS", (-67.5, -103.75))
+via("VSYS", (-68.7, -103.75))
+pista("VSYS", "F.Cu", 0.6, (-68.1, -103.75), (-68.1, -104.5))
+via("VSYS", (-68.1, -104.5))
 stub("GND", "C3.2", (-0.95, 0.0), 0.4)
 stub("GND", "C17.2", (0.0, 1.2), 0.6)
 pista("VBUS", "F.Cu", 0.25, "U2.13", (-67.42, -109.75))
 pista("VBUS", "F.Cu", 0.5, (-67.42, -109.75), "C2.1", "C1.1")
 via("VBUS", (-68.5, -110.8))
+# Segunda vía de VBUS junto a C1.1, unida al tramo de B.Cu (1,34 A en ILIM; I1)
+pista("VBUS", "F.Cu", 0.5, "C1.1", (-69.6, -112.3))
+via("VBUS", (-69.6, -112.3))
+pista("VBUS", "B.Cu", 0.5, (-69.6, -112.3), (-69.6, -110.8))
 pista("VBUS", "B.Cu", 0.5, (-68.5, -110.8), (-71.4, -110.8), (-72.2, -111.6), (-72.2, -116.12))
 via("VBUS", (-72.2, -116.12))
 pista("VBUS", "F.Cu", 0.5, (-72.2, -116.12), "R10.1", "R11.1")
 pista("VBUS", "B.Cu", 0.5, (-72.2, -116.12), (-77.3, -116.12), (-79.48, -118.3), (-82.5, -118.3))
 via("VBUS", (-82.5, -118.3))
 pista("VBUS", "F.Cu", 0.5, (-82.5, -118.3), "F1.2")
+# Segunda vía de F1.2 sobre el tramo de B.Cu, al este (entre R1 y el pad; I1)
+via("VBUS", (-81.3, -118.3))
+pista("VBUS", "F.Cu", 0.5, (-81.3, -118.3), (-82.5, -118.3))
 # VBUS a J11.4 (THT) por B.Cu: diagonal larga por debajo de los convertidores
 pista("VBUS", "B.Cu", 0.5, (-82.5, -118.3), (-84.0, -118.3), (-98.98, -103.32), "J11.4")
 stub("GND", "C2.2", (0.0, 0.9), 0.3)
@@ -468,13 +491,15 @@ pista("MOT_IN2", "In2.Cu", 0.2, (-61.35, -86.3), (-61.85, -86.8), (-70.8, -86.8)
 via("MOT_IN2", (-71.25, -87.25))
 pista("MOT_IN2", "F.Cu", 0.15, (-71.25, -87.25), "R30.1")
 # ---------------------------------------------------------------- puente H (DRV8231A) y V6 local
-# V6: C21.1 desde una vía del tronco de B.Cu, de ahí al pin 5 (0,5, ancho mayor que el pad); C19.1 con
-# su propia vía; C22.1 y C20.1 por la vertical x -46,6 (con las vías del tronco y del ramal a R51).
+# V6: C21.1 desde dos vías del tronco de B.Cu (al sur y al norte del pad, I1), de ahí al pin 5 (0,5,
+# ancho mayor que el pad); C19.1 con su propia vía; C22.1 y C20.1 por la vertical x -46,55 (dos vías).
 # Salidas: OUT2 (pin 8) a J9.11 por F.Cu al noreste; OUT1 (pin 6) por In2 a J9.12 (los pads 11/12
 # del motor se intercambiaron en el esquema). IPROPI a R28 y, por una vía, a TP8 (B) y JP3 (In2
 # por x -54,7, fuera del anillo del mecanismo; JP3 bajo el bus de la cámara). VREF a C23 y por In2 a R27/R26. EP con 2 vías.
 via("V6", (-49.44, -108.0))
 pista("V6", "F.Cu", 0.5, (-49.44, -108.0), "C21.1")
+via("V6", (-49.44, -105.3))
+pista("V6", "F.Cu", 0.5, (-49.44, -105.3), "C21.1")
 pista("V6", "F.Cu", 0.25, "U6.5", (-48.55, -105.45))
 pista("V6", "F.Cu", 0.5, (-48.55, -105.45), (-48.55, -106.45), (-49.44, -107.34))
 pista("V6", "B.Cu", 0.5, (-49.44, -108.3), (-53.85, -108.3))
@@ -484,7 +509,13 @@ pista("MOT_OUT2", "F.Cu", 0.25, "U6.8", (-48.05, -102.45))
 pista("MOT_OUT2", "F.Cu", 0.5, (-48.05, -102.45), (-47.25, -101.65), (-44.34, -101.65))
 pista("MOT_OUT1", "F.Cu", 0.25, "U6.6", (-47.55, -103.95))
 via("MOT_OUT1", (-47.55, -103.95))
-pista("MOT_OUT1", "In2.Cu", 0.5, (-47.55, -103.95), (-46.8, -104.7), "J9.12")
+# Segunda vía al sur, hacia la vía de GND (-47,54; -105,5): al norte cortaría el único paso del
+# relleno de GND de F.Cu entre C22.2 y U6.7 (I1). In2 a 1,0 mm: a 0,5 mm en 0,5 oz interior solo
+# llevaba 0,44 A a ΔT 10 °C (IPC-2221); 3,5 mm a 1,0 mm son 4 mΩ, 4 mW a 1,0 A
+pista("MOT_OUT1", "F.Cu", 0.5, (-47.55, -103.95), (-47.55, -104.65))
+via("MOT_OUT1", (-47.55, -104.65))
+pista("MOT_OUT1", "In2.Cu", 1.0, (-47.55, -103.95), (-46.8, -104.7), "J9.12")
+pista("MOT_OUT1", "In2.Cu", 0.5, (-47.55, -104.65), (-47.55, -103.95))   # 1,0 rozaría la vía de GND
 pista("GND", "F.Cu", 0.25, "U6.7", (-49.5, -103.45))
 via("GND", (-49.5, -103.3))
 via("GND", (-49.5, -104.1))
@@ -680,6 +711,12 @@ stub("VSYS", "R6.2", (1.2, 0.0), 0.6)
 pista("VSYS", "F.Cu", 0.6, "L2.1", (-53.6, -109.3))
 via("VSYS", (-52.9, -109.3))
 via("VSYS", (-53.6, -109.3))
+# L2.1 lleva la entrada del elevador (2,2 A con la batería a 3,0 V): dos vías más bajo la esquina
+# oeste del pad (I1); más al oeste cerrarían el paso del relleno de GND de F.Cu junto a R34
+pista("VSYS", "F.Cu", 0.6, (-53.2, -109.3), (-53.2, -110.45))
+via("VSYS", (-53.2, -110.45))
+pista("VSYS", "F.Cu", 0.6, (-52.2, -110.45), (-52.2, -109.8))
+via("VSYS", (-52.2, -110.45))
 # ---------------------------------------------------------------- módulo: EP y GND de los pines 1/40, C9, C10
 for _x in (-75.9, -74.5, -73.1):
     for _y in (-69.31, -70.71, -72.11):

@@ -105,6 +105,7 @@ Tipo **L**: 232 conexiones sin contar GND ni planos (≈ 340 con GND), 6 capas (
 | 2026-10-25 | Leyendas de J5, J7 y J11 con la disposición de sus pads, filas alineadas y reservadas (nada se mete entre los pads y su leyenda); **J9 en una leyenda aparte** a 22 mm (encima, junto al taladro H2), con título y el rótulo del pad 1 recuadrado | Junto a J9 hay una columna de vías a 1,2 mm de los pads, TP10/TP11/TP8 y el anillo del mecanismo: ninguna fila cabe sin mover cobre | agente (bloque S) |
 | 2026-10-25 | Serigrafía de las huellas recortada a 0,15 mm de cada vía (`recorta_serigrafia`, 28 piezas: contornos de LED, puentes, botones, U1, U2, U10, U11…) | El fabricante la recorta igual; así los Gerber dicen lo que se imprimirá. Las marcas de polaridad de D1–D5 y de pin 1 siguen visibles (PNG) | agente (bloque S) |
 | 2026-10-25 | **R51 de 220 Ω (C22962, básica) desde EN_6V** (P12 del TCA9535, push-pull) en vez de 470 Ω desde V6; ENC_LED_A sin cambios. Ruta: vía de EN_6V junto a U5 movida a (−48,4; −118,25) (entre C18.1 y C16.2) y B.Cu por x −48,4, y −108,4 y el pasillo x −45,8 que ocupaba el ramal de V6 hasta la vía junto a R51; la vía de V6 (−46,55; −106,3) queda unida por B.Cu a la de (−46,55; −107,41) | I3 de la revisión E independiente: el TPS61089 no tiene desconexión de carga (SLVSD38C, «the input voltage goes through the body diode and appears at the VOUT pin at shutdown mode»), así que el LED gastaba 2,8–5,3 mA dormido frente a ≈ 80 µA. Con EN_6V el LED luce exactamente con el elevador encendido, sin piezas nuevas. Cálculos en «Cálculos» | agente (vuelta 1 de E) |
+| 2026-10-25 | **Vías de potencia por cruce** (tabla en «Cálculos»): VSYS de U2 al plano con 5 (fila en y −103,75 al oeste de TP5 y una más debajo), L2.1 con 4, V6 con 2 en cada extremo (la segunda de C18 donde estaba la de EN_6V; la de U6 al norte de C21.1, con el tronco de B.Cu hasta y −105,3), MOT_OUT1 con 2 (la segunda al sur) y In2 a 1,0 mm, VBUS con 2 en F1.2 y en C1, 3V3 con 2 al módulo | I1 de la revisión E independiente: los cruces tenían menos vías de las calculadas. Sitios elegidos para no partir el relleno de GND de F.Cu: la segunda de MOT_OUT1 al norte separaba C22.2 de U6.7 y las de L2.1 más al oeste cerraban el paso junto a R34 (probado: 23 trozos en vez de 21) | agente (vuelta 1 de E) |
 | 2026-10-25 | Nombre arriba en mayúsculas («FURBYBOARD V1.0», 0,8 mm) en la franja de la antena; abajo «FurbyBoard», versión y fecha a la izquierda del agujero del mecanismo y el recuadro PLACA (7 × 3,5 mm, sin vías dentro) bajo ellos | La «y» bajaba de la línea y no cabía entre el módulo y el borde; junto al logo no quedaba sitio sin vías tras el cosido del bloque E | agente (bloque S) |
 
 ## Cálculos
@@ -115,7 +116,24 @@ Tipo **L**: 232 conexiones sin contar GND ni planos (≈ 340 con GND), 6 capas (
 - **Motor**: ITRIP = VREF / (1,5 k · 1500 µA/A) = 2,245 / 2,25 = 1,0 A; Tj ≈ 50 + 0,6 · 66,5 = 90 °C con θJA = 66,5 °C/W del encapsulado **DSG** (WSON 2 × 2, tabla 6.4 del datasheet; los 42,8 °C/W que figuraban aquí son del DDA). Con el motor bloqueado de forma continua y RDS(on) en caliente (0,45 Ω por lado): 0,79 W → **Tj ≈ 103 °C**, PASS justo frente a 110 °C (`sim/drv8231a_motor.cir`). En uso real no se llega al régimen: el firmware corta el bloqueo a ≤ 150 ms («Reglas para el firmware»).
 - **LED del encoder** (desde el 2026-10-25, R51 de 220 Ω a EN_6V): TCA9535 (SCPS201F, 5.5) VOH ≥ 2,6 V a −8 mA con VCC 3 V; IOH recomendada ≤ 10 mA por puerto (5.3). Peor caso bajo (VOH 2,6 V, VF 1,4 V, R +1 %): 5,4 mA; típico ≈ 8 mA; cota alta (VOH = VCC 3,37 V sin caída, VF 1,1 V, R −1 %) 10,4 mA, en el límite recomendado y a la quinta parte del máximo absoluto (50 mA). R51: ≤ 22 mW (≤ 25 % de 0,1 W). EN_6V queda ≥ 2,6 V, muy por encima de VEN_H 1,2 V del TPS61089 (SLVSD38C); al arrancar (puerto en entrada) R25 y el LED la mantienen a 0. Antes: (5,94 − 1,3) / 470 = 9,9 mA desde V6, encendido también dormido.
 - **I2C**: tr ≈ 0,85 · 4,7 k · 100 pF ≈ 0,4 µs: 400 kHz justo; medir (mejora B10).
-- **Pistas** (IPC-2221, 1 oz exterior, ΔT 10 °C): 0,3 → 1,0 A; 0,5 → 1,45 A; 0,8 → 2,0 A; vía de 0,3 ≈ 0,7 A → ≥ 2 por cambio de capa de potencia, 5 para VSYS/BAT (2,9 A).
+- **Pistas** (IPC-2221, 1 oz exterior, ΔT 10 °C): 0,3 → 1,0 A; 0,5 → 1,45 A; 0,8 → 2,0 A; vía de 0,3 ≈ 0,7 A → ≥ 2 por cambio de capa de potencia, 5 para VSYS/BAT (2,9 A). **En las capas interiores (0,5 oz) el ancho no vale lo mismo** (revisión E, I2): 0,5 → 0,44 A; 1,0 → 0,72 A; 1,5 → 0,97 A. El DRC y `revisar-rutado` comprueban el ancho por red, no por capa: una pista de potencia en In2/In3 se calcula aparte (abajo).
+- **Vías por cambio de capa de potencia** (⌈I / 0,7 A⌉, revisión E independiente, I1; contadas por cruce, no por red):
+
+  | Red | Cruce | Corriente | Antes | Vuelta 1 |
+  |-----|-------|-----------|-------|----------|
+  | VSYS | OUT de U2 (F.Cu) → plano de In2 | 2,9 A | 2 (la de R6.2 no está unida a OUT por F.Cu) | **5** |
+  | VSYS | In2 → L2.1 (entrada del elevador) | 2,2 A con la batería a 3,0 V | 2 | **4** |
+  | VSYS | In2 → U3 (buck-boost) | ≈ 0,9 A | 2 | 2 |
+  | VSYS | In2 ↔ puente de B.Cu de U7 | 0,84 A de pico | 2 + 2 | 2 + 2 |
+  | V6 | C18 (F.Cu) → tronco de B.Cu | 1,0 A | 1 | **2** |
+  | V6 | tronco de B.Cu → C21.1 y U6.5 | 1,0 A | 1 | **2** |
+  | MOT_OUT1 | U6.6 (F.Cu) → In2 | 1,0 A | 1 | **2**; In2 de 0,5 a 1,0 mm (3,5 mm: 4 mΩ, 4 mW a 1,0 A) |
+  | VBUS | F1.2 → B.Cu | 1,34 A (ILIM) | 1 | **2** |
+  | VBUS | B.Cu → C1/C2/U2.13 | 1,34 A | 1 | **2** |
+  | 3V3 | tronco de B.Cu → C9 y pin 2 del módulo | 0,55–0,7 A | 1 | **2** |
+  | 3V3 | U3/C8 → tronco de B.Cu | 0,7 A | 2 | 2 |
+
+  Con el factor × 1,5 de `layout-pcb.md` §5.3 harían falta 8 en VSYS y 3 en V6 y MOT_OUT1: no caben sin mover piezas (el cruce de U2 queda entre el tronco de 3V3 de B.Cu, TP5 y las señales del cargador de In3). Con 5 vías el pico de 2,9 A deja 0,58 A por vía, y los picos de 1,0 A duran ≤ 150 ms (bloqueo cortado por el firmware).
 
 ## Simulación
 `sim/elevador_6v.cir` (ngspice, etapa de potencia idealizada, declarado): pico 2,82 A < 3,8 A, rizado 19 mV. Lo que no se simula y por qué: `sim/RESULTADOS.md`.
@@ -274,6 +292,7 @@ Lecciones para el Cerebro (`layout-pcb.md` §4 y §13): al fijar las clases A–
 | `revisar-rutado` pista-entre-pads (6, E1-5) | BST_ILIM bajo C16, I2S_WS bajo C25 y R31, LED_PWR_K bajo D3 y R19, TUMMY bajo C38: pista de 0,15 con máscara y ≥ 0,15 de holgura, ningún nodo de conmutación |
 | `revisar-rutado` roce-pad y roce-via (26, E1-5) | Todos ≥ 0,150 mm (clearance del proyecto; JLCPCB 0,09 en multicapa): margen de diseño de 0,05 sin sitio donde están |
 | `revisar-rutado` rodeo (26, E1-4) | Señales lentas, más clase B/C/D por encima de su criterio: I2S × 1,32–1,85 (BCLK ≈ 3 MHz, ≤ 51 mm sobre In1, desfase ≈ 0,1 ns frente a 325 ns de periodo), USB_DN × 1,21 (0,97 mm más que USB_DP, irrelevante a 12 Mbit/s), IPROPI_IO × 1,51 (casi continua) |
+| `revisar-rutado` rodeo de V6 (× 1,53, vuelta 1 de E) | No es un rodeo: la longitud de más son las uniones entre las vías dobles de C18 y de C21 (I1) y el tronco de B.Cu prolongado hasta la segunda vía de U6; el camino de la corriente sigue siendo el recto de C18 a U6 |
 | `revisar-rutado` ancho-mayor-que-pad (3) y colineales (1) (E1-5, E1-7) | V6 0,50 en U5:6, BAT_G 0,50 en Q1:4, VBUS_IN 0,40 en J1:A9 (cubiertos por las reglas de cuello); vértice colineal de USB_DP en B.Cu (−83,5; −80,0), se quita en la próxima regeneración (`rutas_fijas.py`:343) |
 | kicad-happy (E1-12): SW-003, PP-001, keepouts por caja, J1 fuera del contorno, 0 fiduciales, SU-001, SW-001, 150 frente a 155 huellas | SW-003: el lazo real de U5 es VOUT–C18–GND sin vías (C25 es del amplificador). PP-001: V6 es la salida de U5. Keepouts: H1–H4 y el logo son áreas de reglas circulares o propias; la vía de IR_TX queda a 2,82 mm del centro de H1 (círculo de 2,5). J1: USB-C de montaje medio. Fiduciales: Economic no los pide. SU-001: decisión del apilado (In2/In3 con la regla de cruces). 155 huellas = 150 + H1–H4 + LOGO1. DC-002 (U1 sin condensador en VBUS_IN) va a la v1.1 |
 
