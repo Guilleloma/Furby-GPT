@@ -35,7 +35,7 @@ Otras medidas sin TP propio:
 | GPIO0 (BOOT) | Pad de SW2 (BOOT) que no va a GND, o R18 |
 | CHG | Cátodo de D1 (LED rojo junto al cargador) |
 | PGOOD | Cátodo de D2 (LED verde junto al cargador) |
-| U0TX / U0RX | J_EXP (J11) pines 9 y 10 (cara inferior: «IO43 TX», «IO44 RX») |
+| U0TX / U0RX | J_EXP (J11) pines 7 y 10 (cara inferior: «IO43 TX», «IO44 RX») |
 | VBAT_SNS | C5 (100 nF del divisor de VBAT) |
 
 ## Equipo
@@ -95,7 +95,7 @@ Fuente de laboratorio en **J2 (BAT+) y J3 (BAT−)**, con pinzas o cables soldad
 | 3V3 (TP6) | 3,30 V ± 0,10 | ± 0,10 | U3: divisor R15/R16 (510k/91k) y L1 |
 | LED PWR (D4) | Encendido | | Polaridad de D4, R57 o JP5 abierto |
 | LED TX (D3) | Parpadea al arrancar y al pulsar RST | | D3, R19 y GPIO43 |
-| J11 pin 9 (IO43 TX) a 115 200 baudios | Log del ROM: `ESP-ROM:esp32s3…` | | EN en SW1 a 3,3 V y C11 (RC de EN con R17) |
+| J11 pin 7 (IO43 TX) a 115 200 baudios | Log del ROM: `ESP-ROM:esp32s3…` | | EN en SW1 a 3,3 V y C11 (RC de EN con R17) |
 
 Luego, la fuente a **3,0 V**: 3V3 tiene que seguir en 3,30 ± 0,10 (U3 elevando). A **4,2 V**: igual.
 
@@ -117,7 +117,7 @@ Medidor USB-C en línea, con un cargador de 5 V. Se quita la fuente del paso 3: 
 |------|------|----------|
 | `lsusb` (macOS: `system_profiler SPUSBDataType`) | Aparece «USB JTAG/serial debug unit» (VID 303A) | D+ y D− (¿cruzados?), U1 y el cable de datos. Probar con BOOT (SW2) pulsado al enchufar |
 | `esptool.py chip_id` y `flash_id` | ESP32-S3, 16 MB de flash; PSRAM de 8 MB en el log de arranque | Modo descarga a mano: mantener BOOT, pulsar y soltar RST, soltar BOOT |
-| Flashear el firmware de prueba (`furbyboard-test`) | Se graba y arranca | Ver el log por J11 pin 9 |
+| Flashear el firmware de prueba (`furbyboard-test`) | Se graba y arranca | Ver el log por J11 pin 7 |
 | LED RUN (D5) | Parpadea a 1 Hz (latido del firmware de prueba, P16 de U10) | I2C a U10 (escaneo: 0x20), R36/R37 |
 
 ## 6. LED

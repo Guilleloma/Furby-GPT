@@ -44,8 +44,8 @@ PUENTES_ABAJO = {"JP1": "IO9", "JP2": "IO46", "JP3": "IO3", "JP4": "IO8", "JP5":
 
 # Pads de cable (cara inferior, donde se sueldan): referencia -> {pad: texto}
 PADS = {
-    "J11": {"1": "G", "2": "3V3", "3": "VSYS", "4": "5V", "5": "IO4 SDA", "6": "IO5 SCL",
-            "7": "P07", "8": "G", "9": "IO43 TX", "10": "IO44 RX"},
+    "J11": {"1": "G", "2": "3V3", "3": "VSYS", "4": "5V", "5": "P07", "6": "IO5 SCL",
+            "7": "IO43 TX", "8": "G", "9": "IO4 SDA", "10": "IO44 RX"},
     "J8": {"1": "TLA", "2": "TLB", "3": "G", "4": "LNG", "5": "G", "6": "SP+", "7": "SP-"},
     "J7": {"1": "IR+", "2": "IR-", "3": "RXV", "4": "RX", "5": "3V3", "6": "LDR", "7": "G", "8": "G"},
     "J9": {"1": "ENF", "2": "G", "3": "EN+", "4": "G", "5": "LEVA", "6": "G",
