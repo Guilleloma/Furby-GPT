@@ -78,7 +78,7 @@ H3 y H4 flanquean el USB-C (≈ 7,5 mm de la ranura cada uno) para que la placa 
 
 ## 4. Zona de exclusión del mecanismo
 
-- Agujero en la PCB: Ø11,3 con centro en (−60,88; −95,32). **Es un supuesto**: es la mejor estimación sin el Furby delante, a la espera de medirlo en el Furby.
+- Agujero en la PCB: Ø11,3 con centro en (−60,88; −95,32). **Validado por Guillermo el 2026-10-24.**
 - Exclusión: cilindro de **Ø15,3** con el mismo centro (2 mm alrededor del agujero), desde el suelo hasta la cara inferior de la PCB. Dentro no van separadores, nervios ni postes.
 - El suelo de la base no tiene agujero ahí. Si el mecanismo tiene que atravesar el suelo, el agujero del suelo va con este mismo centro.
 
@@ -122,5 +122,4 @@ Quien lea `muescas` tiene que tratar `null` (o el campo ausente) como «sin mues
 
 ## Pendiente de confirmar
 
-- Posición real del agujero del mecanismo (ahora es un supuesto).
 - Tamaño de la funda del cable USB-C que se vaya a usar. Si es más alta que 6,5 mm, el corte crece hacia arriba (el eje no se mueve).
