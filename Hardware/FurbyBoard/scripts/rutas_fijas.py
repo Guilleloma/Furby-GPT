@@ -883,7 +883,8 @@ pista("ENC_IO", "F.Cu", 0.2, "JP4.2", (-41.6, -108.0))
 # MOT_IN2: los pines 1 (IPROPI a R28.1) y 4 (MOT_VREF a C23.1) de U6 encierran a los pines 2 y 3; su única salida en F.Cu
 # es el hueco de 0,55 mm entre R28 y C23 (una sola pista). Vía entre las de GND de R28.2/C23.2 (0,15 local), B.Cu al este
 # por debajo de U6 y al norte por la ranura entre TP8 y TP11, al oeste en y -94,5 hasta el borde del agujero y al norte
-# hasta una vía al SE de la de IPROPI; In2 rodea esa vía por el norte (y -86,6) hasta la vía de MOT_IN2.
+# hasta una vía al SE de la de IPROPI; In3 rodea esa vía por el norte (y -86,6) hasta la vía de MOT_IN2 (en In2 cerraba el
+# paso del relleno de VSYS entre la fila MOT de In2 y la diagonal de IPROPI y se perdía el relleno del cuadrante NE).
 # Codo de 0,3 en x -51,15 (fuera del patio de U6, a 0,15 de R28.1); 0,0001 de más para que revisar-rutado no lo mida
 # por debajo de 2 x ancho por el redondeo de coma flotante.
 pista("MOT_IN2", "F.Cu", 0.25, "U6.2", (-51.15, -103.4499))   # 0,25 dentro del patio de U6
@@ -892,7 +893,7 @@ via("MOT_IN2", (-54.3, -103.75))
 pista("MOT_IN2", "B.Cu", 0.2, (-54.3, -103.75), (-50.25, -103.75), (-50.25, -99.7), (-51.3, -99.7), (-51.3, -94.5),
       (-54.5, -94.5), (-54.5, -89.7), (-55.0, -89.2), (-56.3, -89.2))
 via("MOT_IN2", (-56.3, -89.2))
-pista("MOT_IN2", "In2.Cu", 0.2, (-56.3, -89.2), (-56.3, -87.0), (-56.7, -86.6), (-61.05, -86.6), (-61.35, -86.3))
+pista("MOT_IN2", "In3.Cu", 0.2, (-56.3, -89.2), (-56.3, -87.0), (-56.7, -86.6), (-61.05, -86.6), (-61.35, -86.3))
 # EXP_P07: el pin 7 de U10 queda encerrado por TONGUE (pines 6 y 8 al oeste); vía bajo el cuerpo y por In3, al oeste entre
 # las vías de x -97,15 y al sur por el este de J8 y J5, hasta la fila entre las dos primeras de J11 y J11.7 desde arriba.
 pista("EXP_P07", "F.Cu", 0.2, "U10.7", (-91.45, -81.325))
@@ -928,3 +929,10 @@ via("U0TX", (-62.8, -66.8))
 pista("U0TX", "B.Cu", 0.2, (-62.8, -66.8), (-60.9, -64.9), (-54.538, -64.9), (-53.588, -63.95))
 via("U0TX", (-53.588, -63.95))
 pista("U0TX", "F.Cu", 0.2, "D3.1", (-53.588, -63.95))
+# Segunda vía en cada extremo del puente de VSYS de U7 (cambio de capa de potencia: >= 2 vías; picos de 0,9 A del clase D).
+via("VSYS", (-97.0, -85.7))
+pista("VSYS", "F.Cu", 0.6, (-96.25, -85.7), (-97.0, -85.7))
+pista("VSYS", "B.Cu", 0.6, (-96.25, -85.7), (-97.0, -85.7))
+via("VSYS", (-92.4, -90.65))
+pista("VSYS", "F.Cu", 0.6, (-92.4, -89.85), (-92.4, -90.65))
+pista("VSYS", "B.Cu", 0.6, (-92.4, -89.85), (-92.4, -90.65))
