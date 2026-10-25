@@ -76,6 +76,11 @@ Tipo **L**: 232 conexiones sin contar GND ni planos (≈ 340 con GND), 6 capas (
 
 ## Simulación
 `sim/elevador_6v.cir` (ngspice, etapa de potencia idealizada, declarado): pico 2,82 A < 3,8 A, rizado 19 mV. Lo que no se simula y por qué: `sim/RESULTADOS.md`.
+| 2026-10-25 | Bloque D: IR_TX por In2 bajo el módulo y por la banda norte de In3 pegada a LED_RUN_K; IR_RX por B.Cu (cruza LED_RUN_K) y In3; vías de IR_TX (−95,0; −70,9) y IR_RX (−91,28; −67,8) junto a Q3/R56 | La banda norte de In3 queda con dos carriles libres para la UART al sur de J7 (y ≈ −66,55/−66,95) y por encima de la vía EN (−80,3; −65,53) bajo el módulo | agente (bloque D) |
+| 2026-10-25 | IR_LED_A (0,3) por In2 entre J7.5 y J7.6 hasta una vía en el pasillo entre Q3 y R54 (−92,0; −71,54); LIGHT de In2 dobla en y −70,4 (antes −70,75) | R54.2 solo tiene salida en F.Cu por ese pasillo (Q3, EN y SCL lo encierran) | agente (bloque D) |
+| 2026-10-25 | VSYS de R54.1 por un puente de In3 de 0,6 (vía de R54.1 → vía (−97,4; −72,05)) | IR_LED_A ocupa el único paso del relleno de VSYS de In2 hacia la bolsa de R54; el puente solo lleva los pulsos de 0,1 A del LED IR (una vía por extremo) | agente (bloque D) |
+| 2026-10-25 | Vía de cosido de GND (−89,75; −84,6) en el trozo de relleno de F.Cu de U10.12 y C34.2 | Era el «Zona GND sin unir» del DRC: esos pads no tienen vía propia | agente (bloque D) |
+| 2026-10-25 | LED_CHG_A por In3 de una vía al norte de D1 (−59,3; −102,3) a otra al oeste de R10 (−73,1; −115,2) | D1.2 está encerrado en F.Cu salvo por el norte; la vía queda a 0,2 del tronco de 3V3 de B.Cu y de HOME de In3 | agente (bloque D) |
 
 ## Apilado e impedancias
 **JLC06161H-7628** (6 capas, 1,6 mm; decisión de Guillermo del 2026-10-24 tras el diagnóstico del rutado en 4 capas):
@@ -183,6 +188,7 @@ Lecciones para el Cerebro (`layout-pcb.md` §4 y §13): al fijar las clases A–
 | Rótulos sin sitio: «IO8» de JP4 en la cara superior (sí en la inferior) y tres pads de J9 (EN+, G y ESP; los demás y los 10 de J_EXP sí) | El patio de J9 y TP11 no dejan hueco; se recolocan con el cobre definitivo |
 
 ## Pendiente para la siguiente versión / otros encargos
+- **Bloque D, sin rutar:** (1) **IR_PWR** (U10.8 → J7.3): el pin 8 de U10 no tiene salida; al oeste lo encierran TONGUE (C35/R43) y AMP_SD, y bajo el cuerpo la única columna de vías libre de In3 (x −91,42) la usan LED_RUN_K y EXP_P07, con BACK de B.Cu en la fila del pin 8. Opciones: mover la vía de EXP_P07 y el tramo B.Cu de BACK (replanteo local de U10) o permutar puertos del TCA9535 (cambia el mapa de firmware). (2) **LED_PG_A** (R11.2 → D2.2): D2.2 está encerrado en F.Cu (D1.2, D2.1/PGOOD, CAM_EN, R9) y la única salida, al sur entre D2.2 y R9.2, no admite vía (TP13 en B.Cu, LED_CHG_A en In3 x −58,6). Opción: recolocar D1/D2 (o TP13 y R9) en la colocación.
 - **UART0 → J11 sin rutar (bloque C):** permutar pines de J11 no basta: ningún pasillo llega del módulo a la esquina de J11. In3 queda cerrado por LED_RUN_K, SDA y EXP_P07; B.Cu por el I2C, el tronco de 3V3 y las series de J8; In2 por el 3V3, EXP_INT y el bus I2S. Opciones: (a) sacar U0TX/U0RX a TP junto a los pines 36/37 del módulo (consola de rescate con pinza) y liberar J11.9/10; (b) replanteo en T0 del cuadrante oeste (SDA, SCL, EXP_P07 y UART como un grupo). U0TX ya llega al LED PROG (D3) y tiene vía en (−62,8; −66,8).
 - Confirmar C23179 (470 Ω) e Isat de la FHD4020S-1R0MT antes del pedido; medir el agujero del mecanismo en el Furby antes de rutar (R9).
 - Rutado (encargo 4): reescribir `scripts/rutas_fijas.py` con el par USB de la sección «Par USB» y los lazos de los convertidores; `scripts/rutado.dsn`/`.ses`, `router/`, `ensanchar_potencia.py` y `vias_extra.py` son del intento anterior y no se reutilizan (el rutador por rejilla queda prohibido como autorrutador).
