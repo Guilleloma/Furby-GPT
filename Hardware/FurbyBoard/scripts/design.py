@@ -359,7 +359,7 @@ def build():
     JP("JP5", s, "LED_PWR_K", "GND", "Cortar para apagar el LED PWR (hasta −0,9 mA en reposo)")
     R("R58", s, "1k", "3V3", "LED_RUN_A", "LED RUN ≈ 0,5–0,9 mA (verde InGaN, VF 2,6–3,1 V)")
     part("D5", s, "Device:LED", "Verde", "LED_SMD:LED_0805_2012Metric", {"1": "LED_RUN_K", "2": "LED_RUN_A"},
-         "C2297", "base", "KT-0805G", "LED RUN: latido del firmware (P16 del expansor)")
+         "C2297", "base", "KT-0805G", "LED RUN: latido del firmware (P03 del expansor)")
     pads("J11", s, ["GND", "3V3", "VSYS", "VBUS", "EXP_P07", "I2C_SCL", "U0TX", "GND", "I2C_SDA", "U0RX"],
          "FurbyBoard:Pads_2x05_P2.54mm", "J_EXP: header de expansión 2 x 5 sin montar")
     for i, ref in enumerate(("TP12", "TP13", "TP14")):

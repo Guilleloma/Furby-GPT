@@ -1355,7 +1355,7 @@
 			(embedded_fonts no)
 		)
 	)
-	(text "JP1–JP3: cortar para liberar GPIO48, GPIO46 y GPIO3."
+	(text "JP1–JP3: cortar para liberar GPIO9, GPIO46 y GPIO3."
 		(exclude_from_sim no)
 		(at 20 42 0)
 		(effects

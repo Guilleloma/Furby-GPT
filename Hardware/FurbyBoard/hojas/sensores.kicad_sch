@@ -2653,7 +2653,7 @@
 		)
 		(uuid "6eed2e40-cbc9-5337-8669-cfc6024f3f31")
 	)
-	(text "Encoder: LED IR con AO3400A en EN_6V y fototransistor al Schmitt; JP4 libera GPIO14."
+	(text "Encoder: LED IR desde V6 por 470 Ω (luce con EN_6V) y fototransistor al Schmitt; JP4 libera GPIO8."
 		(exclude_from_sim no)
 		(at 20 38 0)
 		(effects
@@ -2664,7 +2664,7 @@
 		)
 		(uuid "770476b7-3beb-5d14-a40e-a5b02f00a2e2")
 	)
-	(text "TCA9535 en 0x20, mismo I2C que el SCCB de la cámara; INT a GPIO21 (despierta del sueño)."
+	(text "TCA9535 en 0x20, mismo I2C que el SCCB de la cámara; INT a GPIO6 (despierta del sueño)."
 		(exclude_from_sim no)
 		(at 20 30 0)
 		(effects

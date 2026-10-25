@@ -1056,7 +1056,7 @@
 			(embedded_fonts no)
 		)
 	)
-	(text "J_EXP: header 1 × 10 sin montar con GND, 3V3, VSYS, VBUS, SDA, SCL, P07, GND, U0TX y U0RX."
+	(text "J_EXP: 2 × 5 sin montar: 1 GND, 2 3V3, 3 VSYS, 4 VBUS, 5 P04, 6 SCL, 7 U0TX, 8 GND, 9 SDA, 10 U0RX."
 		(exclude_from_sim no)
 		(at 20 34 0)
 		(effects
@@ -1078,7 +1078,7 @@
 		)
 		(uuid "8979d303-4d97-55ff-abac-a37295051a23")
 	)
-	(text "LED PWR (JP5 para apagarlo), LED RUN en P16 del expansor."
+	(text "LED PWR (JP5 para apagarlo), LED RUN en P03 del expansor."
 		(exclude_from_sim no)
 		(at 20 30 0)
 		(effects
@@ -2259,7 +2259,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "LED RUN: latido del firmware (P16 del expansor)"
+		(property "Description" "LED RUN: latido del firmware (P03 del expansor)"
 			(at 228.6 66.04 0)
 			(hide yes)
 			(show_name no)
