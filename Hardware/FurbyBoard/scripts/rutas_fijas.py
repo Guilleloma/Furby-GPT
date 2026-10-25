@@ -947,3 +947,26 @@ pista("VSYS", "B.Cu", 0.6, (-96.25, -85.7), (-97.0, -85.7))
 via("VSYS", (-92.4, -90.65))
 pista("VSYS", "F.Cu", 0.6, (-92.4, -89.85), (-92.4, -90.65))
 pista("VSYS", "B.Cu", 0.6, (-92.4, -89.85), (-92.4, -90.65))
+# ---------------------------------------------------------------- bloque D: IR de J7, LEDs del cargador, 3V3 y GND
+# IR_TX (U4.26 a la puerta de Q3 y a su pull-down R55): vía bajo el módulo, por In2 (relleno de VSYS) al norte hasta
+# la banda de In3 al norte de LED_RUN_K, que recorre pegada a LED_RUN_K para dejar libre el norte de la banda a la UART:
+# entre las vías de SDA y SCL del pin 4/5 y por debajo de la vía de GND (-85,6; -67,95) hasta una vía junto a Q3.
+stub("IR_TX", "U4.26", (0.0, 1.55), 0.2)
+pista("IR_TX", "In2.Cu", 0.2, ("U4.26", 0.0, 1.55), (-70.0, -75.19), (-70.0, -67.4))
+via("IR_TX", (-70.0, -67.4))
+pista("IR_TX", "In3.Cu", 0.2, (-70.0, -67.4), (-80.9, -67.4), (-82.075, -68.575), (-95.0, -68.575), (-95.0, -71.3))
+via("IR_TX", (-95.0, -71.3))   # al oeste del 3V3 de In2 (x -93,85) y del SDA de B.Cu (x -94,3), fuera del keepout de H1
+pista("IR_TX", "F.Cu", 0.2, (-95.0, -71.3), (-93.35, -71.3), "Q3.1")
+pista("IR_TX", "F.Cu", 0.2, (-95.0, -71.3), (-96.43, -71.3), "R55.1")
+# IR_RX (U4.35 a R56.1): vía al oeste del pin, por B.Cu al norte cruzando LED_RUN_K de In3 y por In3 al oeste entre las
+# vías EN y SDA de los pines 3/4 y al norte de la vía de GND de C9 hasta una vía junto a R56 (entre EN y LIGHT de In2).
+# Entre J7 e IR_RX quedan dos carriles de In3 (y ≈ -66,55 / -66,95) para la UART.
+stub("IR_RX", "U4.35", (-1.85, 0.0), 0.2)
+pista("IR_RX", "B.Cu", 0.2, ("U4.35", -1.85, 0.0), (-67.4, -69.34), (-67.4, -66.165))
+via("IR_RX", (-67.4, -66.165))
+pista("IR_RX", "In3.Cu", 0.2, (-67.4, -66.165), (-83.6, -66.165), (-84.785, -67.35), (-86.6, -67.35), (-87.05, -67.8),
+      (-91.28, -67.8))
+via("IR_RX", (-91.28, -67.8))
+pista("IR_RX", "F.Cu", 0.2, (-91.28, -67.8), "R56.1", modo="d")
+# IR_RX_PAD: de R56.2 al norte entre J7.7 y J7.8 (0,32 a cada lado) y en diagonal a J7.4.
+pista("IR_RX_PAD", "F.Cu", 0.2, "R56.2", (-88.15, -63.97), "J7.4", modo="d")
