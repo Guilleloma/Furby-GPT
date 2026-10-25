@@ -8,9 +8,11 @@ Fuera quedan los pads de cable, TP, puentes, taladros y logo (sin LCSC ni
 posición) y los DNP.
 
 JLCPCB coloca cada pieza con la huella EasyEDA de su número LCSC, no con la de
-KiCad. GIRO y ORIGEN salen de comparar, pad a pad, cada huella de KiCad 10 con
-la EasyEDA de su LCSC (API de easyeda.com, consultada el 2026-10-24; las dos
-con la y hacia abajo):
+KiCad. GIRO y ORIGEN salen de comparar por geometría (posición de cada pad y
+función de su pin, nunca solo el número) cada huella de KiCad 10 con la EasyEDA
+de su LCSC (API de easyeda.com, consultada el 2026-10-24 y otra vez, para los 21
+códigos que no son R ni C, el 2026-10-25 en la puerta E2; las dos con la y hacia
+abajo):
 
 - GIRO: grados CCW vistos desde arriba que se suman a la rotación de KiCad.
   · SOT-23 (C20917) y SOT-23-5 «BR» (C53099, C7836): pin 1 al otro lado → 180.
@@ -20,7 +22,7 @@ con la y hacia abajo):
   · LED (C2286, C2297): EasyEDA numera el cátodo como pad 2, pero está a la
     izquierda, igual que el pad 1 (K) de KiCad → 0. Comparar por número de pad
     daría 180 y montaría los LED al revés.
-  · Resistencias, condensadores, fusible, bobinas, pulsadores, VQFN del
+  · Resistencias, condensadores, NTC, fusible, bobinas, pulsadores, VQFN del
     BQ24073 y del TPS61089, VSON del TPS63802, FPC y USB-C → 0.
 - ORIGEN: dónde cae el origen de la huella EasyEDA en coordenadas locales de la
   huella de KiCad (mm, y hacia abajo). El CPL da la posición de ese origen.
@@ -73,13 +75,18 @@ def posicion(p, lcsc):
 
 def build(rows, pos):
     keep = [r for r in rows if r["LCSC"].strip() and not r["DNP"].strip() and r["Ref"] in pos]
+    # Una línea por pieza (huella y LCSC): si la misma pieza lleva valores distintos en el
+    # esquema (pulsadores RESET y BOOT), van juntos en el comentario
     groups = OrderedDict()
     for r in keep:
-        key = (r["Value"], short_fp(r["Footprint"]), r["LCSC"].strip())
-        groups.setdefault(key, []).append(r["Ref"])
+        key = (short_fp(r["Footprint"]), r["LCSC"].strip())
+        vals, refs = groups.setdefault(key, ([], []))
+        if r["Value"] not in vals:
+            vals.append(r["Value"])
+        refs.append(r["Ref"])
     bom = [["Comment", "Designator", "Footprint", "LCSC Part #"]]
-    for (val, fp, lcsc), refs in groups.items():
-        bom.append([val, ",".join(refs), fp, lcsc])
+    for (fp, lcsc), (vals, refs) in groups.items():
+        bom.append([" / ".join(vals), ",".join(refs), fp, lcsc])
     cpl = [["Designator", "Mid X", "Mid Y", "Layer", "Rotation"]]
     for r in keep:
         p, lcsc = pos[r["Ref"]], r["LCSC"].strip()
