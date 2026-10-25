@@ -921,3 +921,10 @@ pista("I2C_SCL", "In3.Cu", 0.2, (-43.9, -84.65), (-44.45, -84.1), (-44.45, -74.5
       (-83.6, -73.635), (-85.065, -75.1), (-91.325, -75.1), (-91.325, -74.2))
 pista("I2C_SDA", "B.Cu", 0.2, (-43.9, -85.65), (-43.25, -85.0), (-43.25, -74.1), (-70.0, -74.1), (-70.8, -73.3),
       (-77.3, -73.3), (-77.3, -66.8), (-80.3, -66.8))
+# U0TX local: U4.37 a una vía al este del pin (al norte de LED_RUN_K de In3, para que el tramo hacia J11 salga por la banda
+# norte de In3) y por B.Cu hasta una vía bajo D3.1 (LED PROG, encerrado en F.Cu por LED_PWR_K y la fila de 3V3).
+pista("U0TX", "F.Cu", 0.2, "U4.37", (-62.8, -66.8))
+via("U0TX", (-62.8, -66.8))
+pista("U0TX", "B.Cu", 0.2, (-62.8, -66.8), (-60.9, -64.9), (-54.538, -64.9), (-53.588, -63.95))
+via("U0TX", (-53.588, -63.95))
+pista("U0TX", "F.Cu", 0.2, "D3.1", (-53.588, -63.95))
