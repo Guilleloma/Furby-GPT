@@ -24,6 +24,7 @@ Convenciones: «peor caso» = tolerancias, DC bias de los cerámicos y tensión 
 | Batería y Q1 | `bateria_q1.cir` | PASS (con USB y batería al revés, en la esquina mala el BQ entra en precarga: 0,32 W en Q1) |
 | Puente H y motor | `drv8231a_motor.cir` | PASS (θJA del DSG mal copiada en NOTAS: 66,5 °C/W, no 42,8) |
 | Amplificador (MAX98357A) | `max98357_vsys.cir` | **FAIL**: 257 mV pp en VDD por el puente de B.Cu; propuesta: 10 µF junto a los pines 7/8 (25 mV pp) |
+| LDO de la cámara (ME6211) | `ldo_camara.cir`, `ldo_camara_psrr.cir` | PASS (RESETB sin reset por hardware al encender: el firmware usa el reset por SCCB) |
 | Power path (BQ24073) | `bq24073_powerpath.cir` | **2 FAIL** (pico de 2,9 A con USB en USB500 en el peor caso; enchufe con ≥ 4,3 W en modo ILIM): propuestas de firmware |
 
 ## Elevador de 6 V (TPS61089 + FHD4020S-1R0MT) — `elevador_6v.cir`
@@ -182,6 +183,31 @@ Observaciones y propuesta:
 - El puente aguanta la corriente (0,32 A medios, 1,5 A de pico con el anillo; 2 vías por extremo) y VSYS en el relleno apenas se mueve (mín. 3,53 V): **3V3 no se entera** (U3 regula con VIN ≥ 2,3 V; la figura 10-29 del TPS63802 da < 0,1 V para escalones de entrada de 0,6 V en 1 µs).
 
 Figuras: `png/max98357_vdd.png` (VDD en los pines: puente actual, propuesta y referencia), `png/max98357_vsys.png`.
+
+## LDO de la cámara (ME6211C28 y ME6211C12) — `ldo_camara.cir`, `ldo_camara_psrr.cir`
+
+Supuestos:
+
+- **Modelo `LDO_ME6211`** con la hoja ME6211 V24: caída de 110 mV (C28) y 280 mV (C12) a 100 mA, IOUTMAX 450/300 mA con repliegue a 65 mA en cortocircuito, PSRR ajustada a sus dos puntos (70 dB a 1 kHz y 62 dB a 10 kHz) y aplanada en −38 dB por encima de ≈ 170 kHz (supuesto), regulación de carga de 67 mΩ. La hoja no da el tiempo de arranque: rampa de 50 µs supuesta.
+- Cámara OV2640: AVDD 20 mA y DVDD 80 mA (tabla de raíles), 1 µF más en cada raíl dentro del módulo; 3V3 con el modelo del TPS63802 y la pista de 58 mΩ.
+- Rizado de 3V3 para el caso de PSRR: 6 mV pp a 1,6 MHz (PWM, de `tps63802_rizado.cir`) más 40 mV pp a 20 kHz (PFM: **supuesto**, se mide).
+
+| Magnitud | Resultado | Criterio | PASS/FAIL |
+|----------|-----------|----------|-----------|
+| Arranque con CAM_EN: subida de AVDD (10 → 90 %) | 36 µs; sobreimpulso 0,9 mV | Monótona, sin sobreimpulso > 5 % | PASS |
+| Orden de arranque: DVDD frente a AVDD | DVDD − AVDD máx. 0 mV (U9 cuelga de AVDD) | DVDD nunca por encima de AVDD | PASS |
+| Pico de corriente de 3V3 al encender la cámara y caída de 3V3 | 284 mA; 3V3 mín. 3,27 V | 3V3 ≥ 3,0 V | PASS |
+| AVDD y DVDD en régimen (20 y 80 mA) | 2,794 V y 1,195 V | 2,8 V ± 5 % y 1,2 V ± 5 % | PASS |
+| PSRR de U8 a 1 kHz / 10 kHz / 20 kHz / 1,6 MHz | 70 / 62 / 57 / 42 dB | Ajuste a la hoja: 70 dB a 1 kHz y 62 dB a 10 kHz | PASS |
+| Rizado de AVDD / DVDD con 46 mV pp en 3V3 (PWM 1,6 MHz + PFM 20 kHz) | 0,16 / 0,06 mV pp | AVDD ≤ 10 mV pp | PASS |
+| Disipación de U8 / U9 (SOT-23-5, 250 °C/W) | 50 / 128 mW → Tj ≈ 62 / 82 °C | Tj ≤ 110 °C con Ta 50 °C | PASS |
+
+Observaciones:
+
+- U8 trabaja con 0,47 V de margen (3,27 → 2,8 V) y la PSRR de la hoja está medida con 1 V: la real será algo peor, pero hay más de 30 dB de sobra frente al criterio de 10 mV pp. Se mide en TEST-PLAN §14 (TP10 y TP11 con el osciloscopio en AC y 20 MHz).
+- **CAM_RST (RESETB) no da un reset por hardware al encender la cámara**: R35/C31 cuelgan de 3V3, que ya está arriba cuando CAM_EN enciende AVDD y DVDD, así que RESETB está a 3,3 V desde antes de alimentar el sensor. No es un fallo si el firmware usa el reset por SCCB (en `esp32-camera`, `pin_reset = -1`) y PWDN (R34 lo deja en reposo al arrancar). Se anota para el firmware.
+
+Figuras: `png/ldo_arranque.png`, `png/ldo_psrr.png`.
 
 ## Lo que no se simula y por qué
 

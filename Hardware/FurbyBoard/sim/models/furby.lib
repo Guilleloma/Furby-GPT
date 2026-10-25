@@ -140,3 +140,34 @@ R24 comp rc 30k
 C14 rc gnd 4.7n
 C15 comp gnd 10p
 .ends
+
+* ----------------------------------------------------------------------------------------
+* ME6211 (U8 2,8 V, U9 1,2 V), LDO de comportamiento. Hoja de datos Microne ME6211 V24
+* (https://static.chipdip.ru/lib/463/DOC043463792.pdf, tablas ME6211C28 y ME6211C12):
+*  - caída VDIF1 a 100 mA: 110 mV (C28) y 280 mV (C12) -> RDO 1,1 y 2,8 ohm;
+*  - IOUTMAX 450 mA (C28) y 300 mA (C12); cortocircuito ISHORT 65 mA (limitador con repliegue);
+*  - PSRR (VIN = VOUT + 1 V + 1 Vpp): 70 dB a 1 kHz (10 mA) y 62 dB a 10 kHz (100 mA);
+*  - ISS 30-60 uA; CE alto >= 1,0 V, bajo <= 0,5 V.
+* Supuestos: PSRR con un polo de lazo a 4,2 kHz (cuadra con los dos puntos de la hoja) que se aplana
+* en -38 dB por encima de ≈ 170 kHz (la hoja no da datos ahí); regulación de carga 1/GFAST = 67 mohm
+* (la hoja: 7-8 mV de 1 a 100 mA); arranque con rampa de la referencia TSS (supuesto 50 us; la hoja
+* solo dice «fast turn-on»). Con menos de 1 V de margen (U8: 0,47 V) la PSRR real empeora.
+.subckt LDO_ME6211 in out en gnd params: VSET=2.8 RDO=1.1 IMAX=0.45 ISH=0.065 GFAST=15
++ K=3.08e-4 KHF=0.0123 FHP=172k TSS=50u
+* parte alterna de la entrada (la continua se filtra con 10 ms)
+Ravg in inavg 10k
+Cavg inavg gnd 1u
+Bvac vac gnd V = V(in,gnd) - V(inavg,gnd)
+* paso alto para el tramo de PSRR que se aplana
+Chp vac hp {1/(6.2832*FHP*1k)}
+Rhp hp gnd 1k
+* arranque: la referencia sube en TSS cuando CE pasa de 1 V
+Bss gnd ss I = V(en,gnd) > 1.0 ? max(0,min(1,(1.02-V(ss))/0.02))/{TSS} : -V(ss)/1u
+Css ss gnd 1
+Rss ss gnd 1e9
+Bt tgt gnd V = {VSET}*min(V(ss),1) + {K}*V(vac) + {KHF}*V(hp)
+* paso: corriente limitada por el lazo, el repliegue y la caída (in-out)/RDO
+Bp in out I = (V(en,gnd) > 1.0 ? 1 : 0) * max(0, min( min({ISH}+({IMAX}-{ISH})*max(V(out,gnd),0)/{VSET},
++ max(V(in,out),0)/{RDO}), {GFAST}*(V(tgt)-V(out,gnd)) ))
+Biq in gnd I = 40u*(V(en,gnd) > 1.0 ? 1 : 0)
+.ends

@@ -1,0 +1,86 @@
+* FurbyBoard: LDO de la cámara, U8 (ME6211C28, 3V3 -> CAM_2V8) y U9 (ME6211C12, CAM_2V8 -> CAM_DVDD).
+* Qué se mide:
+*  1) Arranque con CAM_EN (P16 del TCA9535; R33 a GND): rampa y orden de AVDD y DVDD, pico de
+*     corriente de los condensadores y caída de 3V3 (con el modelo del TPS63802).
+*  2) PSRR (análisis AC) de U8 y de la cadena U8 + U9: ldo_camara_psrr.cir.
+*  3) Rizado en CAM_2V8 y CAM_DVDD con el rizado de 3V3: PWM (6 mV pp a 1,6 MHz, de
+*     tps63802_rizado.cir) y PFM (supuesto 40 mV pp a 20 kHz; se mide en el bring-up).
+*  4) Disipación de U8 y U9.
+* Modelo LDO_ME6211 (models/furby.lib) con la hoja ME6211 V24. Valores de la placa: C27 1 uF en la
+* entrada de U8, C28 y C29 1 uF 50 V X5R 0603 en las salidas (≈ 0,8 uF efectivos a 1,2-2,8 V), C30
+* 100 nF (DOVDD). U9 se alimenta de CAM_2V8 y comparte CAM_EN con U8.
+* Supuestos: cámara OV2640 con AVDD 20 mA y DVDD 80 mA (tabla de raíles: 0,1 A en CAM_2V8 incluyendo
+* U9); 1 uF más en cada raíl dentro del módulo de la cámara; 3V3 con el modelo calibrado del TPS63802
+* y la pista de 58 mohm; θJA de SOT-23-5 250 °C/W (NOTAS.md).
+* Criterios: AVDD 2,8 V ± 5 % y DVDD 1,2 V ± 5 % en régimen, rizado incluido; rizado de AVDD
+* <= 10 mV pp (raíl analógico del sensor, criterio propio); DVDD no sube antes que AVDD; 3V3 >= 3,0 V
+* al encender la cámara; Tj de U8 y U9 <= 110 °C con Ta 50 °C.
+* Ejecutar desde sim/: ngspice -b ldo_camara.cir
+
+.include models/furby.lib
+
+.param IAV=0.02 IDV=0.08 RIZ=0
+
+* --- 3V3: TPS63802 desde VSYS (3,7 V) o fuente ideal con rizado (RIZ = 1)
+Vbat bat 0 3.7
+Rsrc bat vsys 0.21
+Cvs vsys 0 58u
+XU3 vsys o3 0 TPS63802_AVG
+C78 o3 c78 26u
+R78 c78 0 2m
+Rtr o3 t1 58m
+Ltr t1 n3a 12n
+C9 n3a c9n 13u
+R9 c9n 0 3m
+Rbase n3a 0 33
+Vriz n3a n3 sin(0 {RIZ*0.003} 1.6meg)
+Vpfm n3 n3v3 sin(0 {RIZ*0.02} 20k)
+C27 n3v3 0 0.8u
+C30 n3v3 0 100n
+
+* --- CAM_EN (salida del TCA9535) a 2 ms
+Ven en 0 pwl(0 0 2m 0 2.001m 3.3)
+
+Vi8 n3v3 u8in 0
+XU8 u8in cam28 en 0 LDO_ME6211 params: VSET=2.8 RDO=1.1 IMAX=0.45 ISH=0.065
+C28 cam28 c28n 0.8u
+R28c c28n 0 10m
+Cm28 cam28 0 1u
+Iav cam28 0 pwl(0 0 2.3m 0 2.31m {IAV})
+XU9 cam28 dvdd en 0 LDO_ME6211 params: VSET=1.2 RDO=2.8 IMAX=0.3 ISH=0.065
+C29 dvdd c29n 0.8u
+R29c c29n 0 10m
+Cm12 dvdd 0 1u
+Idv dvdd 0 pwl(0 0 2.3m 0 2.31m {IDV})
+
+.tran 0.1u 4m
+.control
+set wr_singlescale
+set wr_vecnames
+* 1) arranque con 3V3 del TPS63802
+run
+meas tran a_t28 WHEN v(cam28)=2.52 RISE=1
+meas tran a_t12 WHEN v(dvdd)=1.08 RISE=1
+meas tran a_t28i WHEN v(cam28)=0.28 RISE=1
+meas tran a_t12i WHEN v(dvdd)=0.12 RISE=1
+meas tran a_v3min MIN v(n3v3) from=2m to=2.5m
+meas tran a_i8pk MAX i(Vi8) from=2m to=2.5m
+meas tran a_v28max MAX v(cam28) from=2m to=4m
+meas tran a_v12max MAX v(dvdd) from=2m to=4m
+meas tran a_v28 AVG v(cam28) from=3.5m to=4m
+meas tran a_v12 AVG v(dvdd) from=3.5m to=4m
+meas tran a_v3 AVG v(n3v3) from=3.5m to=4m
+wrdata datos/ldo_arranque.dat v(n3v3) v(cam28) v(dvdd) v(en)
+* 3) rizado de 3V3 inyectado (PWM 1,6 MHz y PFM 20 kHz) con 3V3 en régimen
+alterparam RIZ=1
+reset
+tran 10n 4m 3m
+meas tran r_in PP v(n3v3) from=3.2m to=4m
+meas tran r_28 PP v(cam28) from=3.2m to=4m
+meas tran r_12 PP v(dvdd) from=3.2m to=4m
+meas tran r_28min MIN v(cam28) from=3.2m to=4m
+meas tran r_12min MIN v(dvdd) from=3.2m to=4m
+wrdata datos/ldo_rizado.dat v(n3v3) v(cam28) v(dvdd)
+quit
+.endc
+.end

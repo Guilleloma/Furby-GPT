@@ -47,7 +47,7 @@ def leer(nombre):
     return {c: valores[:, i] for i, c in enumerate(cabecera)}
 
 
-def figura(fichero, titulo, paneles, escala_x=1e3, etiqueta_x="tiempo (ms)"):
+def figura(fichero, titulo, paneles, escala_x=1e3, etiqueta_x="tiempo (ms)", log_x=False):
     """Paneles apilados con eje x común y un solo eje y cada uno.
 
     paneles: lista de (etiqueta_y, [(x, y, nombre_serie)], [(valor, texto_del_límite)]).
@@ -72,6 +72,8 @@ def figura(fichero, titulo, paneles, escala_x=1e3, etiqueta_x="tiempo (ms)"):
         eje.tick_params(colors=TINTA_SUAVE)
         if len(curvas) > 1:
             eje.legend(loc="best", fontsize=8, frameon=False)
+    if log_x:
+        ejes[-1, 0].set_xscale("log")
     ejes[-1, 0].set_xlabel(etiqueta_x, color=TINTA)
     ejes[0, 0].set_title(titulo, color=TINTA, loc="left", fontsize=11)
     fig.tight_layout()
@@ -352,12 +354,48 @@ def bloque_max98357():
     return t
 
 
+def bloque_ldo():
+    t = Tabla("LDO de la cámara (ME6211)")
+    m = correr("ldo_camara.cir")
+    p = correr("ldo_camara_psrr.cir")
+    a = leer("ldo_arranque.dat")
+    k = (a["time"] > 2e-3) & (a["time"] < 2.2e-3)
+    dvdd_sobre = (a["v(dvdd)"][k] - a["v(cam28)"][k]).max()
+    t.fila("Arranque con CAM_EN: subida de AVDD (10 → 90 %)", f"{v((m['a_t28']-m['a_t28i'])*1e6, 0)} µs; "
+           f"sobreimpulso {v((m['a_v28max']-2.8)*1e3, 1)} mV", "Monótona, sin sobreimpulso > 5 %", m["a_v28max"] <= 2.94)
+    t.fila("Orden de arranque: DVDD frente a AVDD", f"DVDD − AVDD máx. {v(dvdd_sobre*1e3, 0)} mV (U9 cuelga de AVDD)",
+           "DVDD nunca por encima de AVDD", dvdd_sobre <= 0)
+    t.fila("Pico de corriente de 3V3 al encender la cámara y caída de 3V3", f"{v(m['a_i8pk']*1e3, 0)} mA; 3V3 mín. {v(m['a_v3min'])} V",
+           "3V3 ≥ 3,0 V", m["a_v3min"] >= 3.0)
+    t.fila("AVDD y DVDD en régimen (20 y 80 mA)", f"{v(m['a_v28'], 3)} V y {v(m['a_v12'], 3)} V",
+           "2,8 V ± 5 % y 1,2 V ± 5 %", abs(m["a_v28"] - 2.8) <= 0.14 and abs(m["a_v12"] - 1.2) <= 0.06)
+    t.fila("PSRR de U8 a 1 kHz / 10 kHz / 20 kHz / 1,6 MHz", f"{v(-p['p_1k'], 0)} / {v(-p['p_10k'], 0)} / {v(-p['p_20k'], 0)} / "
+           f"{v(-p['p_1m6'], 0)} dB", "Ajuste a la hoja: 70 dB a 1 kHz y 62 dB a 10 kHz", abs(p["p_1k"] + 70) < 1.5 and abs(p["p_10k"] + 62) < 1.5)
+    t.fila("Rizado de AVDD / DVDD con 46 mV pp en 3V3 (PWM 1,6 MHz + PFM 20 kHz)",
+           f"{v(m['r_28']*1e3, 2)} / {v(m['r_12']*1e3, 2)} mV pp", "AVDD ≤ 10 mV pp", m["r_28"] <= 0.01)
+    p8, p9 = (m["a_v3"] - m["a_v28"]) * 0.1, (m["a_v28"] - m["a_v12"]) * 0.08
+    t.fila("Disipación de U8 / U9 (SOT-23-5, 250 °C/W)", f"{v(p8*1e3, 0)} / {v(p9*1e3, 0)} mW → Tj ≈ {v(50 + p8*250, 0)} / {v(50 + p9*250, 0)} °C",
+           "Tj ≤ 110 °C con Ta 50 °C", 50 + max(p8, p9) * 250 <= 110)
+    z = recorte(a, 1.99e-3, 2.12e-3)
+    figura("ldo_arranque.png", "Cámara: arranque de AVDD (U8) y DVDD (U9) con CAM_EN", [
+        ("tensión (V)", [(z["time"], z["v(n3v3)"], "3V3"), (z["time"], z["v(cam28)"], "CAM_2V8 (AVDD)"),
+                         (z["time"], z["v(dvdd)"], "CAM_DVDD")], []),
+    ], escala_x=1e6, etiqueta_x="tiempo (µs)")
+    q = leer("ldo_psrr.dat")
+    figura("ldo_psrr.png", "Cámara: rechazo del rizado de 3V3 (modelo ajustado a la hoja del ME6211)", [
+        ("V(salida)/V(3V3) (dB)", [(q["frequency"], q["p28"], "CAM_2V8 (U8)"), (q["frequency"], q["p12"], "CAM_DVDD (U8 + U9)")],
+         [(-70, "hoja: −70 dB a 1 kHz"), (-62, "hoja: −62 dB a 10 kHz")]),
+    ], escala_x=1, etiqueta_x="frecuencia (Hz)", log_x=True)
+    return t
+
+
 BLOQUES = {
     "tps63802": bloque_tps63802,
     "bq24073": bloque_bq24073,
     "bateria": bloque_bateria,
     "drv8231a": bloque_drv8231a,
     "max98357": bloque_max98357,
+    "ldo": bloque_ldo,
 }
 
 if __name__ == "__main__":
