@@ -983,3 +983,14 @@ pista("IR_LED_K", "F.Cu", 0.3, "Q3.3", (-92.4, -67.06), (-93.23, -66.23), (-93.2
 # de IR_TX y de GND de R55.2, 0,4 a cada lado) hasta una vía al oeste de R55. Solo lleva los pulsos de 0,1 A del LED IR.
 pista("VSYS", "In3.Cu", 0.6, ("R54.1", 0.0, -1.2), (-93.96, -73.25), (-93.96, -72.05), (-97.4, -72.05))
 via("VSYS", (-97.4, -72.05))
+# 3V3 de R8.2, R9.2 (pull-ups de PGOOD/CHG), C30.1 y R34.2: en F.Cu entre ellos y una vía entre R8/R9 y C30 que sube por
+# B.Cu al este de TP13 y de la vía de GND (-56,9; -105,4) hasta la vía de 3V3 (-57,9; -103,0) del tronco de B.Cu.
+pista("3V3", "F.Cu", 0.4, "R9.2", "R8.2")
+pista("3V3", "F.Cu", 0.4, ("R9.2", 0.0, -0.795), (-57.9, -108.6))
+via("3V3", (-57.9, -108.6))
+pista("3V3", "F.Cu", 0.4, (-57.9, -108.6), "C30.1", modo="d")
+pista("3V3", "F.Cu", 0.4, "C30.1", "R34.2")
+pista("3V3", "B.Cu", 0.4, (-57.9, -108.6), (-56.2, -108.6), (-56.2, -104.7), (-57.9, -103.0))
+# GND: el trozo de relleno de F.Cu de U10.12 y C34.2 (pads sin vía propia) quedaba sin unión al plano; vía de cosido en él,
+# entre PGOOD de In3 (x -90,4) y la vía de BQ_EN2.
+via("GND", (-89.75, -84.6))
