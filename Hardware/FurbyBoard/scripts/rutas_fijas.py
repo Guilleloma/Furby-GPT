@@ -913,3 +913,11 @@ pista("I2C_SDA", "In3.Cu", 0.2, (-95.0, -74.2), (-97.0, -74.2), (-97.3, -74.5), 
 # VSYS de U7 (pines 7/8 y C26): su vía (-96,25; -85,7) quedaba en una bolsa del relleno de In2 cerrada por SCL (y -78,25),
 # el 3V3 de In2 (x -97,6) y el bus I2S; la une por B.Cu (0,6) a la vía del pin 2 de U7, que sí cuelga del relleno.
 pista("VSYS", "B.Cu", 0.6, (-96.25, -85.7), (-92.4, -89.55), (-92.4, -89.85))
+# I2C de J6: las vías colgantes de SCL y SDA junto a J6 se unen al bus del módulo. SCL por In3: al norte entre la columna
+# de vías de J6 y ENC_IO, al oeste al norte de ENC_IO (por la ranura entre GND y ENC_IO de x -79,6 y entre GND e I2S_DIN
+# de x -83,1) y por debajo de LIGHT hasta la vía de SCL junto a R37. SDA por B.Cu: al norte por el este de las vías de J6,
+# al oeste por debajo de BOOT y EN y de las vías del EP del módulo, y al norte hasta la vía de SDA del pin 4.
+pista("I2C_SCL", "In3.Cu", 0.2, (-43.9, -84.65), (-44.45, -84.1), (-44.45, -74.525), (-81.8, -74.525), (-82.69, -73.635),
+      (-83.6, -73.635), (-85.065, -75.1), (-91.325, -75.1), (-91.325, -74.2))
+pista("I2C_SDA", "B.Cu", 0.2, (-43.9, -85.65), (-43.25, -85.0), (-43.25, -74.1), (-70.0, -74.1), (-70.8, -73.3),
+      (-77.3, -73.3), (-77.3, -66.8), (-80.3, -66.8))
