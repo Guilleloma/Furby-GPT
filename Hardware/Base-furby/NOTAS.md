@@ -115,6 +115,8 @@ Lo que se toca a mano está en `parametros-base.json`, sobre todo `separador_d`,
 
 Prueba hecha con copias de los dos JSON: con `separador_d` = 4,8 y `alturas.corte_sup` = 9,5, la base se regenera y la verificación sale con 0, sin tocar código. Los separadores salen de Ø4,798 (96 lados), la ventana llega a z 9,5, el USB-C queda a 0,39 de la pared, la funda a 0,35 de la base y la malla tiene 1 cuerpo y género 1, con los 4 agujeros macizos. Repetida con la `geometria.json` sin muescas. Con `tapar_agujeros_originales` = false también sale con 0: género 5 y agujeros pasantes.
 
+**2026-10-25:** `holgura_pcb_pared_min` pasa de 0,5 a **0,47**, el mínimo que fija `Hardware/PCB-suelo/interfaz-base.md` §1 en las orejetas del USB-C (la pared queda a 0,4735 en la esquina de la orejeta derecha, x −66,75; y −127,794). Es el valor con el que se generó la base del 2026-10-24 (decisión de Maestro; `LEEME.txt` y `parametros-usados.json` junto al STL en el NAS, `3D Files/FurbyGPT/base-modificada/`). La tabla de abajo es de una ejecución anterior, con el criterio de 0,5. El mismo día, el agujero del mecanismo (Ø11,3 con centro en −60,88; −95,32) queda validado por Guillermo el 2026-10-24 en `interfaz-base.md` §4.
+
 ## Verificación
 
 El detalle está en `verificacion.json`. Resultado con los parámetros actuales: **de la A a la I en verde y salida 0**.
@@ -133,5 +135,5 @@ El detalle está en `verificacion.json`. Resultado con los parámetros actuales:
 
 ## Pendiente
 
-- Siguen pendientes de confirmar los supuestos del plan: el centro y el Ø del mecanismo y la funda del cable real.
+- Sigue pendiente de confirmar la funda del cable real (el agujero del mecanismo quedó validado el 2026-10-24).
 - `usb_cuerpo_ancho` y `usb_cuerpo_largo` repiten valores de `contorno_suelo.py`. Convendría que `geometria.json` los exportara.
