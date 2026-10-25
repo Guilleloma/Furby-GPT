@@ -355,7 +355,7 @@ def build():
     R("R58", s, "1.5k", "3V3", "LED_RUN_A", "LED RUN ≈ 0,9 mA")
     part("D5", s, "Device:LED", "Verde", "LED_SMD:LED_0805_2012Metric", {"1": "LED_RUN_K", "2": "LED_RUN_A"},
          "C2297", "base", "KT-0805G", "LED RUN: latido del firmware (P16 del expansor)")
-    pads("J11", s, ["GND", "3V3", "VSYS", "VBUS", "I2C_SDA", "I2C_SCL", "EXP_P07", "GND", "U0TX", "U0RX"],
+    pads("J11", s, ["GND", "3V3", "VSYS", "VBUS", "EXP_P07", "I2C_SCL", "U0TX", "GND", "I2C_SDA", "U0RX"],
          "FurbyBoard:Pads_2x05_P2.54mm", "J_EXP: header de expansión 2 x 5 sin montar")
     for i, ref in enumerate(("TP12", "TP13", "TP14")):
         TP(ref, s, "GND", "GND")

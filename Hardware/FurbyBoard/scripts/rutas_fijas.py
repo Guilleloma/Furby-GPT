@@ -905,12 +905,13 @@ via("MOT_IN1", (-66.325, -88.95))
 pista("MOT_IN1", "F.Cu", 0.15, (-66.325, -88.95), "R29.1")
 pista("MOT_IN2", "In3.Cu", 0.2, (-55.1, -90.35), (-56.25, -89.2), (-56.25, -87.05),
       (-56.7, -86.6), (-61.05, -86.6), (-61.35, -86.3))
-# EXP_P07: el pin 7 de U10 queda encerrado por TONGUE (pines 6 y 8 al oeste); vía bajo el cuerpo y por In3, al oeste entre
-# las vías de x -97,15 y al sur por el este de J8 y J5, hasta la fila entre las dos primeras de J11 y J11.7 desde arriba.
+# EXP_P07: el pin 7 de U10 queda encerrado por TONGUE (pines 6 y 8 al oeste); vía bajo el cuerpo y por In3, al oeste hasta
+# x -95,35 y al sur entre las vías del clase D y del I2S (quiebro al este de la vía de GND (-95,3; -94,7)), al oeste por
+# debajo de J11 (y -107,3) y a J11.10 desde abajo (bloque U: deja el oeste de J8/J5 a la UART).
 pista("EXP_P07", "F.Cu", 0.2, "U10.7", (-91.45, -81.325))
 via("EXP_P07", (-91.45, -81.325))
-pista("EXP_P07", "In3.Cu", 0.2, (-91.45, -81.325), (-91.775, -81.65), (-100.0, -81.65), (-100.0, -87.6), (-101.1, -88.7),
-      (-101.1, -96.97), (-105.34, -96.97), "J11.7")
+pista("EXP_P07", "In3.Cu", 0.2, (-91.45, -81.325), (-91.775, -81.65), (-95.35, -81.65), (-95.35, -93.1), (-94.65, -93.8),
+      (-94.65, -105.86), "J11.5")
 # I2C_SCL a J11.6: de R37.1 al sur a una vía al sur de EXP_INT (In2) y entre LED_RUN_K y TUMMY (In3); por In2 al oeste
 # entre las vías de TILT_A_PAD y 3V3, por el hueco entre J8.4 y J8.5 y entre las columnas de J5 hasta J11.6.
 pista("I2C_SCL", "F.Cu", 0.15, ("R37.1", -0.075, 0.0), (-91.4, -77.3))
@@ -920,8 +921,12 @@ pista("I2C_SCL", "In2.Cu", 0.2, (-91.4, -77.3), (-92.35, -78.25), (-99.5, -78.25
 # I2C_SDA a J11.5: por In3 (en In2 cerraba el relleno de VSYS de R54): desde la vía junto a R36 al oeste por el hueco entre
 # J8.2 y J8.3, a 1 mm al oeste de SCL (In2), por el oeste de J5 y J11 (x -106,8) hasta la fila entre J11.8 y J11.9 y por el
 # hueco entre columnas a J11.5.
-pista("I2C_SDA", "In3.Cu", 0.2, (-95.0, -74.2), (-97.0, -74.2), (-97.3, -74.5), (-104.6, -74.5), (-104.6, -75.5),
-      (-105.1, -76.0), (-105.1, -84.6), (-106.8, -86.3), (-106.8, -102.05), (-104.07, -102.05), (-104.07, -105.86), "J11.5")
+# Bloque U: el tramo al oeste hasta J8 pasa a F.Cu (deja In3 libre a la UART; en In2 aislaba el VSYS de R54) por el hueco
+# entre J8.2 y J8.3 y baja a In3 por una vía junto al borde.
+pista("I2C_SDA", "F.Cu", 0.2, (-95.0, -74.2), (-100.6, -74.2), (-100.9, -74.5), (-104.3, -74.5))
+via("I2C_SDA", (-104.3, -74.5))
+pista("I2C_SDA", "In3.Cu", 0.2, (-104.3, -74.5), (-104.3, -75.2),
+      (-105.1, -76.0), (-105.1, -84.6), (-106.8, -86.3), (-106.8, -101.86), "J11.9")
 # VSYS de U7 (pines 7/8 y C26): su vía (-96,25; -85,7) quedaba en una bolsa del relleno de In2 cerrada por SCL (y -78,25),
 # el 3V3 de In2 (x -97,6) y el bus I2S; la une por B.Cu (0,6) a la vía del pin 2 de U7, que sí cuelga del relleno.
 pista("VSYS", "B.Cu", 0.6, (-96.25, -85.7), (-92.4, -89.55), (-92.4, -89.85))
@@ -940,6 +945,19 @@ via("U0TX", (-62.8, -66.8))
 pista("U0TX", "B.Cu", 0.2, (-62.8, -66.8), (-60.9, -64.9), (-54.538, -64.9), (-53.588, -63.95))
 via("U0TX", (-53.588, -63.95))
 pista("U0TX", "F.Cu", 0.2, "D3.1", (-53.588, -63.95))
+# UART0 a J11 (bloque U; J11 permutado: 6 U0TX, 7 U0RX, 9 SCL, 10 EXP_P07). Por In3 desde el módulo hacia el oeste en
+# dos carriles bajo el keepout de la antena (TX y -62,35; RX y -63,6); TX entra en la fila entre las dos de J7 y RX baja
+# entre la vía de GND (-85,3; -64,75) y la diagonal de IR_RX a la franja al sur de J7.
+# Al oeste de J7 bajan en pareja (0,55) por el oeste de H1, por el este de J8 y J5, y entran en J11.6 (fila entre J5 y
+# J11) y J11.7 (fila entre J11.6 y J11.7) desde arriba.
+pista("U0TX", "In3.Cu", 0.2, (-62.8, -66.8), (-62.35, -66.35), (-62.35, -62.35), (-84.9, -62.35), (-86.525, -63.975),
+      (-95.6, -63.975), (-100.4, -68.775), (-100.4, -87.6), (-101.55, -88.75), (-101.55, -96.97), (-105.34, -96.97),
+      "J11.7")
+pista("U0RX", "F.Cu", 0.2, "U4.36", (-65.67, -68.07), (-66.6, -67.14))
+via("U0RX", (-66.6, -67.14))
+pista("U0RX", "In3.Cu", 0.2, (-66.6, -67.14), (-66.6, -63.6), (-84.4, -63.6), (-84.4, -65.9), (-85.1, -66.6),
+      (-97.445, -66.6), (-99.85, -69.005), (-99.85, -87.7), (-101.0, -88.85), (-101.0, -104.59), (-104.07, -104.59),
+      "J11.10")
 # Segunda vía en cada extremo del puente de VSYS de U7 (cambio de capa de potencia: >= 2 vías; picos de 0,9 A del clase D).
 via("VSYS", (-97.0, -85.7))
 pista("VSYS", "F.Cu", 0.6, (-96.25, -85.7), (-97.0, -85.7))

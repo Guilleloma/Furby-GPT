@@ -1549,7 +1549,7 @@
 			)
 		)
 	)
-	(global_label "I2C_SDA"
+	(global_label "EXP_P07"
 		(shape passive)
 		(at 271.78 76.2 180)
 		(fields_autoplaced yes)
@@ -1664,7 +1664,7 @@
 			)
 		)
 	)
-	(global_label "EXP_P07"
+	(global_label "U0TX"
 		(shape passive)
 		(at 271.78 81.28 180)
 		(fields_autoplaced yes)
@@ -1687,7 +1687,7 @@
 			)
 		)
 	)
-	(global_label "U0TX"
+	(global_label "I2C_SDA"
 		(shape passive)
 		(at 271.78 86.36 180)
 		(fields_autoplaced yes)
