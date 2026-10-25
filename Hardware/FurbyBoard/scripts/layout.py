@@ -113,7 +113,7 @@ P = {
     "R39": (-87.4, -89.4, 0), "R41": (-90.6, -89.4, 0),
     # ------------------------------------------------ bajo la batería: amplificador junto a J8
     # Girado 180°: salidas al oeste hacia J8.6/7, VDD al norte (C26 junto al pin), I2S al sur, DIN al este.
-    "U7": (-96, -89.6, 180), "C26": (-95.475, -86.6, 0), "C24": (-99.2, -92.6, 90), "C25": (-96.25, -93.6, 0),
+    "U7": (-96, -89.6, 180), "C26": (-95.475, -86.6, 0), "C41": (-97.75, -85.3, 90), "C24": (-99.2, -92.6, 90), "C25": (-96.25, -93.6, 0),
     "R31": (-96.25, -95.9, 180), "R32": (-96.25, -97.6, 180),
     # ------------------------------------------------ bajo la batería: buck-boost de 3,3 V
     # VIN/L1/L2/VOUT al este (bobina y condensadores), EN/MODE/AGND/FB al oeste (divisor).

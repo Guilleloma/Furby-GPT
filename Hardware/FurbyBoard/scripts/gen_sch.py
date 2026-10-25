@@ -41,6 +41,7 @@ NOTAS = {
               "PWM a 20 kHz en IN1/IN2 (el DRV se duerme si IN1 = IN2 = 0 más de 0,8 ms).",
               "JP1–JP3: cortar para liberar GPIO48, GPIO46 y GPIO3."],
     "audio": ["MAX98357A en VSYS, GAIN_SLOT a VDD (6 dB), altavoz de 4 Ω y 3 W: 0,9–1,9 W según VSYS.",
+              "VDD: C26 (100 nF) y C41 (10 µF) junto a los pines 7/8; C24/C25 (22 µF) al otro lado del puente de VSYS.",
               "I2S full duplex a 16 kHz: BCLK y WS compartidos con el micro ICS-43434 (placa aparte, pads J5)."],
     "camara": ["FPC 24p 0,5 con el pinout de facto de los módulos OV2640/OV3660/OV5640 para ESP32 (verificar).",
                "AVDD 2,8 V (U8) y DVDD 1,2 V (U9; 1,5 V con ME6211C15 para OV3660/OV5640), EN desde el expansor.",

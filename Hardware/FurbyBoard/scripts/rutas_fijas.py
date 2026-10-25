@@ -522,6 +522,10 @@ pista("GND", "F.Cu", 0.25, "U7.11", (-96.4, -89.85))
 pista("GND", "F.Cu", 0.25, "U7.15", (-95.75, -90.0))
 via("GND", (-96.0, -89.6))
 stub("GND", "C26.2", (0.0, 0.95), 0.3)
+# C41 (10 µF, sim/RESULTADOS.md «Amplificador»): al oeste de C26, entre el tronco de VSYS de los pines 7/8 y SPK_P; su VSYS
+# entra en el tronco por y -86,075 (≈ 2,5 mm de cobre hasta los pines) y su GND baja por una vía al oeste.
+pista("VSYS", "F.Cu", 0.6, "C41.1", (-96.25, -86.075))
+stub("GND", "C41.2", (-1.05, 0.0), 0.4)
 stub("GND", "C25.2", (0.0, -1.1), 0.6)
 stub("GND", "C24.2", (0.0, 1.2), 0.6)
 pista("SPK_P", "F.Cu", 0.25, "U7.9", (-97.4375, -87.85))
@@ -697,8 +701,9 @@ stub("TILT_A_PAD", "R46.2", (0.925, 0.0), 0.2)
 pista("TILT_A_PAD", "B.Cu", 0.2, (-97.15, -77.4), (-99.5, -77.4), (-99.5, -70.6), "J8.1")
 stub("TILT_B_PAD", "R48.2", (0.925, 0.0), 0.2)
 pista("TILT_B_PAD", "B.Cu", 0.2, (-97.15, -80.8), (-99.9, -80.8), (-99.9, -73.14), "J8.2")
-stub("TONGUE_PAD", "R44.2", (-0.925, 0.0), 0.2)
-pista("TONGUE_PAD", "B.Cu", 0.2, (-97.15, -84.2), (-100.3, -84.2), (-100.3, -78.22), "J8.4")
+# Bloque F: la vía de TONGUE_PAD sube 0,65 mm en diagonal desde R44.2 (antes (-97,15; -84,2)) para dejar sitio a C41.
+stub("TONGUE_PAD", "R44.2", (-0.65, 0.65), 0.2)
+pista("TONGUE_PAD", "B.Cu", 0.2, (-96.875, -83.55), (-100.3, -83.55), (-100.3, -78.22), "J8.4")
 pista("3V3", "F.Cu", 0.4, "R45.2", (-93.8, -77.4), (-93.8, -76.55), (-96.075, -76.55), "R38.2")
 stub("3V3", "R47.2", (-0.925, 0.0), 0.4)
 pista("3V3", "F.Cu", 0.4, "R43.2", (-97.15, -82.5))
@@ -970,9 +975,11 @@ pista("U0RX", "In3.Cu", 0.2, (-66.6, -67.14), (-66.6, -63.6), (-84.4, -63.6), (-
       (-97.445, -66.6), (-99.85, -69.005), (-99.85, -87.7), (-101.0, -88.85), (-101.0, -104.59), (-104.07, -104.59),
       "J11.10")
 # Segunda vía en cada extremo del puente de VSYS de U7 (cambio de capa de potencia: >= 2 vías; picos de 0,9 A del clase D).
-via("VSYS", (-97.0, -85.7))
-pista("VSYS", "F.Cu", 0.6, (-96.25, -85.7), (-97.0, -85.7))
-pista("VSYS", "B.Cu", 0.6, (-96.25, -85.7), (-97.0, -85.7))
+# Bloque F: la del lado de los pines pasa de x -97,0 a -96,875 para quedar a 0,1 mm del pad de VSYS de C41; en F.Cu baja
+# al tramo de C41 al tronco (y -86,075) en vez de ir en paralelo a él hasta la primera vía.
+via("VSYS", (-96.875, -85.7))
+pista("VSYS", "F.Cu", 0.6, (-96.875, -85.7), (-96.875, -86.075))
+pista("VSYS", "B.Cu", 0.6, (-96.25, -85.7), (-96.875, -85.7))
 via("VSYS", (-92.4, -90.65))
 pista("VSYS", "F.Cu", 0.6, (-92.4, -89.85), (-92.4, -90.65))
 pista("VSYS", "B.Cu", 0.6, (-92.4, -89.85), (-92.4, -90.65))

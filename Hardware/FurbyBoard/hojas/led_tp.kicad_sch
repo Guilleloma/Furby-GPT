@@ -2344,7 +2344,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "1.5k"
+		(property "Value" "1k"
 			(at 186.92 65.77 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2379,7 +2379,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "LED RUN ≈ 0,9 mA"
+		(property "Description" "LED RUN ≈ 0,4–0,75 mA (verde InGaN, VF 2,6–3,1 V)"
 			(at 185.42 68.58 0)
 			(hide yes)
 			(show_name no)
@@ -2391,7 +2391,7 @@
 				(justify left)
 			)
 		)
-		(property "LCSC" "C22843"
+		(property "LCSC" "C21190"
 			(at 185.42 68.58 0)
 			(hide yes)
 			(show_name no)
@@ -2464,7 +2464,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "2.2k"
+		(property "Value" "1k"
 			(at 49.76 65.77 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2499,7 +2499,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "LED PWR ≈ 0,6 mA"
+		(property "Description" "LED PWR ≈ 0,4–0,75 mA (verde InGaN, VF 2,6–3,1 V)"
 			(at 48.26 68.58 0)
 			(hide yes)
 			(show_name no)
@@ -2511,7 +2511,7 @@
 				(justify left)
 			)
 		)
-		(property "LCSC" "C4190"
+		(property "LCSC" "C21190"
 			(at 48.26 68.58 0)
 			(hide yes)
 			(show_name no)
@@ -2619,7 +2619,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "Cortar para apagar el LED PWR (−0,6 mA en reposo)"
+		(property "Description" "Cortar para apagar el LED PWR (hasta −0,75 mA en reposo)"
 			(at 139.7 66.04 0)
 			(hide yes)
 			(show_name no)

@@ -250,6 +250,9 @@ def build():
     C("C24", s, "22u", "VSYS", "GND", "VDD del amplificador")
     C("C25", s, "22u", "VSYS", "GND", "VDD del amplificador")
     C("C26", s, "100n", "VSYS", "GND", "VDD del amplificador")
+    # 10 µF junto a los pines 7/8 (sim/RESULTADOS.md, «Amplificador»): C24/C25 quedan al otro lado del puente de VSYS
+    # de B.Cu y con solo C26 el rizado en VDD era de 257 mV pp; la hoja pide 0,1 µF + 10 µF en VDD
+    C("C41", s, "10u", "VSYS", "GND", "VDD del amplificador, junto a los pines 7/8")
     R("R31", s, "33", "I2S_BCLK", "I2S_SCK_MIC", "Serie hacia el micro (cable)")
     R("R32", s, "33", "I2S_WS", "I2S_WS_MIC", "Serie hacia el micro (cable)")
     pads("J5", s, ["I2S_DIN", "GND", "I2S_SCK_MIC", "I2S_WS_MIC", "3V3", "GND"], "FurbyBoard:Pads_2x03_P2.54mm",
@@ -350,11 +353,11 @@ def build():
 
     # ---------------------------------------------------------------- LED y TP
     s = "led_tp"
-    R("R57", s, "2.2k", "3V3", "LED_PWR_A", "LED PWR ≈ 0,6 mA")
+    R("R57", s, "1k", "3V3", "LED_PWR_A", "LED PWR ≈ 0,4–0,75 mA (verde InGaN, VF 2,6–3,1 V)")
     part("D4", s, "Device:LED", "Verde", "LED_SMD:LED_0805_2012Metric", {"1": "LED_PWR_K", "2": "LED_PWR_A"},
          "C2297", "base", "KT-0805G", "LED PWR: hay 3,3 V")
-    JP("JP5", s, "LED_PWR_K", "GND", "Cortar para apagar el LED PWR (−0,6 mA en reposo)")
-    R("R58", s, "1.5k", "3V3", "LED_RUN_A", "LED RUN ≈ 0,9 mA")
+    JP("JP5", s, "LED_PWR_K", "GND", "Cortar para apagar el LED PWR (hasta −0,75 mA en reposo)")
+    R("R58", s, "1k", "3V3", "LED_RUN_A", "LED RUN ≈ 0,4–0,75 mA (verde InGaN, VF 2,6–3,1 V)")
     part("D5", s, "Device:LED", "Verde", "LED_SMD:LED_0805_2012Metric", {"1": "LED_RUN_K", "2": "LED_RUN_A"},
          "C2297", "base", "KT-0805G", "LED RUN: latido del firmware (P16 del expansor)")
     pads("J11", s, ["GND", "3V3", "VSYS", "VBUS", "EXP_P07", "I2C_SCL", "U0TX", "GND", "I2C_SDA", "U0RX"],
