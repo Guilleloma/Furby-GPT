@@ -1,0 +1,94 @@
+* FurbyBoard: señales 1/2. Bus I2C (subida con la capacidad real), LED de estado y emisor IR.
+*
+* I2C (R36/R37 4,7 k a 3V3): capacidad del bus Cb con las pistas del PCB actual (SDA 150,5 mm y 4 vías,
+* SCL 137,6 mm y 5 vías, medidas en el .kicad_pcb), 0,09 pF/mm (microstrip y stripline de 0,15 mm del
+* apilado JLC06161H-7628, cálculo IPC-2141, estimado) y 0,4 pF por vía; pines: ESP32-S3 2 pF (tabla
+* 5-4), TCA9535 SCL 8 pF y SDA 9,5 pF máx. (SCPS201F, tabla 5.5), cámara OV2640 10 pF + FPC y flex 5 pF
+* (supuestos). J_EXP sin nada conectado. Criterio (NXP UM10204): tr (30-70 %) <= 1000 ns a 100 kHz y
+* <= 300 ns a 400 kHz; VOL <= 0,4 V con IOL 3 mA.
+*
+* LED (VF de las fichas de LCSC): rojo KT-0603R (C2286) 1,8-2,4 V a 20 mA; verde KT-0805G (C2297)
+* InGaN 2,6-3,1 V a 5 mA. Modelos de diodo ajustados a esos extremos (supuesto: ideal 2 en el rojo y
+* 3 en el verde). D1 (CHG) y D2 (PGOOD) desde VBUS (5,0 V) por 2,2 k; D3 (PROG, U0TX) desde 3V3 por
+* 1,5 k; D4 (PWR) por 2,2 k y D5 (RUN) por 1,5 k desde 3V3. Criterio (propio): >= 0,3 mA para que se vea
+* en interior; corriente y potencia de las resistencias dentro de su valor nominal.
+*
+* IR: VSYS -> R54 22 ohm 0805 (UNI-ROYAL 0805W8F, 1/8 W) -> LED IR -> Q3 AO3400A (RDS(on) <= 48 mohm a
+* VGS 2,5 V, hoja de AOS). LED IR de 940 nm supuesto: 1,2 V a 20 mA y 1,5 V a 100 mA. Portadora de
+* 38 kHz al 33 % y trama NEC (portadora presente el 41 % de los 67,5 ms). Criterio: potencia media de
+* R54 <= 50 % de 0,125 W (62 mW) durante una trama.
+* Ejecutar desde sim/: ngspice -b senales_i2c_led_ir.cir
+
+.param CPM=0.09p CVIA=0.4p
+
+* --- I2C: el ESP32 suelta la línea en t = 1 us
+.param CSDA={150.5*CPM*1e12*1e-12 + 4*CVIA + 2p + 9.5p + 10p + 5p}
+.param CSCL={137.6*CPM*1e12*1e-12 + 5*CVIA + 2p + 8p + 10p + 5p}
+V3 n3v3 0 3.3
+R36 n3v3 sda 4.7k
+Csda sda 0 {CSDA}
+Ssda sda 0 dsda 0 SOD
+Vdsda dsda 0 pwl(0 1 1u 1 1.001u 0 4u 0 4.001u 1)
+R37 n3v3 scl 4.7k
+Cscl scl 0 {CSCL}
+Sscl scl 0 dscl 0 SOD
+Vdscl dscl 0 pwl(0 1 1u 1 1.001u 0 4u 0 4.001u 1)
+* salida en drenador abierto del ESP32: ≈ 18 ohm (IOL 28 mA a 0,495 V, tabla 5-4)
+.model SOD sw(ron=18 roff=1e9 vt=0.5 vh=0.1)
+
+* --- LED de estado
+.model LEDR d(is=3.4e-19 n=2 rs=10)
+.model LEDGT d(is=8.1e-20 n=3 rs=20)
+.model LEDGB d(is=5.2e-17 n=3 rs=20)
+Vbus vbus 0 5.0
+R10 vbus d1a 2.2k
+D1 d1a 0 LEDR
+R11 vbus d2a 2.2k
+D2 d2a 0 LEDGT
+R19 n3v3 d3a 1.5k
+D3 d3a 0 LEDR
+* D4 y D5 en las dos esquinas de VF del verde (T: 3,1 V; B: 2,6 V a 5 mA)
+R57 n3v3 d4a 2.2k
+D4 d4a 0 LEDGT
+R57b n3v3 d4b 2.2k
+D4b d4b 0 LEDGB
+R58 n3v3 d5a 1.5k
+D5 d5a 0 LEDGT
+R58b n3v3 d5b 1.5k
+D5b d5b 0 LEDGB
+
+* --- IR: VSYS 4,4 V (USB) y 3,0 V (batería baja); un periodo de portadora a 38 kHz
+.model LEDIR d(is=4.7e-12 n=2 rs=2.7)
+.model NMOSQ3 sw(ron=0.048 roff=1e8 vt=1.5 vh=0.1)
+Vsh vsh 0 4.4
+R54 vsh irah 22
+Dirh irah irkh LEDIR
+Sq3h irkh 0 gir 0 NMOSQ3
+Vsl vsl 0 3.0
+R54l vsl iral 22
+Dirl iral irkl LEDIR
+Sq3l irkl 0 gir 0 NMOSQ3
+Vgir gir 0 pulse(0 3.3 2u 20n 20n {0.33/38k} {1/38k})
+
+.options savecurrents
+.tran 1n 60u
+.control
+run
+meas tran sda_tr TRIG v(sda) VAL=0.99 RISE=1 TARG v(sda) VAL=2.31 RISE=1
+meas tran scl_tr TRIG v(scl) VAL=0.99 RISE=1 TARG v(scl) VAL=2.31 RISE=1
+meas tran sda_vol MIN v(sda) from=5u to=6u
+meas tran sda_vol2 AVG v(sda) from=0.5u to=0.9u
+meas tran i_d1 AVG @d1[id] from=10u to=20u
+meas tran i_d2 AVG @d2[id] from=10u to=20u
+meas tran i_d3 AVG @d3[id] from=10u to=20u
+meas tran i_d4t AVG @d4[id] from=10u to=20u
+meas tran i_d4b AVG @d4b[id] from=10u to=20u
+meas tran i_d5t AVG @d5[id] from=10u to=20u
+meas tran i_d5b AVG @d5b[id] from=10u to=20u
+meas tran ir_ih MAX @dirh[id] from=2u to=12u
+meas tran ir_il MAX @dirl[id] from=2u to=12u
+let vfir = v(irah)-v(irkh)
+meas tran ir_vf FIND vfir AT=5u
+quit
+.endc
+.end

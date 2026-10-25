@@ -26,6 +26,7 @@ Convenciones: «peor caso» = tolerancias, DC bias de los cerámicos y tensión 
 | Amplificador (MAX98357A) | `max98357_vsys.cir` | **FAIL**: 257 mV pp en VDD por el puente de B.Cu; propuesta: 10 µF junto a los pines 7/8 (25 mV pp) |
 | LDO de la cámara (ME6211) | `ldo_camara.cir`, `ldo_camara_psrr.cir` | PASS (RESETB sin reset por hardware al encender: el firmware usa el reset por SCCB) |
 | NTC en TS | `ntc_ts.cir` | PASS frente a 0–51 °C (nominal 0,2–51,2 °C; con tolerancias −2,2–56,4 °C); frente a 0–45 °C, pendiente de la hoja de la celda |
+| Señales | `senales_i2c_led_ir.cir`, `senales_sensores_adc.cir` | **FAIL** menores: D4/D5 tenues (verdes InGaN; R57/R58 a 1 kΩ) y ADC solo con muestreo ≤ 1 kHz (regla de firmware); I2C a 400 kHz PASS |
 | Power path (BQ24073) | `bq24073_powerpath.cir` | **2 FAIL** (pico de 2,9 A con USB en USB500 en el peor caso; enchufe con ≥ 4,3 W en modo ILIM): propuestas de firmware |
 
 ## Elevador de 6 V (TPS61089 + FHD4020S-1R0MT) — `elevador_6v.cir`
@@ -228,6 +229,48 @@ Observaciones:
 - **Si la celda pide 0–45 °C** (lo habitual en LiPo), el corte en caliente queda 6–11 °C por encima. No es un fallo del circuito, sino del criterio: depende de la hoja de la celda, que no tenemos. Si la celda lo exige, la solución en la v1.1 es un NTC de 10 kΩ con B ≈ 3950–4100 K (ventana nominal ≈ 3–47 °C con los mismos umbrales); con la red Rs/Rp de la figura 9-9 no se puede bajar el corte en caliente sin bajar también el de frío por debajo de 0 °C. Recordatorio de `NOTAS.md`: el NTC mide la PCB bajo la celda, no la celda.
 
 Figura: `png/ntc_ts.png`.
+
+## Señales: I2C, LED, IR, sensores y ADC — `senales_i2c_led_ir.cir`, `senales_sensores_adc.cir`
+
+Supuestos (detalle en la cabecera de cada `.cir`):
+
+- **I2C**: capacidad del bus con las pistas del PCB actual (SDA 150,5 mm y 4 vías; SCL 137,6 mm y 5 vías), 0,09 pF/mm y 0,4 pF por vía (estimados para el apilado de 6 capas), pines del ESP32-S3 (2 pF), del TCA9535 (8/9,5 pF máx.) y de la cámara con su flex (15 pF, supuesto): **Cb ≈ 42 pF**, no los 100 pF que suponía `NOTAS.md`.
+- **LED**: VF de las fichas de LCSC (rojo KT-0603R 1,8–2,4 V a 20 mA; verde KT-0805G **InGaN, 2,6–3,1 V a 5 mA**). Criterio de visibilidad ≥ 0,3 mA (propio).
+- **IR**: LED de 940 nm supuesto (1,2 V a 20 mA, 1,5 V a 100 mA) y AO3400A con 48 mΩ; portadora de 38 kHz al 33 % y trama NEC.
+- **Sensores**: rebote de 5 aperturas de 100 µs al pulsar; umbrales del TCA9535 (0,3/0,7 VCC) y del ESP32-S3 (0,25/0,75 VDD).
+- **ADC**: el ESP32-S3 no publica su condensador de muestreo: 10 pF que se vacía en cada muestra (peor caso) y fuga máxima de pin de 50 nA (tabla 5-4).
+
+| Magnitud | Resultado | Criterio | PASS/FAIL |
+|----------|-----------|----------|-----------|
+| I2C: subida de SDA / SCL (4,7 kΩ, Cb ≈ 42 pF con las pistas reales) | 166 / 157 ns (30–70 %) | ≤ 300 ns (400 kHz) y ≤ 1000 ns (100 kHz) | PASS |
+| I2C: VOL con el ESP32 tirando a GND | 13 mV | ≤ 0,4 V | PASS |
+| LED D1 CHG (rojo, VBUS, 2,2 kΩ) | 1,42 mA | ≥ 0,3 mA (diseño ≈ 1,4 mA) | PASS |
+| LED D2 PG (verde, VBUS, 2,2 kΩ) | 0,96 mA | ≥ 0,3 mA (diseño ≈ 1,4 mA) | PASS |
+| LED D3 PROG (rojo, 3V3, 1,5 kΩ) | 0,97 mA | ≥ 0,3 mA (diseño ≈ 1,0 mA) | PASS |
+| LED D4 PWR (verde, 3V3, 2,2 kΩ), VF 3,1 / 2,6 V a 5 mA | 0,24–0,45 mA | ≥ 0,3 mA (diseño en NOTAS: ≈ 0,6 mA) | **FAIL** |
+| LED D5 RUN (verde, 3V3, 1,5 kΩ), VF 3,1 / 2,6 V a 5 mA | 0,34–0,63 mA | ≥ 0,3 mA (diseño en NOTAS: ≈ 0,9 mA) | PASS |
+| IR: corriente del LED con VSYS 4,4 / 3,0 V | 131 / 73 mA (VF 1,59 V) | Informativo (≈ 100 mA de diseño) | — |
+| IR: potencia de R54 (0805, 0,125 W) con VSYS 4,4 V | pico 0,37 W; portadora continua 124 mW; trama NEC 51 mW | ≤ 62 mW (50 %) de media en una trama | PASS |
+| Barriga/espalda/lengua: rebote al pulsar (47 kΩ, 1 kΩ, 100 nF) | máx. 0,76 V entre el primer contacto y el fin del rebote | < VIH 2,31 V (no hay flanco falso) | PASS |
+| Barriga: respuesta al soltar (cruce de VIH) | 5,6 ms | < 50 ms | PASS |
+| Inclinación (220 kΩ, 100 nF): rebote y respuesta al soltar | máx. 0,74 V; 26,4 ms | < 2,31 V y < 50 ms | PASS |
+| Leva HOME al ESP32 (100 kΩ, 1 kΩ, 10 nF): rebote y respuesta al soltar | máx. 0,34 V; 1,4 ms | < VIH 2,48 V y < 50 ms | PASS |
+| Encoder ENC_PT (10 kΩ, 50 pF): subida 10–90 % | 1,08 µs | ≪ medio periodo del encoder (informativo) | — |
+| VBAT_SNS: error de muestreo con el ADC a 1 kHz (Cs 10 pF supuesto) | 4,9 mV (0,23 %) | ≤ 0,5 % de la lectura | PASS |
+| VBAT_SNS: error de muestreo con el ADC a 10 kHz (Cs 10 pF supuesto) | 47,9 mV (2,28 %) | ≤ 0,5 % de la lectura | **FAIL** |
+| VBAT_SNS: error de muestreo con el ADC a 100 kHz (Cs 10 pF supuesto) | 397,3 mV (18,92 %) | ≤ 0,5 % de la lectura | **FAIL** |
+| VBAT_SNS: desplazamiento por la fuga del pin (50 nA máx.) | 11,8 mV (0,56 %) | Informativo: fijo, se corrige con la calibración de TEST-PLAN §9 | — |
+| LIGHT (LDR 10 kΩ–1 MΩ con 470 kΩ y 100 nF): constante de tiempo | 1 ms (luz) a 32 ms (oscuridad) | Informativo: el firmware espera ≥ 5 τ tras un cambio | — |
+
+Observaciones y propuestas:
+
+- **I2C a 400 kHz es viable** con los pull-ups de 4,7 kΩ (166 ns frente a 300 ns), con la Cb estimada desde el rutado. Si se conecta algo a J_EXP con cable, se suma su capacidad: con más de ≈ 75 pF de bus, 400 kHz deja de cumplir. Se mide en TEST-PLAN (tiempo de subida con el osciloscopio).
+- **FAIL — LED D4 (PWR) y D5 (RUN) más tenues de lo previsto.** Los verdes KT-0805G son de InGaN (VF ≈ 2,6–3,1 V), no de 2 V como suponían los cálculos: con 3V3 quedan 0,24–0,45 mA en D4 (diseño 0,6 mA) y 0,34–0,63 mA en D5 (diseño 0,9 mA). Funcionan, pero D4 puede verse muy flojo en la esquina mala. Propuesta: R57 y R58 de 1 kΩ (C21190, básica, ya en la BOM): 0,4–0,75 mA. Coste en reposo: el LED PWR se puede quitar con JP5, como ya está previsto.
+- **IR**: con USB (VSYS 4,4 V), R54 ve 0,37 W de pico y 124 mW de media con la portadora continua, justo su potencia nominal (0,125 W en 0805). Con tramas NEC (51 mW de media) cumple el 50 %; el firmware no debe emitir portadora continua más de ≈ 50 ms. Mejora para la v1.1: R54 en 1206 (0,25 W).
+- **Sensores**: los RC filtran el rebote de sobra (nunca se acercan a VIH) y responden en 1,4–26 ms. El TCA9535 no tiene histéresis en sus entradas: con la subida lenta de la inclinación (26 ms) el ruido puede dar varias interrupciones en el cruce; el firmware debe hacer antirrebote por tiempo (≥ 30 ms) en la INT del expansor.
+- **FAIL condicionado — ADC de VBAT_SNS con muestreo rápido.** Con un divisor de 470 kΩ + 470 kΩ, cada muestra se lleva la carga del condensador de muestreo; la media cae ≈ Cs · V · fs · 235 kΩ: 4,9 mV a 1 kHz (PASS), 48 mV a 10 kHz y 0,4 V a 100 kHz (modo continuo del ESP-IDF). **Regla de firmware: lecturas sueltas (oneshot) a ≤ 1 kHz de media** (para la batería sobra con 1 Hz). La fuga del pin (hasta 11,8 mV, 0,56 %) es un desplazamiento fijo que corrige la calibración de TEST-PLAN §9. Lo mismo vale para LIGHT.
+
+Figuras: `png/sensores_rc.png`, `png/adc_vbat_sns.png`.
 
 ## Lo que no se simula y por qué
 

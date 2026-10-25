@@ -1,0 +1,94 @@
+* FurbyBoard: señales 2/2. Filtros RC de los sensores del Furby, encoder y entradas del ADC.
+*
+* Sensores (design.py, hoja «sensores»): interruptor a GND en el cable, 1 k en serie (R40, R42, R44,
+* R46, R48, R50) y condensador en el lado del chip. Barriga/espalda/lengua: 47 k a 3V3 y 100 nF;
+* inclinación (TILT_A/B): 220 k y 100 nF; leva (HOME, al ESP32): 100 k y 10 nF. Umbrales: TCA9535
+* VIL 0,3·VCC y VIH 0,7·VCC (SCPS201F, tabla 5.3); ESP32-S3 VIL 0,25·VDD y VIH 0,75·VDD (tabla 5-4).
+* Rebote supuesto: 5 aperturas de 100 us cada 300 us durante 1,5 ms al pulsar. Criterio: la entrada no cruza
+* VIH durante el rebote (lo filtra el RC) y la respuesta al soltar es < 50 ms (propio).
+*
+* Encoder: ENC_PT con 10 k a 3V3 (R52), fototransistor + cable ≈ 50 pF (supuesto) y el Schmitt
+* SN74LVC1G17. Se mide la subida (10-90 %) del lado de 10 k; el fototransistor añade su propio tiempo
+* de conmutación (decenas de us con 10 k de carga), que no se modela.
+*
+* ADC: VBAT_SNS = divisor R13/R14 (470 k + 470 k) con C5 100 nF; LIGHT = LDR (10 k con luz a 1 M a
+* oscuras, supuesto) a 3V3 con R53 470 k y C40 100 nF. El ESP32-S3 no publica su condensador de muestreo:
+* se supone 10 pF que se descarga en cada muestra (peor caso) y fuga de pin de 50 nA (IIL/IIH máx.,
+* tabla 5-4). Se simula el error de lectura de VBAT_SNS frente a la frecuencia de muestreo.
+* Criterio: error <= 0,5 % de la lectura (21 mV de batería a 4,2 V) a la frecuencia que use el firmware.
+* Ejecutar desde sim/: ngspice -b senales_sensores_adc.cir
+
+.param FS=1k
+
+V3 n3v3 0 3.3
+
+* --- barriga (47 k, 1 k, 100 nF): se pulsa a 1 ms con rebote y se suelta a 20 ms
+R39 n3v3 tummy 47k
+C33 tummy 0 100n
+R40 tummy tpad 1k
+Vsw1 sw1 0 pwl(0 0 1m 0 1.001m 1 1.2m 1 1.201m 0 1.3m 0 1.301m 1 1.5m 1 1.501m 0 1.6m 0 1.601m 1 1.8m 1
++ 1.801m 0 1.9m 0 1.901m 1 2.1m 1 2.101m 0 2.2m 0 2.201m 1 2.4m 1 2.401m 0 2.5m 0 2.501m 1 20m 1 20.001m 0)
+* sw = 1: contacto cerrado (a GND)
+Stum tpad 0 sw1 0 SCON
+.model SCON sw(ron=0.5 roff=1e9 vt=0.5 vh=0.1)
+
+* --- inclinación (220 k, 1 k, 100 nF), mismo patrón
+R45 n3v3 tilt 220k
+C36 tilt 0 100n
+R46 tilt tipad 1k
+Stil tipad 0 sw1 0 SCON
+
+* --- leva HOME (100 k, 1 k, 10 nF) al ESP32
+R49 n3v3 home 100k
+C38 home 0 10n
+R50 home hpad 1k
+Shom hpad 0 sw1 0 SCON
+
+* --- encoder: el fototransistor deja de conducir a 30 ms
+R52 n3v3 encpt 10k
+Cpt encpt 0 50p
+Vpt ptg 0 pwl(0 1 30m 1 30.0001m 0)
+Spt encpt 0 ptg 0 SPT
+.model SPT sw(ron=200 roff=1e9 vt=0.5 vh=0.1)
+
+* --- VBAT_SNS con batería a 4,2 V y muestreo del ADC (Cs 10 pF, 1 us cada 1/FS, se vacía entre muestras)
+Vbat bat 0 4.2
+R13 bat sns 470k
+R14 sns 0 470k
+C5 sns 0 100n
+Ileak sns 0 50n
+Ssamp sns cs smp 0 SSMP
+Cs cs 0 10p
+Sdump cs 0 dmp 0 SSMP
+Vsmp smp 0 pulse(0 1 0 10n 10n 1u {1/FS})
+Vdmp dmp 0 pulse(0 1 1.1u 10n 10n 1u {1/FS})
+.model SSMP sw(ron=1k roff=1e12 vt=0.5 vh=0.1)
+
+.ic v(sns)=2.1 v(tummy)=3.3 v(tilt)=3.3 v(home)=3.3
+.tran 1u 200m 0 2u uic
+.control
+set wr_singlescale
+set wr_vecnames
+run
+meas tran t_vmax MAX v(tummy) from=1.15m to=2.6m
+meas tran t_rel WHEN v(tummy)=2.31 RISE=LAST
+meas tran ti_rel WHEN v(tilt)=2.31 RISE=LAST
+meas tran h_vmax MAX v(home) from=1.15m to=2.6m
+meas tran ti_vmax MAX v(tilt) from=1.15m to=2.6m
+meas tran h_rel WHEN v(home)=2.475 RISE=LAST
+meas tran e_tr TRIG v(encpt) VAL=0.33 RISE=1 TARG v(encpt) VAL=2.97 RISE=1
+meas tran a_fin AVG v(sns) from=190m to=200m
+wrdata datos/sensores.dat v(tummy) v(tilt) v(home)
+wrdata datos/adc_fs1k.dat v(sns)
+alterparam FS=10k
+reset
+run
+meas tran a10_fin AVG v(sns) from=190m to=200m
+alterparam FS=100k
+reset
+run
+meas tran a100_fin AVG v(sns) from=190m to=200m
+wrdata datos/adc_fs100k.dat v(sns)
+quit
+.endc
+.end

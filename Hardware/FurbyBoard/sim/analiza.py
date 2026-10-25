@@ -411,6 +411,61 @@ def bloque_ntc():
     return t
 
 
+def bloque_senales():
+    t = Tabla("Señales")
+    m = correr("senales_i2c_led_ir.cir")
+    cb_sda = 150.5 * 0.09 + 4 * 0.4 + 2 + 9.5 + 10 + 5
+    t.fila(f"I2C: subida de SDA / SCL (4,7 kΩ, Cb ≈ {v(cb_sda, 0)} pF con las pistas reales)",
+           f"{v(m['sda_tr']*1e9, 0)} / {v(m['scl_tr']*1e9, 0)} ns (30–70 %)", "≤ 300 ns (400 kHz) y ≤ 1000 ns (100 kHz)",
+           max(m["sda_tr"], m["scl_tr"]) <= 300e-9)
+    t.fila("I2C: VOL con el ESP32 tirando a GND", f"{v(m['sda_vol']*1e3, 0)} mV", "≤ 0,4 V", m["sda_vol"] <= 0.4)
+    for clave, texto, diseño in (("i_d1", "D1 CHG (rojo, VBUS, 2,2 kΩ)", 1.4), ("i_d2", "D2 PG (verde, VBUS, 2,2 kΩ)", 1.4),
+                                 ("i_d3", "D3 PROG (rojo, 3V3, 1,5 kΩ)", 1.0)):
+        t.fila(f"LED {texto}", f"{v(m[clave]*1e3, 2)} mA", f"≥ 0,3 mA (diseño ≈ {v(diseño, 1)} mA)", m[clave] >= 0.3e-3)
+    for clave, texto, diseño in (("i_d4", "D4 PWR (verde, 3V3, 2,2 kΩ)", 0.6), ("i_d5", "D5 RUN (verde, 3V3, 1,5 kΩ)", 0.9)):
+        lo, hi = m[clave + "t"], m[clave + "b"]
+        t.fila(f"LED {texto}, VF 3,1 / 2,6 V a 5 mA", f"{v(lo*1e3, 2)}–{v(hi*1e3, 2)} mA",
+               f"≥ 0,3 mA (diseño en NOTAS: ≈ {v(diseño, 1)} mA)", lo >= 0.3e-3)
+    p_pico = m["ir_ih"] ** 2 * 22
+    t.fila("IR: corriente del LED con VSYS 4,4 / 3,0 V", f"{v(m['ir_ih']*1e3, 0)} / {v(m['ir_il']*1e3, 0)} mA (VF {v(m['ir_vf'])} V)",
+           "Informativo (≈ 100 mA de diseño)", None)
+    t.fila("IR: potencia de R54 (0805, 0,125 W) con VSYS 4,4 V", f"pico {v(p_pico, 2)} W; portadora continua {v(p_pico*0.33*1e3, 0)} mW; "
+           f"trama NEC {v(p_pico*0.33*0.41*1e3, 0)} mW", "≤ 62 mW (50 %) de media en una trama", p_pico * 0.33 * 0.41 <= 0.0625)
+
+    n = correr("senales_sensores_adc.cir")
+    t.fila("Barriga/espalda/lengua: rebote al pulsar (47 kΩ, 1 kΩ, 100 nF)", f"máx. {v(n['t_vmax'], 2)} V entre el primer contacto y el fin del rebote",
+           "< VIH 2,31 V (no hay flanco falso)", n["t_vmax"] < 2.31)
+    t.fila("Barriga: respuesta al soltar (cruce de VIH)", f"{v((n['t_rel']-0.02)*1e3, 1)} ms", "< 50 ms", n["t_rel"] - 0.02 < 0.05)
+    t.fila("Inclinación (220 kΩ, 100 nF): rebote y respuesta al soltar", f"máx. {v(n['ti_vmax'], 2)} V; {v((n['ti_rel']-0.02)*1e3, 1)} ms",
+           "< 2,31 V y < 50 ms", n["ti_vmax"] < 2.31 and n["ti_rel"] - 0.02 < 0.05)
+    t.fila("Leva HOME al ESP32 (100 kΩ, 1 kΩ, 10 nF): rebote y respuesta al soltar",
+           f"máx. {v(n['h_vmax'], 2)} V; {v((n['h_rel']-0.02)*1e3, 1)} ms", "< VIH 2,48 V y < 50 ms", n["h_vmax"] < 2.475 and n["h_rel"] - 0.02 < 0.05)
+    t.fila("Encoder ENC_PT (10 kΩ, 50 pF): subida 10–90 %", f"{v(n['e_tr']*1e6, 2)} µs", "≪ medio periodo del encoder (informativo)", None)
+    fuga = 50e-9 * 235e3
+    for clave, fs in (("a_fin", "1 kHz"), ("a10_fin", "10 kHz"), ("a100_fin", "100 kHz")):
+        err = 2.1 - n[clave] - fuga
+        t.fila(f"VBAT_SNS: error de muestreo con el ADC a {fs} (Cs 10 pF supuesto)", f"{v(err*1e3, 1)} mV ({v(err/2.1*100, 2)} %)",
+               "≤ 0,5 % de la lectura", err / 2.1 <= 0.005)
+    t.fila("VBAT_SNS: desplazamiento por la fuga del pin (50 nA máx.)", f"{v(fuga*1e3, 1)} mV ({v(fuga/2.1*100, 2)} %)",
+           "Informativo: fijo, se corrige con la calibración de TEST-PLAN §9", None)
+    t.fila("LIGHT (LDR 10 kΩ–1 MΩ con 470 kΩ y 100 nF): constante de tiempo", "1 ms (luz) a 32 ms (oscuridad)",
+           "Informativo: el firmware espera ≥ 5 τ tras un cambio", None)
+
+    d = leer("sensores.dat")
+    z = recorte(d, 0, 50e-3)
+    figura("sensores_rc.png", "Sensores: pulsación con rebote a 1 ms y suelta a 20 ms", [
+        ("tensión en el chip (V)", [(z["time"], z["v(tummy)"], "barriga (47 kΩ, 100 nF)"), (z["time"], z["v(tilt)"], "inclinación (220 kΩ, 100 nF)"),
+                                    (z["time"], z["v(home)"], "leva HOME (100 kΩ, 10 nF)")],
+         [(2.31, "VIH TCA9535 2,31 V"), (0.99, "VIL TCA9535 0,99 V")]),
+    ])
+    a1, a100 = leer("adc_fs1k.dat"), leer("adc_fs100k.dat")
+    figura("adc_vbat_sns.png", "VBAT_SNS (batería 4,2 V): lectura frente a la frecuencia de muestreo", [
+        ("VBAT_SNS (V)", [(a1["time"], a1["v(sns)"], "ADC a 1 kHz"), (a100["time"], a100["v(sns)"], "ADC a 100 kHz")],
+         [(2.1, "valor ideal 2,1 V")]),
+    ])
+    return t
+
+
 BLOQUES = {
     "tps63802": bloque_tps63802,
     "bq24073": bloque_bq24073,
@@ -419,6 +474,7 @@ BLOQUES = {
     "max98357": bloque_max98357,
     "ldo": bloque_ldo,
     "ntc": bloque_ntc,
+    "senales": bloque_senales,
 }
 
 if __name__ == "__main__":
