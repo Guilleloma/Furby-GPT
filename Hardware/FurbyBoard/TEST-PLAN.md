@@ -80,6 +80,7 @@ No se conecta el 3V3 del adaptador: la placa se alimenta por USB-C o por la bate
 | Pads de la batería | J2 cuadrado con «+» (arriba) y «BAT+» (abajo); J3 redondo con «-» (arriba) y «BAT-» (abajo) | Defecto de serigrafía: marcar a mano antes de seguir |
 | Puentes JP1–JP5 | Cerrados de fábrica (puente de cobre entre los dos medios pads) | Cerrarlos con estaño |
 | Zona de la antena | Sin cobre ni componentes delante del módulo (x −85 a −61) | Defecto de diseño: anotarlo |
+| Prueba en seco en la base del Furby, **antes de soldar la batería**: placa atornillada con los 4 × M2 y el mecanismo girado a mano una vuelta completa | El eje del mecanismo pasa por el agujero de Ø11,3 sin rozar el borde | **Descartar la placa, no limar**: MOT_IN2 e IPROPI pasan a 0,34–0,43 mm del borde del agujero (revisión E independiente, M10). El agujero se dio por bueno sin medirlo en el Furby |
 
 ## 2. Cortos y continuidad (sin alimentar)
 

@@ -357,7 +357,7 @@ La v1.0 depende del firmware para no pasar de estos límites (`NOTAS.md`, «Regl
 - **Rellenos de cobre:** `gen_pcb.py` rellena con el margen a borde por defecto de KiCad (0,5 mm) en vez del del proyecto (0,3). Antes de exportar los Gerber hay que rellenar con kicad-cli (paso en «Cómo regenerar»). Ese relleno se comprobó en la puerta E1: DRC limpio y sin trozos sueltos.
 - **Piezas por confirmar antes del pedido:** C22962 (220 Ω, R51) como básica en la API de JLCPCB e Isat de la bobina FHD4020S-1R0MT.
 - **Sin GPIO libres:** solo J_EXP (I2C, UART, P04 y alimentaciones); los puentes JP1–JP4 liberan GPIO9, GPIO46, GPIO3 y GPIO8 si se renuncia a su función.
-- **Serigrafía:** la leyenda de J9 está aparte (22 mm por encima de sus pads), «IO8» de JP4 solo en la cara inferior, J5 sin título y cuatro rótulos a 0,8 mm de letra (por debajo del 1,0 mm recomendado por JLCPCB).
+- **Serigrafía:** la leyenda de J9 está aparte (22 mm por encima de sus pads), «IO8» de JP4 solo en la cara inferior, J5 sin título y 12 textos a 0,8 mm de letra, en cuatro grupos (nombre de la cara superior, leyenda de J7, «I2S» de TP9, «BAT» de TP4 y «BAT-» de J3), por debajo del 1,0 mm recomendado por JLCPCB.
 - **Pendiente para la v1.1:** TVS en VBUS, agujeros para atar los cables de la batería, PTC de 2 A, pull-ups de I2C según la medida, RC de VBAT_SNS y LIGHT junto al módulo, F1 entre J1 y U2, leer CC, NTC de B 3950–4100 K si la celda pide 0–45 °C, R54 en 1206, sitio para la leyenda de J9 junto a sus pads y un header de GPIO libres.
 
 ## Cómo regenerar

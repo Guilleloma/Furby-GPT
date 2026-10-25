@@ -159,3 +159,33 @@ Simulación repetida con el mismo resultado (6 FAIL). Contrastado con el datashe
 
 ## Siguiente paso
 Vuelta al encargo de rutado (vuelta 1 de 2) con I1, I2 e I3; de paso M8 (cifras de NOTAS/README) y, si cabe, M3 (R24). Tras corregir: DRC con paridad, `revisar-rutado --ancho`, PNG de U2, U5/U6, F1/U1 y J9, y la simulación no cambia. Después, revisión independiente breve de los tres puntos y E2 (con E1-1 y M4 en el relleno).
+
+## Respuesta del diseño (vuelta 1)
+- Fecha: 2026-10-25 · Autor: electronics-engineer (T1, Opus 5.5), encargo de arreglos · Commits: `d2f0140` (I3), `aa46f95` (I1), `51dbd2d` (I2) y el de documentación que añade esta sección.
+- Orden: I3 primero, porque libera el pasillo de B.Cu de x −45,8 (ramal de V6 a R51) y el sitio de la vía de EN_6V junto a C18, que I1 usa para la segunda vía de V6.
+- Método: cambios solo en `scripts/rutas_fijas.py` y `scripts/design.py` (R51), sin mover piezas; tras cada uno, regeneración completa (`gen_sch.py`, `gen_pro.py`, `gen_pcb.py`, `gen_pro.py`), puertas, relleno de kicad-cli sobre una copia del proyecto y recuento de trozos por red y capa con pcbnew.
+
+| ID | Qué se hizo | Commit | Medida que lo demuestra |
+|----|-------------|--------|-------------------------|
+| I1 | Vías por cruce según ⌈I / 0,7 A⌉ (tabla en NOTAS «Cálculos»): VSYS de OUT de U2 al plano de In2 **2 → 5** (fila en y −103,75 al oeste de TP5 y una debajo; la vía de R6.2 que contaba el informe no está unida a OUT por F.Cu, así que eran 2, no 3); VSYS a L2.1 (entrada del elevador, 2,2 A) **2 → 4**; V6 **1 → 2** junto a C18 (la segunda donde estaba la de EN_6V) y **1 → 2** en C21.1/U6.5 (tronco de B.Cu hasta y −105,3); MOT_OUT1 **1 → 2** e In2 de 0,5 a **1,0 mm** (el mismo problema de capa que I2, en 3,5 mm: 4 mΩ, 4 mW a 1,0 A); VBUS **1 → 2** en F1.2 y en C1; 3V3 **1 → 2** al módulo junto a C9 | `aa46f95` | Vías de la placa 322 → 333 (volcado con pcbnew). DRC 0/0/0. Dos sitios se descartaron midiendo: la segunda vía de MOT_OUT1 al norte separaba C22.2 de U6.7 en el relleno de F.Cu, y las de L2.1 más al oeste cerraban el paso del relleno junto a R34 (GND F.Cu pasaba a 23 trozos); en sus posiciones finales el recuento vuelve a 21. El × 1,5 de `layout-pcb.md` §5.3 (8 en VSYS) no cabe sin mover piezas: 5 vías dejan 0,58 A por vía en el pico de 2,9 A (NOTAS) |
+| I2 | **VBUS_IN por B.Cu** (1 oz) a 0,5 mm de las vías de A4/B9 y A9/B4 de J1 a dos vías junto a F1.1: fila y −120,85 sobre la ranura, diagonal bajo el pad de escudo y fila y −122,41 bajo F1. In2 se queda con los 2 mm de la toma de U1.5 (TVS, sin corriente continua). CC2 pasa de B.Cu a In3 (vacía en el lóbulo) con la misma traza; su vía de R2 se mueve a (−80,9; −120,0) y la de J1 0,05 mm al norte | `51dbd2d` | Longitudes de VBUS_IN por capa: B.Cu 15,9 mm a 0,5; In2 2,0 mm (antes 27,0 mm a 0,5). IPC-2221 exterior: 0,5 mm → 1,45 A a ΔT 10 °C (≈ 8 °C a 1,34 A); 16 mΩ, 28 mW. Dos vías por extremo (una por pareja de pines de J1, ≈ 0,67 A cada una). Más ancho no cabe: vía de CC2 de J1 a 0,20 mm y muesca de la ranura a 0,34 mm del cobre (borde 0,3; medido contra el contorno con pcbnew). DRC 0/0/0; el plano de VSYS de In2 recupera el lóbulo (2576,0 → 2616,3 mm², 3 trozos). Par USB y lazo del cargador sin tocar |
+| I3 | **R51 de 220 Ω (C22962, básica) desde EN_6V** (P12 del TCA9535, push-pull) en vez de 470 Ω desde V6. Ruta: vía de EN_6V junto a U5 a (−48,4; −118,25) y B.Cu por x −48,4, y −108,4 y el pasillo x −45,8 que ocupaba el ramal de V6, hasta la vía junto a R51 | `d2f0140` | TCA9535 (SCPS201F, 5.3 y 5.5): VOH ≥ 2,6 V a −8 mA con VCC 3 V; IOH recomendada ≤ 10 mA; máximo absoluto 50 mA. LED: 5,4 mA en el peor caso bajo (VOH 2,6 V, VF 1,4 V), ≈ 8 mA típico, cota alta 10,4 mA (VOH = VCC sin caída, VF 1,1 V). EN_6V queda ≥ 2,6 V con esa carga, frente a VEN_H 1,2 V del TPS61089 (SLVSD38C); con el puerto en entrada al arrancar, R25 y el propio LED la llevan a 0. **Dormido (EN_6V = 0) el LED no consume**: 0 frente a 2,8–5,3 mA. ERC 0, paridad 0. NOTAS, README (J9.3, P12, diagrama) y TEST-PLAN §10 (tensión en R51 con EN_6V = 1 y 0) al día |
+
+**Mejoras resueltas de paso (solo texto):** M5 y M8 (README y NOTAS: 12 textos a 0,8 mm en cuatro grupos; el LED del encoder ya no es una afirmación falsa), M10 (TEST-PLAN §1: prueba en seco en la base antes de soldar la batería; si roza, se descarta la placa). Quedan abiertas M1–M4, M6, M7, M9 (documentada), M11 y la parte de M8 que vive en el informe E1 (cifras de paralelos, 3W y «17 vías»; el informe se conserva como registro).
+
+**Comprobación de capa de todas las pistas de potencia interiores** (la lección de I2 aplicada a la placa entera, IPC-2221 a 0,5 oz): MOT_OUT1 se corrigió (arriba); el resto cumple: 3V3 en In2 a 0,4 mm (0,37 A) solo lleva ramales de pull-ups, J7 y DOVDD de la cámara (≤ 0,15 A; el módulo va por B.Cu), CAM_2V8 a 0,25 mm (0,1 A), CAM_DVDD a 0,2 mm (0,08 A), IR_LED_A a 0,3 mm (0,1 A en pulsos) y el puente de VSYS de R54 en In3 a 0,6 mm (0,13 A en pulsos).
+
+**Puertas tras el último commit (`51dbd2d`):**
+
+| Herramienta | Resultado |
+|-------------|-----------|
+| ERC (`--severity-all`) | 0 |
+| DRC con paridad, placa guardada | 0 infracciones, 0 sin unir, 0 de paridad |
+| DRC con paridad, relleno de kicad-cli sobre una copia | 0 / 0 / 0 |
+| `revisar-rutado --ancho` (anchos de `params.ANCHOS_MINIMOS`, `--tp-max 5`) | PASS: 0 errores, 152 avisos (+1 rodeo de V6 por las uniones de las vías dobles, −1 entrada asimétrica en R51; VBUS_IN baja de × 2,03 a × 1,51). Justificados en NOTAS «Avisos aceptados» |
+| `comprobar-flujo` | El mismo error aceptado (falso positivo USB_DP/L1) y los 4 avisos de desacoplo; nada nuevo |
+| Rellenos de kicad-cli (área y trozos) | In1/In4 3313,1 mm² en 1 (E1: 3324,4 en 1); GND F 2084,6 en 21 (2096,3 en 21); GND B 2773,2 en 10 (2799,7 en 10); VSYS In2 2616,3 en 3 (2584,3 en 3); BAT F 31,2 en 1. **Ningún trozo nuevo**: las áreas bajan por los antipads de las 12 vías nuevas y suben en In2 por el lóbulo que deja VBUS_IN |
+| PNG leídos | B.Cu de U5 a R51 y F.Cu junto a U5/C18 y R51 (I3); F.Cu e In2 del cruce de U2, F.Cu de F1, C1 y C9, F.Cu y B.Cu de L2/C18/U5, F.Cu e In2 de U6/C21/MOT_OUT1, y F.Cu/U6 a 125 px/mm antes y después para el relleno (I1); lóbulo del USB en F.Cu, In2, In3 y B.Cu (I2). Detalle en los mensajes de commit |
+| Simulación | Sin cambios de esquema que la afecten salvo R51 (fuera de `sim/`); no se repitió |
+
+**Para el revisor (vuelta breve):** comprobar en el volcado el número de vías por cruce de la tabla de NOTAS «Cálculos», la longitud de VBUS_IN por capa (B.Cu 15,9 mm, In2 2,0 mm) y que R51.1 es EN_6V en el esquema y en la placa.
