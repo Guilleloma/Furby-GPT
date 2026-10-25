@@ -21,6 +21,7 @@ Convenciones: «peor caso» = tolerancias, DC bias de los cerámicos y tensión 
 |--------|---------|-----------|
 | Elevador de 6 V (TPS61089) | `elevador_6v.cir` | PASS (Isat de L2 por verificar) |
 | 3V3 (TPS63802) | `tps63802_3v3.cir`, `tps63802_rizado.cir` | PASS |
+| Power path (BQ24073) | `bq24073_powerpath.cir` | **2 FAIL** (pico de 2,9 A con USB en USB500 en el peor caso; enchufe con ≥ 4,3 W en modo ILIM): propuestas de firmware |
 
 ## Elevador de 6 V (TPS61089 + FHD4020S-1R0MT) — `elevador_6v.cir`
 
@@ -63,6 +64,41 @@ Observaciones:
 - C6 (10 µF 10 V 0603) da ≈ 5 µF efectivos a 4,4 V y ≈ 4 µF en el peor caso, justo el mínimo de 4 µF efectivos de la tabla 8.3. No cambia la simulación (VSYS tiene ≈ 58 µF más en la red), pero un 10 µF de 16 V o en 0805 daría margen. Mejora, no bloqueo.
 
 Figuras: `png/tps63802_escalon.png` (escalón de carga, nominal y peor caso), `png/tps63802_rizado.png` (rizado y corriente de L1).
+
+## Power path (BQ24073, Q1 y batería) — `bq24073_powerpath.cir`
+
+Supuestos:
+
+- **Modelo `BQ24073_PP`** con lo que da la tabla 8.5 del datasheet (SLUS810N): OUT regulado a 4,4 V con límite de entrada (USB500 0,475 A; ILIM 1,25–1,43 A con RILIM 1,2 kΩ), VIN-DPM 4,5 V, DPPM a VO(REG) − 100 mV, supplement a VBAT − 40 mV, BAT-FET de 50 mΩ típ. y 100 mΩ máx. (VDO(BAT-OUT) 50/100 mV a 1 A), validación de la entrada a los 1,2 ms y consumo de IN de 1,5 mA. **El retardo de entrada en supplement no está en la hoja**: se usan 5 µs y 50 µs (la figura 10-6 lo muestra por debajo de la resolución de 1 ms/div).
+- **Cargas de VSYS como potencia constante** (convertidores): elevador + motor bloqueado 6,6 W, amplificador 1,6 W (limitador a −6 dBFS), 3V3 con 0,55 A a través del modelo del TPS63802: **2,9–3,3 A a 3,1–2,9 V**, el pico simultáneo de `ARQUITECTURA.md` §11.
+- Batería 3,7 V (media) o 3,4 V (baja) con 0,15 Ω; Q1 con el modelo EKV (`SI7615`); cable USB de 1 m (0,15 Ω, 1 µH); PTC en frío 0,08 Ω; capacidades efectivas tras DC bias.
+- `VO(SC2)` (cortocircuito en supplement: VBAT − VOUT > 200–300 mV durante 250 µs apaga OUT 60 ms) no se modela como apagado: `analiza.py` mide el tramo continuo más largo por encima de 200 mV.
+
+| Magnitud | Resultado | Criterio | PASS/FAIL |
+|----------|-----------|----------|-----------|
+| Pico de 2,9 A con USB (USB500, BAT-FET típ. (50 mΩ)): VBAT − VSYS en régimen | 142 mV (> 200 mV durante 0 µs seguidos) | < 200 mV (VO(SC2) mín.) o > 200 mV menos de 250 µs | PASS |
+| Pico de 2,9 A con USB (USB500, BAT-FET máx. (100 mΩ)): VBAT − VSYS en régimen | 308 mV (> 200 mV durante 19968 µs seguidos) | < 200 mV (VO(SC2) mín.) o > 200 mV menos de 250 µs | **FAIL** |
+| Pico de 2,9 A con USB (modo ILIM, BAT-FET máx. (100 mΩ)): VBAT − VSYS en régimen | 198 mV (> 200 mV durante 0 µs seguidos) | < 200 mV (VO(SC2) mín.) o > 200 mV menos de 250 µs | PASS |
+| VSYS mín. en supplement (USB500, BAT-FET máx.) | 2,88 V | ≥ 2,5 V | PASS |
+| 3V3 mín. durante el pico | 3,26 V | ≥ 3,0 V | PASS |
+| Desenchufe con 1,15 A (batería 3,4 V), retardo de supplement 5 µs | VSYS 4,24 → mín. 2,95 V; VBAT − VSYS máx. 170 mV durante 0 µs | VSYS ≥ 2,5 V; sin VO(SC2) (≥ 250 µs) | PASS |
+| Desenchufe con 1,15 A (batería 3,4 V), retardo de supplement 50 µs | VSYS 4,24 → mín. 2,81 V; VBAT − VSYS máx. 309 mV durante 104 µs | VSYS ≥ 2,5 V; sin VO(SC2) (≥ 250 µs) | PASS |
+| Enchufe en caliente (cable 1 m, 1 µH): pico de VBUS | 6,06 V | < 6,4 V (OVP mín.) y < 28 V (máx. absoluto) | PASS |
+| Enchufe con 5 W de carga (modo ILIM): VSYS final y disipación de U2 | VSYS se queda en 3,30 V (supplement); U2 disipa 1,76 W → Tj ≈ 128 °C | Tj ≤ 110 °C con Ta 50 °C (θJA 44,5 °C/W) | **FAIL** |
+| Disipación de U2 durante el pico en USB500 (LDO + BAT-FET, 20 ms) | 1,89 W (en régimen daría Tj ≈ 134 °C) | Informativo: es un pulso; el firmware no debe sostenerlo (bloqueo ≤ 150 ms) | — |
+
+Observaciones y propuestas:
+
+- **FAIL 1 — pico de 2,9 A con el USB enchufado en USB500 y el BAT-FET en su máximo.** La batería aporta ≈ 3 A por el BAT-FET y VBAT − VSYS queda en 308 mV, por encima de VO(SC2) (200–300 mV) mientras dure el pico: **OUT se apagaría 60 ms y la placa se reiniciaría.** Con el BAT-FET típico (50 mΩ) quedan 142 mV y pasa; el máximo de 100 mΩ es para todo el rango de Tj (0–125 °C), así que el fallo es probable con la placa caliente. El firmware arranca y se queda en USB500 por la restricción B8 (PTC de 1,5 A). Propuestas, sin cambiar el esquema de la v1.0:
+  1. **Firmware (recomendada):** con USB presente (PGOOD a 0 en el TCA9535), limitar la carga simultánea de VSYS a ≈ 2,0 A, de modo que la batería aporte ≤ 1,6 A (≤ 160 mV con 100 mΩ, 20 % de margen): motor con PWM ≤ 50 % en decaimiento lento (con el motor bloqueado, la corriente de V6 solo circula en el tiempo encendido: ≈ 1,1 A en VSYS) y el audio a −12 dBFS mientras se mueve el motor. La detección de bloqueo por el encoder (150 ms) llega tarde frente a los 250 µs de VO(SC2): el límite tiene que estar puesto antes.
+  2. Modo ILIM (1,34 A) con USB: deja 198 mV en el peor caso, **sin margen**, y exige el PTC de 2 A de la v1.1 (B8). No se recomienda como única medida.
+  3. v1.1, si la medida lo confirma: ITRIP más bajo (R26 de 4,7 kΩ a 6,8 kΩ → 0,87 A; resta ≈ 0,3 A al pico) o un cargador conmutado con power path.
+  - **Medida en el bring-up (propuesta de paso para TEST-PLAN §8.3):** USB enchufado en USB500, motor bloqueado + TX + audio al máximo durante 1 s; medir VBAT (TP4) − VSYS (TP5) con el osciloscopio en modo diferencial (dos canales) y comprobar que no hay reinicio. PASS: < 150 mV y sin reinicio.
+- **FAIL 2 — enchufar el USB con ≥ ≈ 4,3 W de carga en modo ILIM.** Con cargas de potencia constante el power path lineal es biestable: al enchufar con la batería a 3,4 V y 5 W de carga, VSYS no sube a 4,4 V (a 3,3 V el BQ solo entrega 1,25 A × 3,3 V = 4,1 W) y se queda en supplement: la batería sigue descargándose y U2 disipa 1,76 W (Tj ≈ 128 °C con Ta 50 °C): entra en regulación térmica y, si sigue subiendo, en el «hiccup» de TJ(OFF) (sección 9.3.5.8). No rompe nada, pero no carga. En USB500 el umbral es ≈ 1,6 W (0,475 A × VBAT): con el WiFi activo la placa enchufada tampoco carga hasta que baje el consumo, aunque ahí U2 no pasa de ≈ 0,75 W. **Propuesta (firmware):** al detectar el flanco de PGOOD, pausar motor y audio ≈ 5 ms para que VSYS suba a 4,4 V; una vez arriba, el punto de 4,4 V es estable mientras la carga sea < ILIM × 4,4 V (2,1 W en USB500; 5,9 W en ILIM).
+- El desenchufe es limpio incluso con 50 µs de retardo de supplement (VSYS mín. 2,81 V, 104 µs por encima de 200 mV, menos de los 250 µs de VO(SC2)) y 3V3 no se entera (el modelo promediado del TPS63802 no tiene paso de línea; la figura 10-28 del datasheet da < 0,1 V).
+- El pico de VBUS al enchufar en caliente con un cable de 1 m (6,06 V) queda por debajo del OVP mínimo; con cables más largos o C1 con menos DC bias puede acercarse a 6,4 V: el OVP tiene 50 µs de filtro y el pico dura < 10 µs. No se modela el diodo de U1 (USBLC6-2SC6) entre VBUS y GND, que lo recortaría. Se mide en TEST-PLAN §4 con el osciloscopio en VBUS.
+
+Figuras: `png/bq24073_supplement.png`, `png/bq24073_desenchufe.png`, `png/bq24073_enchufe.png`.
 
 ## Lo que no se simula y por qué
 

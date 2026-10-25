@@ -59,10 +59,12 @@ def figura(fichero, titulo, paneles, escala_x=1e3, etiqueta_x="tiempo (ms)"):
         eje.set_facecolor(SUPERFICIE)
         for i, (x, y, nombre) in enumerate(curvas):
             eje.plot(x * escala_x, y, color=SERIES[i % len(SERIES)], lw=1.4, label=nombre)
-        for valor, texto in limites:
+        for j, (valor, texto) in enumerate(limites):
+            # rótulos alternados a derecha e izquierda para que no se pisen límites cercanos
             eje.axhline(valor, color=TINTA_SUAVE, lw=1, ls="--")
-            eje.annotate(texto, xy=(1, valor), xycoords=("axes fraction", "data"), xytext=(-4, 3),
-                         textcoords="offset points", ha="right", va="bottom", fontsize=8, color=TINTA_SUAVE)
+            eje.annotate(texto, xy=(1 - j % 2, valor), xycoords=("axes fraction", "data"),
+                         xytext=(-4 if j % 2 == 0 else 4, 3), textcoords="offset points",
+                         ha="right" if j % 2 == 0 else "left", va="bottom", fontsize=8, color=TINTA_SUAVE)
         eje.set_ylabel(etiqueta_y, color=TINTA)
         eje.grid(True, color="#e4e3df", lw=0.6)
         for lado in ("top", "right"):
@@ -148,8 +150,92 @@ def bloque_tps63802():
     return t
 
 
+def tramo_mas_largo(t, condicion):
+    """Duración del tramo continuo más largo en que se cumple la condición (s)."""
+    mejor, inicio = 0.0, None
+    for ti, c in zip(t, condicion):
+        if c and inicio is None:
+            inicio = ti
+        elif not c and inicio is not None:
+            mejor, inicio = max(mejor, ti - inicio), None
+    if inicio is not None:
+        mejor = max(mejor, t[-1] - inicio)
+    return mejor
+
+
+def bloque_bq24073():
+    t = Tabla("BQ24073 (power path)")
+    m = correr("bq24073_powerpath.cir")
+    casos = {}
+    rfet = {"bq_a_typ": 0.05}
+    for nombre in ("bq_a_typ", "bq_a_max", "bq_b_max", "bq_c_tsup5", "bq_c_tsup50", "bq_d"):
+        d = leer(nombre + ".dat")
+        d["dif"] = d["v(bat)"] - d["v(vsysu)"]
+        # pérdidas de U2: LDO de entrada + BAT-FET en supplement (I² · RFET)
+        d["pbq"] = ((d["v(vbus)"] - d["v(vsysu)"]) * d["v(xu2.ic)"]
+                    + np.clip(d["dif"], 0, None) ** 2 / rfet.get(nombre, 0.1))
+        casos[nombre] = d
+
+    def sc2(d, desde, hasta):
+        k = (d["time"] > desde) & (d["time"] < hasta)
+        return (d["dif"][k].max(), tramo_mas_largo(d["time"][k], d["dif"][k] > 0.2),
+                d["dif"][np.argmin(abs(d["time"] - 20e-3))])
+
+    for nombre, texto, ilim in (("bq_a_typ", "USB500, BAT-FET típ. (50 mΩ)", "0,475 A"),
+                                ("bq_a_max", "USB500, BAT-FET máx. (100 mΩ)", "0,475 A"),
+                                ("bq_b_max", "modo ILIM, BAT-FET máx. (100 mΩ)", "1,25 A")):
+        pico, dur, regimen = sc2(casos[nombre], 4e-3, 30e-3)
+        t.fila(f"Pico de 2,9 A con USB ({texto}): VBAT − VSYS en régimen", f"{v(regimen*1e3, 0)} mV "
+               f"(> 200 mV durante {v(dur*1e6, 0)} µs seguidos)",
+               "< 200 mV (VO(SC2) mín.) o > 200 mV menos de 250 µs", regimen < 0.2 or dur < 250e-6)
+    t.fila("VSYS mín. en supplement (USB500, BAT-FET máx.)", f"{v(m['a2_vsysmin'])} V", "≥ 2,5 V", m["a2_vsysmin"] >= 2.5)
+    t.fila("3V3 mín. durante el pico", f"{v(min(m['a_v3min'], m['a2_v3min']))} V", "≥ 3,0 V",
+           min(m["a_v3min"], m["a2_v3min"]) >= 3.0)
+    for nombre, tsup, clave in (("bq_c_tsup5", "5 µs", "c"), ("bq_c_tsup50", "50 µs", "c2")):
+        d = casos[nombre]
+        k = (d["time"] > 9.9e-3) & (d["time"] < 12e-3)
+        t.fila(f"Desenchufe con 1,15 A (batería 3,4 V), retardo de supplement {tsup}",
+               f"VSYS {v(m['c_vsyspre'])} → mín. {v(m[clave + '_vsysmin'])} V; VBAT − VSYS máx. "
+               f"{v(d['dif'][k].max()*1e3, 0)} mV durante {v(tramo_mas_largo(d['time'][k], d['dif'][k] > 0.2)*1e6, 0)} µs",
+               "VSYS ≥ 2,5 V; sin VO(SC2) (≥ 250 µs)",
+               m[clave + "_vsysmin"] >= 2.5 and tramo_mas_largo(d["time"][k], d["dif"][k] > 0.2) < 250e-6)
+    t.fila("Enchufe en caliente (cable 1 m, 1 µH): pico de VBUS", f"{v(m['d_vbusmax'])} V",
+           "< 6,4 V (OVP mín.) y < 28 V (máx. absoluto)", m["d_vbusmax"] < 6.4)
+    d = casos["bq_d"]
+    pmax = d["pbq"][d["time"] > 15e-3].max()
+    t.fila("Enchufe con 5 W de carga (modo ILIM): VSYS final y disipación de U2",
+           f"VSYS se queda en {v(m['d_vsysfin'])} V (supplement); U2 disipa {v(pmax)} W → Tj ≈ {v(50 + pmax*44.5, 0)} °C",
+           "Tj ≤ 110 °C con Ta 50 °C (θJA 44,5 °C/W)", 50 + pmax * 44.5 <= 110)
+    pa = casos["bq_a_max"]["pbq"][casos["bq_a_max"]["time"] > 15e-3].max()
+    t.fila("Disipación de U2 durante el pico en USB500 (LDO + BAT-FET, 20 ms)",
+           f"{v(pa)} W (en régimen daría Tj ≈ {v(50 + pa*44.5, 0)} °C)",
+           "Informativo: es un pulso; el firmware no debe sostenerlo (bloqueo ≤ 150 ms)", None)
+
+    a, b = ({c: x[d["time"] > 2e-3] for c, x in d.items()} for d in (casos["bq_a_typ"], casos["bq_a_max"]))
+    figura("bq24073_supplement.png", "BQ24073: pico de 2,9 A con USB en USB500 (supplement mode)", [
+        ("VSYS (V)", [(a["time"], a["v(vsys)"], "BAT-FET típ. 50 mΩ"), (b["time"], b["v(vsys)"], "BAT-FET máx. 100 mΩ")], []),
+        ("VBAT − VSYS (V)", [(a["time"], a["dif"], "BAT-FET típ. 50 mΩ"), (b["time"], b["dif"], "BAT-FET máx. 100 mΩ")],
+         [(0.2, "VO(SC2) mín. 200 mV"), (0.3, "VO(SC2) máx. 300 mV")]),
+    ])
+    c5, c50 = casos["bq_c_tsup5"], casos["bq_c_tsup50"]
+    k5, k50 = (c5["time"] > 9.8e-3) & (c5["time"] < 10.6e-3), (c50["time"] > 9.8e-3) & (c50["time"] < 10.6e-3)
+    figura("bq24073_desenchufe.png", "BQ24073: desenchufe del USB con 1,15 A de carga (batería 3,4 V)", [
+        ("VSYS (V)", [(c5["time"][k5], c5["v(vsys)"][k5], "supplement en 5 µs"),
+                      (c50["time"][k50], c50["v(vsys)"][k50], "supplement en 50 µs")], [(2.5, "2,5 V")]),
+        ("VBUS (V)", [(c5["time"][k5], c5["v(vbus)"][k5], "VBUS")], []),
+    ])
+    d = {c: x[d["time"] > 2e-3] for c, x in d.items()}
+    figura("bq24073_enchufe.png", "BQ24073: enchufe en caliente con 5 W de carga (modo ILIM, batería 3,4 V)", [
+        ("VBUS (V)", [(d["time"], d["v(vbus)"], "VBUS")], [(6.4, "OVP mín. 6,4 V")]),
+        ("VSYS (V)", [(d["time"], d["v(vsys)"], "VSYS")], [(4.4, "VO(REG) 4,4 V")]),
+        ("potencia en U2 (W)", [(d["time"], d["pbq"], "U2")], []),
+    ])
+    return t
+
+
 BLOQUES = {
     "tps63802": bloque_tps63802,
+    "bq24073": bloque_bq24073,
 }
 
 if __name__ == "__main__":

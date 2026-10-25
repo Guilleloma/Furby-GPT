@@ -49,8 +49,10 @@ Dbody d si DBODY
 * Pines: in out bat gnd.
 .subckt BQ24073_PP in out bat gnd params: ILIM=0.475 ICHG=0.494 VOREG=4.4 RFET=0.05 RDO=0.4
 + VINDPM=4.5 TSUP=5u TON=1.2m TIN=5u CHGEN=1
-* entrada válida: VIN > UVLO (3,3 V) y VIN > VBAT + 50 mV; se valida tras TON y cae en 1 us
-Bokr okr gnd V = (V(in,gnd) > 3.3 && V(in,gnd) > V(bat,gnd)+0.05) ? 1 : 0
+* entrada válida: VIN > UVLO (3,3 V) y VIN > VBAT + VIN(DT) (80 mV típ.); se valida tras TON y cae
+* en 1 us. Consumo propio de IN: ICC 1,5 mA máx. (descarga C1 tras desenchufar)
+Bokr okr gnd V = (V(in,gnd) > 3.3 && V(in,gnd) > V(bat,gnd)+0.08) ? 1 : 0
+Bicc in gnd I = 1.5m*min(1,max(0,V(in,gnd)-1))
 Bok gnd ok I = V(okr) > V(ok) ? (V(okr)-V(ok))/{TON} : (V(okr)-V(ok))/1u
 Cok ok gnd 1
 Rok ok gnd 1e9

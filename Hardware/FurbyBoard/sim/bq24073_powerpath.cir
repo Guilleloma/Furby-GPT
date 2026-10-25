@@ -1,0 +1,119 @@
+* FurbyBoard: power path del BQ24073 (U2) con la batería, Q1 y las cargas reales de VSYS.
+* Qué se mide:
+*  A) USB enchufado en USB500 (como arranca la placa, R6/R7) y pico simultáneo de 2,9 A (motor
+*     bloqueado + TX + cámara + amplificador): supplement mode, VSYS mín. y VBAT - VSYS frente al
+*     umbral de cortocircuito en supplement VO(SC2) (200-300 mV durante 250 us apaga OUT 60 ms).
+*  B) Lo mismo en modo ILIM (EN2 = 1, EN1 = 0: 1,25-1,43 A).
+*  C) Desenchufe del USB con 1,15 A de carga (por debajo de ILIM): VSYS y 3V3 mínimos con el
+*     retardo de entrada en supplement TSUP de 5 us y de 50 us.
+*  D) Enchufe en caliente con un cable de 1 m (1 uH, 0,15 ohm): sobretensión en VBUS y paso de
+*     VSYS de batería a 4,4 V con 1,15 A de carga (3V3 2,0 W + motor en marcha 2,0 W + audio 1,0 W).
+*
+* Modelos (models/furby.lib): BQ24073_PP (SLUS810N, tabla 8.5), TPS63802_AVG (calibrado en
+* tps63802_3v3.cir), BAT_LIPO, SI7615 (Q1).
+* Supuestos (declarados):
+*  - Cargas de VSYS como potencia constante: elevador + motor bloqueado 5,94 V x 1,0 A / 0,9 = 6,6 W
+*    (motor en marcha a 0,3 A: 2,0 W); amplificador 1,6 W (0,4 A de pico con el limitador a
+*    -6 dBFS, ARQUITECTURA.md §7.2); 3V3: 0,15 A de base + 0,4 A de TX/cámara por el TPS63802.
+*  - Condensadores efectivos: VBUS C1 10 uF 10 V 0603 a 5 V ≈ 4,5 uF + C2 0,8 uF; VSYS (C3, C6,
+*    C16, C17, C24, C25) ≈ 58 uF; BAT C4 ≈ 5 uF; 3V3 (C7, C8, C9) ≈ 39 uF.
+*  - Resistencia de VSYS entre U2 y las cargas (relleno de In2 + vías): 10 mohm (estimado).
+*  - PTC F1 (BSMD1206-150) 0,08 ohm en frío (estimado); cable USB de 1 m: 0,15 ohm y 1 uH.
+*  - Batería: VOC 3,7 V (media carga) y 3,4 V (baja), 0,15 ohm.
+* Criterios: VBAT - VSYS < VO(SC2) mín. 200 mV, o por encima menos de 250 us seguidos (si no, OUT
+* se apaga 60 ms y la placa se reinicia); 3V3 >= 3,0 V; VSYS >= 2,5 V (UVLO del TPS61089 y
+* VDD mín. del MAX98357A); VBUS < 6,4 V (OVP mín. del BQ24073, con 50 us de filtro) o pico más
+* corto que el filtro, y < 28 V (máximo absoluto de IN).
+* Ejecutar desde sim/: ngspice -b bq24073_powerpath.cir
+
+.include models/furby.lib
+
+.param ILIMP=0.475 RFETP=0.05 TSUPP=5u VOCP=3.7
+.param GA=1 GB=1 TSW=10m
+.param TL1=5m TL2=25m PMOT=6.6 PAMP=1.6 I3TX=0.4
+
+* --- USB: fuente de 5,0 V, cable y conexión (GA antes de TSW, GB después; 1 = conectado)
+Vusb usb 0 5.0
+Vcon con 0 pwl(0 {GA} {TSW} {GA} {TSW+10u} {GB})
+Bcab usb cab I = V(usb,cab)*(V(con)/0.15 + 1e-9)
+Lcab cab j1 1u
+Rf1 j1 vbus 0.08
+C1 vbus c1n 4.5u
+R1c c1n 0 5m
+C2 vbus 0 0.8u
+
+* --- cargador y batería
+XU2 vbus vsysu bat 0 BQ24073_PP params: ILIM={ILIMP} RFET={RFETP} TSUP={TSUPP}
+XB bpad 0 BAT_LIPO params: VOC={VOCP} R0=0.15
+XQ1 bpad g bat SI7615 params: VTH=1.5
+R12 g 0 10k
+C4 bat 0 5u
+
+* --- VSYS
+Rpl vsysu vsys 10m
+Cvs vsys cvn 58u
+Rcv cvn 0 5m
+Bmot vsys 0 I = (time > {TL1} && time < {TL2} ? {PMOT} : 0)/max(V(vsys),2.5)*(V(vsys) > 2.5 ? 1 : 0)
+Bamp vsys 0 I = (time > {TL1} && time < {TL2} ? {PAMP} : 0)/max(V(vsys),2.5)*(V(vsys) > 2.5 ? 1 : 0)
+XU3 vsys v3 0 TPS63802_AVG
+C3v3 v3 c3n 39u
+R3c c3n 0 3m
+R3b v3 0 {3.3/0.15}
+B3tx v3 0 I = time > {TL1} && time < {TL2} ? {I3TX} : 0
+
+.tran 1u 40m
+.control
+set wr_singlescale
+set wr_vecnames
+* A) USB500, pico de 2,9 A, BAT-FET típico (50 mohm) y máximo (100 mohm)
+reset
+run
+meas tran a_vsysmin MIN v(vsys) from=5m to=25m
+meas tran a_v3min MIN v(v3) from=5m to=25m
+wrdata datos/bq_a_typ.dat v(vsys) v(bat) v(vsysu) v(v3) v(vbus) v(xu2.ic)
+alterparam RFETP=0.1
+reset
+run
+meas tran a2_vsysmin MIN v(vsys) from=5m to=25m
+meas tran a2_v3min MIN v(v3) from=5m to=25m
+wrdata datos/bq_a_max.dat v(vsys) v(bat) v(vsysu) v(v3) v(vbus) v(xu2.ic)
+* B) modo ILIM (1,25 A mín. con RILIM 1,2 k y KILIM 1500), BAT-FET máximo
+alterparam ILIMP=1.25
+reset
+run
+meas tran b_vsysmin MIN v(vsys) from=5m to=25m
+wrdata datos/bq_b_max.dat v(vsys) v(bat) v(vsysu) v(v3) v(vbus) v(xu2.ic)
+* C) desenchufe a 10 ms con 1,2 A de carga (motor en marcha), batería a 3,4 V; TSUP 5 y 50 us
+alterparam VOCP=3.4
+alterparam PMOT=2.0
+alterparam PAMP=1.0
+alterparam TL1=2m
+alterparam TL2=30m
+alterparam GA=1
+alterparam GB=0
+reset
+run
+meas tran c_vsysmin MIN v(vsys) from=9m to=20m
+meas tran c_v3min MIN v(v3) from=9m to=20m
+meas tran c_vsyspre AVG v(vsys) from=8m to=9.9m
+wrdata datos/bq_c_tsup5.dat v(vsys) v(bat) v(vsysu) v(v3) v(vbus) v(xu2.ic)
+alterparam TSUPP=50u
+reset
+run
+meas tran c2_vsysmin MIN v(vsys) from=9m to=20m
+meas tran c2_v3min MIN v(v3) from=9m to=20m
+wrdata datos/bq_c_tsup50.dat v(vsys) v(bat) v(vsysu) v(v3) v(vbus) v(xu2.ic)
+* D) enchufe a 10 ms con 1,2 A de carga, batería a 3,4 V
+alterparam TSUPP=5u
+alterparam GA=0
+alterparam GB=1
+reset
+run
+meas tran d_vbusmax MAX v(vbus) from=9m to=12m
+meas tran d_vsysmin MIN v(vsys) from=9m to=20m
+meas tran d_v3min MIN v(v3) from=9m to=20m
+meas tran d_vsysfin AVG v(vsys) from=18m to=20m
+wrdata datos/bq_d.dat v(vsys) v(bat) v(vsysu) v(v3) v(vbus) v(xu2.ic)
+quit
+.endc
+.end
