@@ -1061,3 +1061,30 @@ pista("IR_PWR", "In3.Cu", 0.2, (-91.4, -80.025), (-91.4, -75.4), (-89.6, -75.4),
       (-87.65, -69.75), (-86.88, -69.75))
 via("IR_PWR", (-86.88, -69.75))
 pista("IR_PWR", "In2.Cu", 0.2, (-86.88, -69.75), "J7.8")
+# ---------------------------------------------------------------- bloque E: cosido de GND (In1, In4, F.Cu y B.Cu)
+# Vías de 0,6/0,3 colocadas donde hay hueco en las seis capas (holgura 0,2 a cobre de otra red, 0,2 a pads de GND,
+# >= 1,2 mm entre vías de GND, centro a >= 1,0 mm del borde, fuera de patios, serigrafía y áreas de reglas, y sin
+# partir el relleno de VSYS de In2: solo se acepta una vía dentro del relleno si muerde un único filo).
+# Desacoplos que no tenían vía de GND a <= 1 mm: C35 (TONGUE, 3,7 mm) y C5 (VBAT_SNS, 1,8 mm), con stub a 45°
+# (el de C5 de 0,15, como la pista de VBAT_SNS del otro pad: entradas simétricas).
+stub("GND", "C35.2", (-0.775, -0.775), 0.3)
+stub("GND", "C5.2", (-1.025, 1.025), 0.15)
+# Borde: paso nominal de 4 mm a lo largo del contorno (layout-pcb.md §5.4, <= 5 mm). Sin vías en el casquete
+# delantero (sin planos) ni en los tramos que ocupan los pads de J8/J11/J9, la pista de I2S_WS_MIC junto al borde
+# izquierdo y el USB-C.
+for _xy in [(-50.85, -63.15), (-48.9, -65.05), (-46.5, -67.95), (-44.45, -70.95), (-42.65, -75.05), (-41.7, -78.4),
+            (-41.0, -82.25), (-40.5, -86.15), (-40.2, -89.75), (-41.55, -106.15), (-55.75, -120.3), (-57.6, -123.75),
+            (-61.05, -124.9), (-66.4, -126.1), (-66.4, -124.3), (-80.6, -124.85), (-80.35, -126.2), (-82.4, -125.85),
+            (-86.2, -124.85), (-89.85, -123.55), (-91.2, -120.35), (-95.5, -118.6), (-99.0, -118.4), (-101.75, -116.15),
+            (-103.45, -112.95), (-104.65, -109.25), (-106.25, -84.7), (-105.85, -82.0), (-104.5, -76.55),
+            (-103.1, -76.05), (-100.35, -67.65), (-97.8, -64.8), (-96.05, -63.25)]:
+    via("GND", _xy)
+# Antena: la banda de y -62…-64 al sur del keepout la ocupan U0TX/U0RX (In3), EN (In2) y la tira de VSYS de In2
+# (una vía la partiría); la fila va bajo el módulo en y -64,9, entre VBAT_SNS (In2, y -64,26) y el pad expuesto,
+# completando las vías de GND de los pines 1 y 40 (x -83,0 y -63,0) y la de (-66,0; -64,9).
+for _xy in [(-73.5, -64.9), (-71.0, -64.9), (-68.8, -64.9)]:
+    via("GND", _xy)
+# Rejilla interior de 8 mm donde no había ninguna vía de GND a < 4 mm (une los rellenos exteriores al plano)
+for _xy in [(-87.9, -115.8), (-80.3, -108.15), (-79.9, -99.8), (-71.2, -99.1), (-87.9, -91.8), (-77.9, -91.8),
+            (-71.9, -91.8)]:
+    via("GND", _xy)
