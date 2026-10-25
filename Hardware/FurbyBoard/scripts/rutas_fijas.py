@@ -312,33 +312,39 @@ stub("GND", "RT1.2", (0.0, 0.95), 0.3)
 # ---------------------------------------------------------------- USB-C: VBUS_IN, CC1, CC2 y GND
 # U1 (USBLC6) es de paso: los pines 6-1 (D+) y 4-3 (D-) se unen por debajo del cuerpo con 0,15,
 # así que VBUS_IN no puede subir por el hueco entre columnas. Entra en el pin 5 y baja a In2 por
-# una vía bajo el cuerpo; A4/B9 (0,3 centrada entre los dos pads) y A9/B4 bajan a In2 con sus
-# propias vías y se juntan en la columna x -75,85; de ahí a F1.1 por la fila y -116,6 y la
-# columna x -83,9 (sin cruzar la fila de BQ_TS). CC1 (A5) y CC2 (B5) por In2 bajo la fila de
-# pads a R1 (oeste de F1; por In2, fila y -120,8) y R2 (oeste de U1; por B.Cu, fila y -120,9,
-# porque en In2 la columna de VBUS_IN y el pad de escudo de J1 no dejan sitio a dos filas).
+# una vía bajo el cuerpo (In2 hasta la vía de A4/B9). A4/B9 (0,3 centrada entre los dos pads) y
+# A9/B4 bajan con sus propias vías a B.Cu (1 oz) y de ahí van a F1.1 por la fila y -120,9, sobre
+# el borde de la ranura del conector y bajo el pad de escudo, con dos vías junto a F1.1. Antes iba
+# 27 mm por In2 a 0,5 mm: en 0,5 oz interior eso son 0,44 A a ΔT 10 °C frente a 1,34 A en modo
+# ILIM (revisión E independiente, I2). En B.Cu, 0,5 mm llevan 1,45 A (IPC-2221, ΔT 10 °C); más
+# ancho no cabe entre la vía de CC2 de J1, la muesca de la ranura (x -77,9) y el pad de escudo.
+# CC1 (A5) por In2 bajo la fila de pads (y -120,8) a R1, al oeste de F1; CC2 (B5) por In3 (vacía
+# en el lóbulo) bajo la fila de B.Cu de VBUS_IN hasta una vía al suroeste de R2.
 # GND de A12/B1 a una vía; A1/B12 por el relleno.
 pista("VBUS_IN", "F.Cu", 0.3, (-75.85, -121.194), (-75.85, -120.2))
 via("VBUS_IN", (-75.85, -120.2))
 pista("VBUS_IN", "F.Cu", 0.5, "U1.5", (-75.85, -118.2))
 via("VBUS_IN", (-75.85, -118.2))
-pista("VBUS_IN", "In2.Cu", 0.5, (-75.85, -120.2), (-75.85, -118.2), (-75.85, -115.9), (-83.9, -115.9), (-83.9, -122.41))
-via("VBUS_IN", (-83.9, -122.41))
-pista("VBUS_IN", "F.Cu", 0.5, (-83.9, -122.41), "F1.1")
+pista("VBUS_IN", "In2.Cu", 0.5, (-75.85, -120.2), (-75.85, -118.2))
 pista("VBUS_IN", "F.Cu", 0.4, (-71.05, -121.194), (-71.05, -120.21))
 via("VBUS_IN", (-70.95, -120.21))
-pista("VBUS_IN", "In2.Cu", 0.5, (-70.95, -120.21), (-70.95, -117.0), (-75.85, -117.0))
+pista("VBUS_IN", "B.Cu", 0.5, (-70.95, -120.21), (-70.95, -120.85), (-79.75, -120.85), (-81.31, -122.41),
+      (-83.9, -122.41), (-83.9, -123.41))
+pista("VBUS_IN", "B.Cu", 0.5, (-75.85, -120.2), (-75.85, -120.85))
+via("VBUS_IN", (-83.9, -122.41))
+via("VBUS_IN", (-83.9, -123.41))
+pista("VBUS_IN", "F.Cu", 0.5, (-83.9, -123.41), (-83.9, -122.41), "F1.1")
 pista("CC1", "F.Cu", 0.2, "J1.A5", (-74.75, -120.2))
 pista("CC1", "F.Cu", 0.15, (-74.75, -120.2), (-74.99, -119.96))
 via("CC1", (-74.99, -119.96))
 pista("CC1", "In2.Cu", 0.2, (-74.99, -119.96), (-74.99, -120.8), (-78.8, -120.8), (-79.5, -120.1), (-79.5, -118.925), (-81.0, -117.425))
 via("CC1", (-81.0, -117.425))
 pista("CC1", "F.Cu", 0.2, (-81.0, -117.425), "R1.1")
-pista("CC2", "F.Cu", 0.2, "J1.B5", (-71.75, -120.15))
-via("CC2", (-71.75, -120.15))
-pista("CC2", "B.Cu", 0.2, (-71.75, -120.15), (-71.75, -120.9), (-79.6, -120.9), (-80.0, -120.5))
-via("CC2", (-80.0, -120.5))
-pista("CC2", "F.Cu", 0.2, (-80.0, -120.5), "R2.1")
+pista("CC2", "F.Cu", 0.2, "J1.B5", (-71.75, -120.1))
+via("CC2", (-71.75, -120.1))   # 0,05 al norte: deja 0,2 a la fila de VBUS_IN de B.Cu
+pista("CC2", "In3.Cu", 0.2, (-71.75, -120.1), (-71.75, -120.9), (-80.0, -120.9), (-80.9, -120.0))
+via("CC2", (-80.9, -120.0))
+pista("CC2", "F.Cu", 0.2, (-80.9, -120.0), "R2.1")
 stub("GND", "R1.2", (0.0, 0.9), 0.3)
 stub("GND", "R2.2", (0.0, 1.0), 0.3)
 stub("GND", "U1.2", (-1.0625, 0.0), 0.3)
