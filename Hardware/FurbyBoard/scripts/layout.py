@@ -54,6 +54,11 @@ P = {
     "SW1": (-60.8, -69.6, 90), "SW2": (-57.2, -69.6, 90), "JP5": (-53.9, -69.4, 90),
     # ------------------------------------------------ cámara: FPC en el borde derecho (pin 1 abajo)
     "J6": (-49.3, -80.0, 90),
+    # Series de los relojes del DVP (M7, 2026-10-27), 0402 a 0°: R59 (XCLK) justo bajo el pin 21 del
+    # módulo, entre su patio (y -81,70) y la fila del bus (XCLK en y -83,0; Y8 sube por x -71,1 al
+    # este y Y9 por x -73,6 al oeste); R60 (PCLK) a 2 mm del pad 17 de J6, con PCLK bajada a y -78,0
+    # y Y7 a -78,6 en ese tramo para que quepan los pads de 0,64 entre Y6 (-77,25) y Y7.
+    "R59": (-72.365, -82.35, 0), "R60": (-53.6, -78.0, 0),
     # LDO de la cámara debajo del FPC: 3V3 -> U8 (2,8 V) -> U9 (1,2 V); control debajo
     "U8": (-51.6, -91, 270), "C28": (-50.65, -94.65, 270), "C29": (-46.35, -97.5, 270),
     "R33": (-56.1, -106.4, 0), "C27": (-48.2, -89.86, 0), "U9": (-47.3, -93.8, 270),

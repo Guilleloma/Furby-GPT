@@ -387,15 +387,28 @@ pista("USB_DP", "B.Cu", 0.28, (-83.0, -79.5), (-83.5, -80.0), (-84.3, -80.8), "T
 # orden. Los pines no DVP de J6 salen por el este bajo el cuerpo (GND 15, 3V3 11, DVDD 10,
 # PWDN 8, SCL 5, SDA 3, GND 2: columna de vías en x -43,9) o por el oeste (2V8 4 a una vía;
 # CAM_RST 6 en F.Cu a R35/C31). Retornos de GND a <= 1 mm de cada vía de red CAM_*.
+# Series de 33 Ω en el origen de los relojes (M7, 2026-10-27), 0402 a 0° y en F.Cu, sin vías:
+# · PCLK (lo genera la cámara): R60 en (-53,6; -78,0), a 2 mm del pad 17. PCLK baja 0,25 a y -78,0
+#   nada más salir del patio de J6 (x -51,8 → -52,05) y vuelve a -77,75 al oeste de R60 (x -55,2 →
+#   -55,45); Y7 baja 0,35 a y -78,6 (x -51,8 → -52,15) y vuelve a -78,25 en x -55,6 → -55,95, más
+#   al oeste que el quiebro de PCLK para no acercarse a él a < 0,2. Entre Y6 (-77,25) y Y7 (-78,6)
+#   quedan 0,355 y 0,205 a los pads de R60 (0,64 de alto); Y8 (-79,25) sigue a 0,5 de Y7.
+# · XCLK (lo genera el ESP32): R59 en (-72,365; -82,35), bajo el pin 21 (patio del módulo en
+#   y -81,70, pads a 0,53 del pin). Pad 1 (oeste, x -72,875) sube y entra en el pin 21 por su eje
+#   con una diagonal; pad 2 (este, x -71,855) baja recto a la fila de XCLK (y -83,0), que se
+#   acorta 0,51 por el este. Y8 sube por x -71,095 (0,415 del pad 2) y Y9 por x -73,635 (0,415
+#   del pad 1); la fila de Y9 (y -83,3) no pasa bajo los pads.
 pista("CAM_Y4", "F.Cu", 0.15, "J6.22", (-62.3, -75.25), (-62.3, -70.61), "U4.34")
 pista("CAM_Y3", "F.Cu", 0.15, "J6.21", (-62.6, -75.75), (-62.6, -71.88), "U4.33")
 pista("CAM_Y5", "F.Cu", 0.15, "J6.20", (-62.9, -76.25), (-62.9, -73.15), "U4.32")
 pista("CAM_Y2", "F.Cu", 0.15, "J6.19", (-63.2, -76.75), (-63.2, -74.42), "U4.31")
 pista("CAM_Y6", "F.Cu", 0.15, "J6.18", (-56.5, -77.25), (-61.05, -81.8), (-67.285, -81.8), "U4.25")
-pista("CAM_PCLK", "F.Cu", 0.15, "J6.17", (-56.5, -77.75), (-60.85, -82.1), (-68.555, -82.1), "U4.24")
-pista("CAM_Y7", "F.Cu", 0.15, "J6.16", (-56.5, -78.25), (-60.65, -82.4), (-69.825, -82.4), "U4.23")
+pista("CAM_PCLK_CAM", "F.Cu", 0.15, "J6.17", (-51.8, -77.75), (-52.05, -78.0), "R60.2")
+pista("CAM_PCLK", "F.Cu", 0.15, "R60.1", (-55.2, -78.0), (-55.45, -77.75), (-56.5, -77.75), (-60.85, -82.1), (-68.555, -82.1), "U4.24")
+pista("CAM_Y7", "F.Cu", 0.15, "J6.16", (-51.8, -78.25), (-52.15, -78.6), (-55.6, -78.6), (-55.95, -78.25), (-56.5, -78.25), (-60.65, -82.4), (-69.825, -82.4), "U4.23")
 pista("CAM_Y8", "F.Cu", 0.15, "J6.14", (-56.5, -79.25), (-59.95, -82.7), (-71.095, -82.7), "U4.22")
-pista("CAM_XCLK", "F.Cu", 0.15, "J6.13", (-56.5, -79.75), (-59.75, -83.0), (-72.365, -83.0), "U4.21")
+pista("CAM_XCLK", "F.Cu", 0.15, "J6.13", (-56.5, -79.75), (-59.75, -83.0), (-71.855, -83.0), "R59.2")
+pista("CAM_XCLK_IO", "F.Cu", 0.15, "R59.1", "U4.21", modo="d")
 pista("CAM_Y9", "F.Cu", 0.15, "J6.12", (-56.5, -80.25), (-59.55, -83.3), (-73.635, -83.3), "U4.20")
 pista("CAM_HREF", "F.Cu", 0.15, "J6.9", (-56.5, -81.75), (-58.35, -83.6), (-74.905, -83.6), "U4.19")
 pista("CAM_VSYNC", "F.Cu", 0.15, "J6.7", (-56.5, -82.75), (-57.65, -83.9), (-76.175, -83.9), "U4.18")
