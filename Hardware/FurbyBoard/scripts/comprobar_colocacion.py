@@ -25,11 +25,11 @@ MARGEN_ACCESO = 0.3             # el pad del TP queda al menos a esto del borde 
 # Altura máxima de cada encapsulado según su datasheet (mm). El módulo es el apoyo
 # delantero de la batería (con espuma de 1,0) y por eso puede asomar debajo.
 ALTURAS = {
-    "C_0603_1608Metric": 0.95, "R_0603_1608Metric": 0.55, "C_0805_2012Metric": 1.45,
+    "C_0603_1608Metric": 0.95, "R_0603_1608Metric": 0.55, "R_0402_1005Metric": 0.45, "C_0805_2012Metric": 1.45,
     "R_0805_2012Metric": 0.65, "SOT-23": 1.25, "SOT-23-5": 1.45, "SOT-23-6": 1.45,
     "TSSOP-24_4.4x7.8mm_P0.65mm": 1.2, "TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm": 0.8,
     "Texas_DLA_VSON-10_2x3mm_P0.5mm": 1.0, "L_Changjiang_FHD4020S": 2.1,
-    "MountingHole_2.3mm_M2": 1.6, "Logo_Furby_PixelArt": 0.0,
+    "MountingHole_2.3mm_M2": 1.6, "Logo_Furby_PixelArt": 0.0, "Logo_GuilleMaker": 0.0,
     "TestPoint_Pad_D1.5mm": 0.0, "SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm": 0.0,
     "Pads_1x07_P2.54mm": 0.0, "Pads_2x04_P2.54mm": 0.0,   # pads de cable sin montar
 }

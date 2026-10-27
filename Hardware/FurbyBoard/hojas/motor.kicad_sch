@@ -4812,7 +4812,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
 			(at 88.9 127 0)
 			(hide yes)
 			(show_name no)
@@ -4848,7 +4848,7 @@
 				(justify left)
 			)
 		)
-		(property "LCSC" "C22984"
+		(property "LCSC" "C25776"
 			(at 88.9 127 0)
 			(hide yes)
 			(show_name no)
@@ -4860,7 +4860,7 @@
 				(justify left)
 			)
 		)
-		(property "JLC_Class" "base"
+		(property "JLC_Class" "ext"
 			(at 88.9 127 0)
 			(hide yes)
 			(show_name no)
@@ -4872,7 +4872,7 @@
 				(justify left)
 			)
 		)
-		(property "MPN" "UNI-ROYAL 0603 1%"
+		(property "MPN" "UNI-ROYAL 0402 1%"
 			(at 88.9 127 0)
 			(hide yes)
 			(show_name no)
