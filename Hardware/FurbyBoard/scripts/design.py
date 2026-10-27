@@ -19,6 +19,7 @@ SHEETS = [
     ("led_tp", "LED, puntos de test y J_EXP"),
 ]
 
+FP_R0402 = "Resistor_SMD:R_0402_1005Metric"
 FP_R0603 = "Resistor_SMD:R_0603_1608Metric"
 FP_R0805 = "Resistor_SMD:R_0805_2012Metric"
 FP_C0603 = "Capacitor_SMD:C_0603_1608Metric"
@@ -36,6 +37,10 @@ RES = {
     "150k": ("C22807", "base"), "220k": ("C22961", "base"), "270k": ("C22965", "pref"),
     "390k": ("C23150", "pref"), "470k": ("C23178", "base"), "510k": ("C23192", "base"),
 }
+# Resistencias 0402 UNI-ROYAL 1 % (solo donde un 0603 no cabe: las series de los relojes del bus
+# DVP, M7 de la revisión E independiente). Código comprobado en la API de piezas de JLCPCB el
+# 2026-10-27: C25105 (0402WGF330JTCE), básica, 2 162 519 en stock.
+RES0402 = {"33": ("C25105", "base")}
 # Condensadores: valor -> (LCSC, clase, huella, descripción)
 CAP = {
     "10p": ("C1634", "base", FP_C0603, "10 pF 50 V C0G"),
@@ -62,6 +67,12 @@ def R(ref, sheet, value, a, b, desc=""):
     lcsc, jlc = RES[value]
     part(ref, sheet, "Device:R", value, FP_R0603, {"1": a, "2": b}, lcsc, jlc,
          "UNI-ROYAL 0603 1%", desc)
+
+
+def R0402(ref, sheet, value, a, b, desc=""):
+    lcsc, jlc = RES0402[value]
+    part(ref, sheet, "Device:R", value, FP_R0402, {"1": a, "2": b}, lcsc, jlc,
+         "UNI-ROYAL 0402 1%", desc)
 
 
 def C(ref, sheet, value, a, b, desc=""):
@@ -174,11 +185,13 @@ def build():
     # (I2S) y a J9 por el pasillo sur (HOME, ENC). Los pines 35-39 (IR_RX, UART0, LIGHT,
     # VBAT_SNS) salen por debajo del módulo en capas internas: no cruzan el bus de la cámara.
     # Sin tocar strapping (IO0, IO3, IO45, IO46) ni el USB (IO19/IO20).
+    # Pin 21: CAM_XCLK_IO es el tramo corto hasta la serie R59 (33 Ω, junto al pin); del otro lado
+    # de R59 sigue CAM_XCLK hasta J6 (M7, 2026-10-27).
     io = {
         "1": "GND", "2": "3V3", "3": "EN", "4": "I2C_SDA", "5": "I2C_SCL", "6": "EXP_INT",
         "7": "I2S_BCLK", "8": "I2S_WS", "9": "I2S_DOUT", "10": "I2S_DIN", "11": "HOME",
         "12": "ENC_IO", "13": "USB_DN", "14": "USB_DP", "15": "IPROPI_IO", "16": "MOT_IN2_IO",
-        "17": "MOT_IN1_IO", "18": "CAM_VSYNC", "19": "CAM_HREF", "20": "CAM_Y9", "21": "CAM_XCLK",
+        "17": "MOT_IN1_IO", "18": "CAM_VSYNC", "19": "CAM_HREF", "20": "CAM_Y9", "21": "CAM_XCLK_IO",
         "22": "CAM_Y8", "23": "CAM_Y7", "24": "CAM_PCLK", "25": "CAM_Y6", "26": "IR_TX",
         "27": "BOOT", "28": "", "29": "", "30": "", "31": "CAM_Y2", "32": "CAM_Y5",
         "33": "CAM_Y3", "34": "CAM_Y4", "35": "IR_RX", "36": "U0RX", "37": "U0TX",
@@ -266,10 +279,20 @@ def build():
          {"1": "", "2": "GND", "3": "I2C_SDA", "4": "CAM_2V8", "5": "I2C_SCL", "6": "CAM_RST",
           "7": "CAM_VSYNC", "8": "CAM_PWDN", "9": "CAM_HREF", "10": "CAM_DVDD", "11": "3V3",
           "12": "CAM_Y9", "13": "CAM_XCLK", "14": "CAM_Y8", "15": "GND", "16": "CAM_Y7",
-          "17": "CAM_PCLK", "18": "CAM_Y6", "19": "CAM_Y2", "20": "CAM_Y5", "21": "CAM_Y3",
+          "17": "CAM_PCLK_CAM", "18": "CAM_Y6", "19": "CAM_Y2", "20": "CAM_Y5", "21": "CAM_Y3",
           "22": "CAM_Y4", "23": "", "24": "", "MP": "GND"},
          "C262669", "ext", "JUSHUO AFC01-S24FCA-00",
          "Cámara DVP OV2640/OV3660/OV5640 (pinout de facto, verificar con el módulo)")
+    # Series de 33 Ω en el origen de los dos relojes del bus DVP (M7 de la revisión E independiente,
+    # diseno-de-circuito.md §7.3), en 0402 porque un 0603 no cabe en el corredor: R59 junto al pin 21
+    # del módulo (XCLK lo genera el ESP32) y R60 junto al pad 17 de J6 (PCLK lo genera la cámara).
+    # Rs + Rout ≈ Z0: la pista de 0,15 mm sobre In1 (prepreg 7628 de 0,21 mm) mide ≈ 75 Ω (IPC-2141)
+    # y la salida del ESP32-S3 a su drive por defecto, ≈ 30–40 Ω (estimada por VOH/IOH de la hoja):
+    # 33 Ω amortigua sin pasarse; con ≈ 10 pF de carga, τ = 0,33 ns frente a 50 ns de periodo a
+    # 20 MHz. HREF y VSYNC (frecuencia de línea y de cuadro) y los datos (se muestrean a mitad de
+    # periodo de PCLK, con tiempo de sobra para que se asiente el flanco) no la llevan (NOTAS.md).
+    R0402("R59", s, "33", "CAM_XCLK_IO", "CAM_XCLK", "Serie del reloj XCLK, junto al pin 21 del módulo")
+    R0402("R60", s, "33", "CAM_PCLK", "CAM_PCLK_CAM", "Serie del reloj PCLK, junto al pad 17 de J6 (pad 2 al este, hacia J6)")
     part("U8", s, "Regulator_Linear:ME6211C28M5", "ME6211C28M5G-N", "Package_TO_SOT_SMD:SOT-23-5",
          {"1": "3V3", "2": "GND", "3": "CAM_EN", "4": "", "5": "CAM_2V8"},
          "C53099", "ext", "Microne ME6211C28M5G-N", "AVDD 2,8 V de la cámara")

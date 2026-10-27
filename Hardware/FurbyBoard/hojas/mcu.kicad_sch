@@ -3232,7 +3232,7 @@
 			)
 		)
 	)
-	(global_label "CAM_XCLK"
+	(global_label "CAM_XCLK_IO"
 		(shape passive)
 		(at 45.72 109.22 180)
 		(fields_autoplaced yes)
