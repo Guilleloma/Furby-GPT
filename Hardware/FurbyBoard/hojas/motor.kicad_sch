@@ -4801,7 +4801,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "30k"
+		(property "Value" "33k"
 			(at 90.4 124.19 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4836,7 +4836,7 @@
 				(justify left)
 			)
 		)
-		(property "Description" "Compensación (fc ≈ 20–30 kHz)"
+		(property "Description" "Compensación (fc ≈ 20–33 kHz)"
 			(at 88.9 127 0)
 			(hide yes)
 			(show_name no)
@@ -4848,7 +4848,7 @@
 				(justify left)
 			)
 		)
-		(property "LCSC" "C25776"
+		(property "LCSC" "C25779"
 			(at 88.9 127 0)
 			(hide yes)
 			(show_name no)
@@ -4860,7 +4860,7 @@
 				(justify left)
 			)
 		)
-		(property "JLC_Class" "ext"
+		(property "JLC_Class" "base"
 			(at 88.9 127 0)
 			(hide yes)
 			(show_name no)

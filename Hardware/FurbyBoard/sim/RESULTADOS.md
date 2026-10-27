@@ -163,8 +163,8 @@ Supuestos:
 | Bloqueado al 100 %: corriente regulada (media / pico / valle) | 0,94 / 1,00 / 0,74 A | pico ≤ ITRIP + 10 % | PASS |
 | Bloqueado: IPROPI en el pico frente a VREF | 2,246 V frente a 2,246 V | ≤ 3,0 V (rango de AERR) y ≤ 3,1 V (ADC del ESP32-S3 a 12 dB) | PASS |
 | Bloqueado: disipación del DRV8231A (RDS(on) 0,45 Ω por lado en caliente) | 0,79 W → Tj ≈ 103 °C (θJA 66,5 °C/W del DSG) | Tj ≤ 110 °C con Ta 50 °C | PASS |
-| Bloqueado: rizado y mínimo de V6 | 130 mV pp; mín. 5,92 V | V6 > 4,45 V | PASS |
-| PWM 20 kHz al 70 % (decaimiento lento) a 700 rad/s: corriente y rizado | 0,12 A medios, 125 mA pp; V6 19 mV pp | Informativo (motor estimado) | — |
+| Bloqueado: rizado y mínimo de V6 | 120 mV pp; mín. 5,92 V (con R24 de 33 kΩ, A2; 130 mV pp con 30 kΩ) | V6 > 4,45 V | PASS |
+| PWM 20 kHz al 70 % (decaimiento lento) a 700 rad/s: corriente y rizado | 0,12 A medios, 125 mA pp; V6 18 mV pp | Informativo (motor estimado) | — |
 | Inversión a toda velocidad sin freno: pico | 1,01 A; V6 5,85–5,97 V | < 3,7 A (OCP) y V6 < 6,5 V | PASS |
 
 Observaciones:
@@ -172,7 +172,7 @@ Observaciones:
 - La regulación funciona como dice la hoja: el pico se queda en ITRIP en el arranque, bloqueado y al invertir sin freno, lejos del OCP (3,7 A). Con el motor bloqueado la corriente oscila entre 0,74 y 1,0 A (0,93 A de media) con un periodo de ≈ 230 µs (≈ 4 kHz): **se oirá un pitido** mientras regula. Si molesta al micro, el firmware evita sostener la regulación (rampa de PWM y detección de bloqueo).
 - **θJA del DRV8231A**: `NOTAS.md` («Tabla de raíles», «Cálculos») y `ARQUITECTURA.md` §6 usan 42,8 °C/W, que es la del encapsulado DDA (HSOP). U6 es el **DSG (WSON 2 × 2)**: 66,5 °C/W (tabla 6.4). Con el motor bloqueado de forma continua y RDS(on) en caliente, Tj ≈ 103 °C (PASS justo); con 0,6 W, 90 °C en vez de 76 °C. El firmware limita el bloqueo a ≤ 150 ms (encoder), así que en uso real no se llega al régimen. Corregido en `NOTAS.md` (bloque F).
 - **ITRIP**: el ±6 % de AERR solo está garantizado con VM ≥ 6,5 V y V6 es 5,94 V. Con el resto de tolerancias, 0,91–1,10 A. Se mide en el bring-up (TEST-PLAN §11, IPROPI en TP8 con el motor bloqueado: 2,25 V ± 10 %).
-- V6 no baja de 5,85 V en ningún caso (UVLO del DRV8231A 4,05–4,35 V). El rizado de V6 con el motor bloqueado (130 mV pp) viene de la carga a golpes de la regulación; el lazo del elevador (fc ≈ 20 kHz) lo sigue sin problemas.
+- V6 no baja de 5,85 V en ningún caso (UVLO del DRV8231A 4,05–4,35 V). El rizado de V6 con el motor bloqueado (120 mV pp) viene de la carga a golpes de la regulación; el lazo del elevador (fc ≈ 22 kHz con R24 de 33 kΩ, A2 del 2026-10-27; ≈ 20 kHz con los 30 kΩ anteriores) lo sigue sin problemas.
 
 Figuras: `png/drv_arranque.png`, `png/drv_bloqueo.png`, `png/drv_inversion.png`.
 
