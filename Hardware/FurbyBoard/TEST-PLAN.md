@@ -250,6 +250,7 @@ Si falla, se revisa por este orden: la soldadura del cable, el pull-up (R39/R41/
 |--------|------|----------|
 | Encender la cámara (CAM_EN, P16 = 1; CAM_PWDN, P15 = 0) y escanear el I2C | Responden la cámara (0x30 el OV2640; 0x3C el OV3660/OV5640) y U10 (0x20) | Pinout del FPC J6 (lado del contacto), TP10, TP11, CAM_RST (R35/C31) |
 | Foto JPEG SVGA con el preset ESP32-S3-EYE | Imagen correcta | XCLK (bajar a 10 MHz) y PCLK |
+| Flancos de los relojes con la cámara en marcha: sonda ×10 con masa de muelle en el pad de R59 del lado de J6 (XCLK, 20 MHz) y en el pad de R60 del lado del módulo (PCLK), ancho de banda ≥ 200 MHz | Flancos limpios, sobreimpulso ≤ 10 % (≤ 0,33 V) y sin escalón a mitad de flanco; XCLK a 20 MHz con ciclo de trabajo 40–60 % | Anillo: subir R59/R60 a 47 Ω; flanco lento o amplitud baja: bajar a 22 Ω (0402 en la misma huella). Sin señal en XCLK: pin 21 del módulo y R59 |
 | Con el flex final hasta la cara | 50 fotos seguidas sin error | Acortar el flex, bajar XCLK o la resolución |
 
 ## 15. WiFi

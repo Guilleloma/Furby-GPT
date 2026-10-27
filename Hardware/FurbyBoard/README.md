@@ -6,16 +6,16 @@ Placa principal del Furby-GPT: va atornillada en el suelo de la base de un Furby
 
 Este documento es la referencia para quien coja la placa sin contexto: qué hace cada bloque, qué hay en cada conector, qué pin usa el firmware, dónde se mide y qué límites tiene. El porqué de cada decisión está en [`NOTAS.md`](NOTAS.md); el plan de pruebas, en [`TEST-PLAN.md`](TEST-PLAN.md); las simulaciones, en [`sim/RESULTADOS.md`](sim/RESULTADOS.md). Si este documento y el esquema no coinciden, manda el esquema (`scripts/design.py`).
 
-## Estado (2026-10-25)
+## Estado (2026-10-27)
 
 | | |
 |---|---|
 | Versión | **v1.0** (serigrafía «v1.0 · 2026-10») |
 | Rama | `feature/electronica-v1` |
-| Esquema | 8 hojas, 150 referencias (124 piezas montadas por el fabricante, 51 códigos LCSC). ERC 0 errores y 0 avisos |
+| Esquema | 8 hojas, 152 referencias (126 piezas montadas por el fabricante, 52 códigos LCSC). ERC 0 errores y 0 avisos |
 | PCB | 6 capas, **rutada al completo** (0 conexiones sin unir). DRC con paridad esquema-PCB: 0 errores, 0 avisos. `pcb-toolkit revisar-rutado`: PASS, 0 errores |
-| Puertas pasadas | A (arquitectura), B (esquema), C (colocación, con revisión independiente), D (rutado, propia), S (serigrafía), **E1** (diseño listo para fabricar, con revisión independiente) y **E2** (ficheros de fabricación). Informes en [`revisiones/`](revisiones/) y tabla «Revisiones» de `NOTAS.md` |
-| Ficheros de fabricación | Gerber, taladros, BOM y CPL de JLCPCB en [`fabricacion/`](fabricacion/README.md), con la puerta E2 pasada (2026-10-25). Antes de pedir: lista «Confirmar antes de pedir» de [`fabricacion/README.md`](fabricacion/README.md) |
+| Puertas pasadas | A (arquitectura), B (esquema), C (colocación, con revisión independiente), D (rutado, propia), S (serigrafía), **E1** (diseño listo para fabricar, con revisión independiente) y **E2** (ficheros de fabricación). El 2026-10-27 se cerraron las mejoras **M7** (series de 33 Ω en los relojes de la cámara) y **M1** (paralelos In2/In3) con la E1 y la E2 repetidas (`revisiones/2026-10-27-M7-M1.md`); **pendiente su revisión independiente**. Informes en [`revisiones/`](revisiones/) y tabla «Revisiones» de `NOTAS.md` |
+| Ficheros de fabricación | Gerber, taladros, BOM y CPL de JLCPCB en [`fabricacion/`](fabricacion/README.md), con la puerta E2 pasada (2026-10-25) y regenerados el 2026-10-27 tras M7 y M1. Antes de pedir: lista «Confirmar antes de pedir» de [`fabricacion/README.md`](fabricacion/README.md) |
 | Fabricada | No. Nadie ha medido todavía una placa real: todo lo que sigue es diseño y simulación |
 | Firmware | No existe. Las reglas que debe cumplir están en «Reglas para el firmware» |
 
@@ -31,7 +31,7 @@ Este documento es la referencia para quien coja la placa sin contexto: qué hace
 | Procesador | ESP32-S3-WROOM-1-N16R8 (16 MB de flash, 8 MB de PSRAM octal), WiFi y BLE con antena de PCB |
 | Motor | Puente H DRV8231A a 6 V, PWM de 20 kHz, corriente limitada a 1,0 A y medida (2,25 V/A) |
 | Audio | Amplificador clase D MAX98357A (altavoz de 4 Ω, 0,9–1,9 W según la batería) y micro I2S ICS-43434 en una plaquita aparte |
-| Cámara | DVP de 8 bits por FPC de 24 pines (OV2640; OV3660 u OV5640 cambiando U9) |
+| Cámara | DVP de 8 bits por FPC de 24 pines (OV2640; OV3660 u OV5640 cambiando U9), con 33 Ω en serie en XCLK (R59, junto al módulo) y en PCLK (R60, junto al FPC) |
 | Sensores | Inclinación, lengua, barriga y espalda por un expansor TCA9535; leva y encoder del mecanismo, luz e infrarrojos directos al módulo |
 | Depuración | 5 LED, 14 puntos de test, botones RST y BOOT, consola UART en J_EXP y 5 puentes de soldadura |
 | Consumo | Dormido ≈ 80 µA; escuchando 85–120 mA; pico ≈ 2,9 A en la batería (estimado) |
@@ -69,7 +69,7 @@ USB-C (J1) ─ ESD USBLC6 (U1) ─ PTC 1,5 A (F1) ─ VBUS ─┐
 | 3V3 | U3, L1, R15, R16, C6–C8 | Buck-boost TPS63802: 3,30 V desde VSYS (2,3–4,4 V), hasta 2 A; alimenta el módulo, el expansor, la cámara y la lógica |
 | 6 V y motor | U5, L2, R20–R25, C12–C22, U6, R26–R30, JP1–JP3 | Elevador TPS61089 a 5,94 V (ILIM 3,8 A), solo encendido cuando hace falta (EN_6V). Puente H DRV8231A con ITRIP de 1,0 A (VREF por R26/R27) y salida de corriente IPROPI (2,25 V/A, R28) al ADC |
 | Audio | U7, C24–C26, C41, R31, R32, J5 | MAX98357A desde VSYS, ganancia de 6 dB, controlado por AMP_SD. El micro ICS-43434 va en una plaquita con cable (≤ 15 cm) a J5; comparte BCLK y WS con el amplificador (bus I2S full duplex) |
-| Cámara | J6, U8, U9, R33–R35, C27–C31 | FPC de 24 pines con el pinout habitual de los módulos OV2640/OV3660/OV5640 para ESP32 (**verificar con el módulo concreto**). AVDD de 2,8 V y DVDD de 1,2 V (1,5 V cambiando U9 por ME6211C15) con CAM_EN; DOVDD a 3V3 |
+| Cámara | J6, U8, U9, R33–R35, R59, R60, C27–C31 | FPC de 24 pines con el pinout habitual de los módulos OV2640/OV3660/OV5640 para ESP32 (**verificar con el módulo concreto**). AVDD de 2,8 V y DVDD de 1,2 V (1,5 V cambiando U9 por ME6211C15) con CAM_EN; DOVDD a 3V3 |
 | Expansor y sensores | U10, R36–R52, C32–C39, U11, JP4 | TCA9535 en 0x20 sobre el I2C del módulo (el mismo bus que el SCCB de la cámara). Entradas con pull-up, 1 kΩ en serie y 100 nF; Schmitt 74LVC1G17 para el encoder |
 | IR y luz | Q3, R53–R56, C40, J7 | Emisor IR con AO3400A (≈ 100 mA en pulsos por R54 de 22 Ω desde VSYS), receptor alimentado por el expansor (P17), LDR con 470 kΩ a GND |
 | LED y depuración | D1–D5, R10, R11, R19, R57, R58, SW1, SW2, JP5, TP1–TP14, J11 | Ver «LED», «Botones y puentes» y «Puntos de test» |
@@ -142,11 +142,11 @@ En el borde derecho, pin 1 abajo, con el flex saliendo hacia la pared de la base
 
 | Pin | Red | Pin | Red |
 |-----|-----|-----|-----|
-| 1 | — | 13 | CAM_XCLK (GPIO13) |
+| 1 | — | 13 | CAM_XCLK (GPIO13 por R59 de 33 Ω) |
 | 2 | GND | 14 | CAM_Y8 (GPIO14) |
 | 3 | I2C_SDA (SIOD) | 15 | GND |
 | 4 | CAM_2V8 (AVDD) | 16 | CAM_Y7 (GPIO21) |
-| 5 | I2C_SCL (SIOC) | 17 | CAM_PCLK (GPIO47) |
+| 5 | I2C_SCL (SIOC) | 17 | CAM_PCLK_CAM (GPIO47 por R60 de 33 Ω) |
 | 6 | CAM_RST (RC de R35/C31) | 18 | CAM_Y6 (GPIO48) |
 | 7 | CAM_VSYNC (GPIO10) | 19 | CAM_Y2 (GPIO38) |
 | 8 | CAM_PWDN (P15 del expansor) | 20 | CAM_Y5 (GPIO39) |
@@ -239,7 +239,7 @@ Columna exterior (borde de la placa): pads 1–6; interior: 7–12. **La leyenda
 | GPIO7 | 7 | I2S_BCLK | Reloj de bit I2S |
 | GPIO8 | 12 | ENC_IO | Encoder del mecanismo (por JP4) |
 | GPIO9 | 17 | MOT_IN1_IO | IN1 del puente H (PWM, por JP1) |
-| GPIO10–GPIO14 | 18–22 | CAM_VSYNC, CAM_HREF, CAM_Y9, CAM_XCLK, CAM_Y8 | Cámara |
+| GPIO10–GPIO14 | 18–22 | CAM_VSYNC, CAM_HREF, CAM_Y9, CAM_XCLK_IO, CAM_Y8 | Cámara (XCLK sale por R59 de 33 Ω, junto al pin) |
 | GPIO15 | 8 | I2S_WS | Selección de canal I2S |
 | GPIO16 | 9 | I2S_DOUT | Datos al amplificador |
 | GPIO17 | 10 | I2S_DIN | Datos del micro |
@@ -252,7 +252,7 @@ Columna exterior (borde de la placa): pads 1–6; interior: 7–12. **La leyenda
 | GPIO43 / GPIO44 | 37 / 36 | U0TX / U0RX | Consola UART0 (J_EXP.7 / .10); LED D3 en TX |
 | GPIO45 | 26 | IR_TX | Emisor IR por Q3 (RMT); pin de arranque de VDD_SPI: R55 lo mantiene a 0 (flash de 3,3 V) |
 | GPIO46 | 16 | MOT_IN2_IO | IN2 del puente H (PWM, por JP2); pin de arranque: R30 lo mantiene a 0 |
-| GPIO47 / GPIO48 | 24 / 25 | CAM_PCLK / CAM_Y6 | Cámara |
+| GPIO47 / GPIO48 | 24 / 25 | CAM_PCLK / CAM_Y6 | Cámara (PCLK llega por R60 de 33 Ω, junto a J6) |
 | EN | 3 | EN | Reset (SW1), RC de R17 y C11 (≈ 10 ms) |
 
 GPIO3, GPIO45 y GPIO46 son pines de arranque: el firmware no los debe forzar durante el reset (los pull-downs de la placa ya dan el valor correcto). No quedan GPIO del módulo libres: para usar uno, se corta su puente (JP1–JP4, ver abajo) o se usa J_EXP.
