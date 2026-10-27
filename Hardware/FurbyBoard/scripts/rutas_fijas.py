@@ -102,6 +102,8 @@ pista("BST_VCC", "F.Cu", 0.25, "U5.2", (-52.355, -115.25), "C12.1")
 pista("BST_FB", "F.Cu", 0.25, "U5.3", (-52.51, -115.75), "R22.1")
 pista("BST_FB", "F.Cu", 0.25, "R22.1", (-52.98, -115.39), "R21.2")
 pista("BST_COMP", "F.Cu", 0.25, "U5.4", (-52.25, -116.25), (-52.25, -116.99), "C15.1")
+# R24 en 0402 bajo C15 (M3): COMP baja recto de C15.1 y entra en R24.1 con una diagonal; RC sale de
+# R24.2 al oeste, sube a 45° a la fila de C14 (y -118,6) y entra en C14.1 por su eje.
 pista("BST_COMP", "F.Cu", 0.25, "C15.1", "R24.1")
 pista("BST_RC", "F.Cu", 0.25, "R24.2", (-55.45, -118.6), "C14.1")
 pista("V6", "F.Cu", 0.5, "U5.6", (-50.15, -117.39), "C18.1")
@@ -120,7 +122,9 @@ via("GND", (-47.3, -118.4))
 # junto al borde, al este de la vía de V6 de C18, a la segunda vía de V6 (revisión E, I1)
 pista("EN_6V", "F.Cu", 0.25, "U5.7", (-49.33, -117.0), (-48.4, -117.0), (-48.4, -118.25))
 via("EN_6V", (-48.4, -118.25))
-pista("BST_ILIM", "F.Cu", 0.25, "U5.8", (-48.83, -115.75), (-48.38, -116.2), "R23.1")
+# ILIM pasa entre los pads de C16 por y -116,12 (0,245 al pad de VSYS, 0,405 al de GND) y entra en
+# R23.1 por su eje desde el sur (R23 0,30 al norte por M3).
+pista("BST_ILIM", "F.Cu", 0.25, "U5.8", (-48.83, -115.75), (-48.46, -116.12), ("R23.1", 0.0, -0.225), "R23.1")
 # V6: vía junto a C18.1; por B.Cu, toma Kelvin hacia R21 (TP7 sobre esa pista) y tronco al puente H
 # Dos vías junto a C18 (1,0 A; I1 de la revisión E: ⌈I / 0,7 A⌉ vías por cambio de capa, «Cálculos»
 # de NOTAS): bajo C18.1 y al este, donde estaba la de EN_6V
@@ -146,7 +150,9 @@ pista("GND", "F.Cu", 0.35, "R22.2", "C15.2")
 pista("GND", "F.Cu", 0.3, (-54.62, -117.1), (-55.55, -117.1))
 via("GND", (-55.55, -117.1))
 stub("GND", "C14.2", (-0.97, 0.0), 0.3)
-stub("GND", "R23.2", (0.9, 0.0), 0.3)
+# M3: la vía de GND de R23.2 baja a 45° al SE (antes 0,9 al este): con R23 0,30 al norte y la columna de
+# HOME_PAD 0,15 al oeste (x -43,825), al este quedaba a 0,125 de esa pista.
+stub("GND", "R23.2", (0.6, -0.6), 0.3)
 # ---------------------------------------------------------------- V6 hacia el puente H
 # La vertical x -46,55 une C22.1 y C20.1 y baja a B.Cu por dos vías (tronco de B.Cu desde C18).
 pista("V6", "F.Cu", 0.5, "C22.1", "C20.1")
@@ -953,14 +959,15 @@ via("HOME", (-62.6, -87.5))
 pista("HOME", "In3.Cu", 0.2, (-62.6, -87.5), (-63.15, -88.05), (-67.0, -88.05), (-69.0, -90.05), (-69.0, -98.05), (-65.35, -101.7),
       (-58.6, -101.7))
 via("HOME", (-58.6, -101.7))
-pista("HOME", "In2.Cu", 0.2, (-58.6, -101.7), (-56.2, -101.7), (-56.2, -106.2), (-48.3, -106.2), (-48.3, -110.8), (-46.3, -112.8))
-via("HOME", (-46.3, -112.8))
-pista("HOME", "F.Cu", 0.2, (-46.3, -112.8), "R50.1")
+# M3 (2026-10-27): R50 0,15 al oeste y 0,05 al norte; la vía de HOME se queda en la diagonal (45°).
+pista("HOME", "In2.Cu", 0.2, (-58.6, -101.7), (-56.2, -101.7), (-56.2, -106.2), (-48.3, -106.2), (-48.3, -110.8), (-46.35, -112.75))
+via("HOME", (-46.35, -112.75))
+pista("HOME", "F.Cu", 0.2, (-46.35, -112.75), "R50.1")
 # HOME_PAD: J9.5 solo se alcanza por el canal entre las columnas de J9 (x -43,07; F.Cu lo usa ENC, In3 TUMMY_PAD y B.Cu
 # BACK_PAD): R50.2 baja a una vía y sube por In2 entre las vías de TUMMY y TUMMY_PAD hasta el canal.
-pista("HOME_PAD", "F.Cu", 0.2, "R50.2", (-43.675, -114.0))
-via("HOME_PAD", (-43.675, -114.0))
-pista("HOME_PAD", "In2.Cu", 0.2, (-43.675, -114.0), (-43.675, -107.605), (-43.07, -107.0), (-43.07, -102.16), "J9.5")
+pista("HOME_PAD", "F.Cu", 0.2, "R50.2", (-43.825, -114.0))
+via("HOME_PAD", (-43.825, -114.0))
+pista("HOME_PAD", "In2.Cu", 0.2, (-43.825, -114.0), (-43.825, -107.755), (-43.07, -107.0), (-43.07, -102.16), "J9.5")
 # ENC: en F.Cu sin vías. De U11.4 por debajo de la vía de GND de C39 (y -100,9, al norte de MOT_OUT2), entre J9.10 y
 # J9.11 al canal de J9 (x -43,07) y por la franja entre J9 y JP4 (y -105,95) a JP4.1.
 pista("ENC", "F.Cu", 0.2, "U11.4", (-49.0, -99.55), (-49.0, -100.9), (-43.07, -100.9), (-43.07, -105.95),
@@ -971,8 +978,10 @@ pista("ENC", "F.Cu", 0.2, "U11.4", (-49.0, -99.55), (-49.0, -100.9), (-43.07, -1
 # las vías de TUMMY y TUMMY_PAD y llega a una vía al este de JP4.2 (B.Cu cierra el canal con BACK_PAD).
 pista("ENC_IO", "F.Cu", 0.2, "U4.12", (-80.6, -76.96), (-79.6, -75.96), (-79.6, -75.3))
 via("ENC_IO", (-79.6, -75.3))
+# M3: la bajada de x -43,95 pasa a -44,2 (0,225 a la vía de TUMMY): la columna de HOME_PAD de In2 se fue 0,15 al
+# oeste con R50 y quedaba a 0,125 de eje a eje (1,55 mm de solape); ahora a 0,375 (antes 0,275).
 pista("ENC_IO", "In3.Cu", 0.2, (-79.6, -75.3), (-46.5, -75.3), (-46.5, -80.5), (-45.2, -81.8), (-45.2, -90.2),
-      (-45.6, -90.6), (-45.6, -106.3), (-43.95, -106.3), (-43.95, -109.3), (-41.9, -109.3), (-41.6, -109.0), (-41.6, -108.0))
+      (-45.6, -90.6), (-45.6, -106.3), (-44.2, -106.3), (-44.2, -109.3), (-41.9, -109.3), (-41.6, -109.0), (-41.6, -108.0))
 via("ENC_IO", (-41.6, -108.0))
 pista("ENC_IO", "F.Cu", 0.2, "JP4.2", (-41.6, -108.0))
 # ---------------------------------------------------------------- bloque C: MOT_IN2, UART0, EXP_P07 e I2C a J11

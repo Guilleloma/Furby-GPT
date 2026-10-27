@@ -77,15 +77,20 @@ P = {
     "R26": (-56.1, -103, 0), "R27": (-56.1, -104.6, 180),
     "R29": (-65.5, -87.25, 0), "R30": (-69.3, -87.25, 0), "R25": (-60.5, -114.2, 0),
     # Series de barriga, espalda y leva y resistencia del LED del encoder, junto a J9
-    "R40": (-44, -109.6, 0), "R42": (-44, -111.2, 0), "R50": (-44.5, -112.8, 0), "R51": (-43.95, -89.6, 0),
+    # M3: R50 0,15 al oeste y 0,05 al norte (patio a 0,55 del borde, antes 0,41). R42 queda a 0,50
+    # justo: C20 toca su patio por el oeste y R40 por el norte.
+    "R40": (-44, -109.6, 0), "R42": (-44, -111.2, 0), "R50": (-44.65, -112.75, 0), "R51": (-43.95, -89.6, 0),
     "R52": (-53.6, -101.3, 0),
     # ------------------------------------------------ elevador de 6 V (esquina trasera derecha)
     # SW abajo (hacia U5), VIN al este (Cin), VOUT y GND al sur (lazo caliente con Cout).
     "L2": (-50.5, -110.9, 270), "U5": (-50.5, -115.5, 0),
-    "C13": (-47.35, -112.93, 90), "C16": (-47.3, -116.2, 270), "R23": (-45.25, -115.37, 90), "C17": (-64.3, -104.95, 0),
+    # M3 (2026-10-27): R23 0,30 al norte (patio a 0,33 del borde fresado, antes 0,22; pads a 1,0): no
+    # cabe más al norte (patio de R50 a 0,01) ni al oeste (vías de VSYS de C16 en x -46,25, a 0,225 de
+    # sus pads). R24 pasa a 0402 bajo C15 (pads a 0,77 del borde, antes 0,34; patio a 0,60, antes 0,09).
+    "C13": (-47.35, -112.93, 90), "C16": (-47.3, -116.2, 270), "R23": (-45.25, -115.07, 90), "C17": (-64.3, -104.95, 0),
     "C18": (-50.39, -118.1, 180), "C19": (-52.9, -107.1, 0),
     "R20": (-57.3, -113.8, 180), "C12": (-53.8, -114.58, 180), "R22": (-53.8, -116.22, 180),
-    "C15": (-53.84, -117.8, 180), "R21": (-56.9, -116.23, 90), "R24": (-53.88, -119.35, 180),
+    "C15": (-53.84, -117.8, 180), "R21": (-56.9, -116.23, 90), "R24": (-53.88, -119.1, 180),
     "C14": (-57.3, -118.6, 180),
     # ------------------------------------------------ cargador (centro trasero), girado 90°:
     # IN al oeste (C2 junto al pin), BAT al sur (C4, Q1 y pads), OUT al norte (C3), EN/PGOOD al este.

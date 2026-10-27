@@ -1,6 +1,6 @@
 # FurbyBoard v1.0: ficheros de fabricación
 
-Generados el 2026-10-27 desde el diseño del commit `4156112` (M7 `f2f73dd`: R59 y R60 de 33 Ω en los relojes de la cámara; M1: paralelos In2/In3) con `scripts/make_fab.sh`; la puerta E2 se repitió sobre ellos ([`../revisiones/2026-10-27-M7-M1.md`](../revisiones/2026-10-27-M7-M1.md)). Primera puerta E2 (ficheros del 2026-10-25, commit `d99273f`) pasada el 2026-10-25: [`../revisiones/2026-10-25-E2-fabricacion.md`](../revisiones/2026-10-25-E2-fabricacion.md) y tabla «Revisiones» de `../NOTAS.md`. **Desde aquí no se pide nada:** el pedido se hace a mano en jlcpcb.com.
+Generados el 2026-10-27 desde el diseño de la rama `fix/furbyboard-m3-a2` (A2: R24 a 33 kΩ 0402 básica, C25779, tras la revisión independiente de M3, [`../revisiones/2026-10-27-M3-independiente.md`](../revisiones/2026-10-27-M3-independiente.md), que repitió la puerta E2 sobre estos ficheros; antes M3 `ce455a2`: R24 en 0402 y R23/R50 separadas del borde fresado; antes M7 `f2f73dd`: R59 y R60 de 33 Ω en los relojes de la cámara, y M1 `4156112`: paralelos In2/In3) con `scripts/make_fab.sh`; la puerta E2 se repitió sobre ellos ([`../revisiones/2026-10-27-M3.md`](../revisiones/2026-10-27-M3.md); la anterior, [`../revisiones/2026-10-27-M7-M1.md`](../revisiones/2026-10-27-M7-M1.md)). Primera puerta E2 (ficheros del 2026-10-25, commit `d99273f`) pasada el 2026-10-25: [`../revisiones/2026-10-25-E2-fabricacion.md`](../revisiones/2026-10-25-E2-fabricacion.md) y tabla «Revisiones» de `../NOTAS.md`. **Desde aquí no se pide nada:** el pedido se hace a mano en jlcpcb.com.
 
 ## Qué subir
 
@@ -69,7 +69,7 @@ Vías pasantes de 0,6/0,3 mm en toda la placa y tres de 0,45/0,2 en el par USB; 
 
 ## Revisar en el visor de JLCPCB antes de pagar
 
-Los giros y orígenes del CPL se compararon por geometría con la huella EasyEDA de cada LCSC el 2026-10-25 (`pcb-toolkit cpl-rotaciones`: PASS, 0 errores); el 2026-10-27, tras añadir R59 y R60 (0402 sin polaridad, giro 0), PASS con 2 avisos `giro-sin-tabla` por C25105 (pendiente de añadir a la tabla de pcb-toolkit). **Ninguna de estas piezas se ha montado todavía en JLCPCB**: la vista previa no basta, hay que mirarlas una a una.
+Los giros y orígenes del CPL se compararon por geometría con la huella EasyEDA de cada LCSC el 2026-10-25 (`pcb-toolkit cpl-rotaciones`: PASS, 0 errores); el 2026-10-27, tras añadir R59 y R60 (0402 sin polaridad, giro 0) y pasar R24 a 0402 (M3, giro 180, sin polaridad), PASS con 3 avisos `giro-sin-tabla` por C25105 y C25779 (R24 de 33 kΩ desde A2; pendientes de añadir a la tabla de pcb-toolkit). **Ninguna de estas piezas se ha montado todavía en JLCPCB**: la vista previa no basta, hay que mirarlas una a una.
 
 | Pieza | Qué mirar |
 |-------|-----------|
@@ -81,7 +81,7 @@ Los giros y orígenes del CPL se compararon por geometría con la huella EasyEDA
 | J1 (USB-C) | La boca hacia el borde inferior, dentro de la muesca; el CPL corrige 4,70 mm de origen |
 | U4 (ESP32-S3-WROOM-1) | La antena hacia el borde superior, sobre la zona sin cobre; el CPL corrige 3,63 mm de origen |
 | J6 (FPC de 24 pines) | Pin 1 junto al punto blanco de la serigrafía |
-| R59 y R60 (0402, 33 Ω) | Son las únicas piezas 0402 de la placa: R59 pegada a la fila inferior del módulo (bajo el pin 21) y R60 a 2 mm a la izquierda del FPC; sin polaridad, solo comprobar que están |
+| R59 y R60 (0402, 33 Ω) y R24 (0402, 33 kΩ) | Las tres piezas 0402 de la placa: R59 pegada a la fila inferior del módulo (bajo el pin 21), R60 a 2 mm a la izquierda del FPC y R24 (M3) la última de la columna a la izquierda del elevador, pegada al borde trasero; sin polaridad, solo comprobar que están |
 
 ## Coste estimado (consultado el 2026-10-25)
 
@@ -91,7 +91,7 @@ Los giros y orígenes del CPL se compararon por geometría con la huella EasyEDA
 |----------|------------------------|-------------------------|
 | PCB de 6 capas, 68,9 × 74,7 mm, 1,6 mm (5 unidades) | ≈ 15–45 (con ENIG; desde ≈ 2 con OSP en promoción) | ≈ 15–45 |
 | Montaje Economic: puesta en marcha 8,18 + plantilla 1,53 + confirmación 0,45 + juntas (≈ 0,0017 cada una) | ≈ 12 | ≈ 15 |
-| Carga de 18 referencias extended × 3,07 | 55,26 | 55,26 |
+| Carga de 18 referencias extended × 3,07 (con M3, R24 en 0402 pasó a extended, C25776; con A2 vuelve a básica, C25779 de 33 kΩ) | 55,26 | 55,26 |
 | Componentes (16,29 por placa, sin contar mínimos de compra; R59 y R60 añaden 0,002) | ≈ 33 | ≈ 81 |
 | Envío y aranceles | No incluidos | No incluidos |
 | **Total sin envío** | **≈ 115–145** | **≈ 165–200** |
@@ -106,6 +106,7 @@ Lo que más pesa por placa: el WROOM-1-N16R8 (5,35), los 11 condensadores de 22 
 | L2, FHD4020S-1R0MT (C602028) | **Cerrado:** Isat 8,7 A (máx., caída < 30 %) y 11 A (típ.), Irms 5,8 A según el datasheet de Changjiang; hacía falta ≥ 3,4 A | Nada |
 | R51, 220 Ω (C22962) | **Cerrado:** basic, 3 288 255 en stock | Nada |
 | R59, R60, 33 Ω 0402 (C25105) | **Cerrado** (2026-10-27): basic, 2 162 519 en stock, 0,0011 USD | Nada; si faltara, cualquier 33 Ω 0402 1 % básica |
+| R24, 33 kΩ 0402 (C25779, UNI-ROYAL 0402WGF3302TCE; A2) | **Cerrado** (2026-10-27): básica según la API de JLCPCB, 2 540 677 en stock, 0,0019 USD. Sustituye al 30 kΩ 0402 (C25776, extended, 3,07 USD de carga): fC del lazo del TPS61089 +10 %, margen de fase ≥ 78,8° en todas las esquinas (cálculo en [`../revisiones/2026-10-27-M3-independiente.md`](../revisiones/2026-10-27-M3-independiente.md)) | Nada; si faltara, cualquier 33 kΩ 0402 1 % básica (o el 30 kΩ C25776, extended) |
 | C41, 10 µF 0603 (C19702) | **Cerrado:** basic, 13 044 359 en stock | Nada |
 | 470 Ω (C23179) | Ya no está en la BOM | Nada |
 | J1, USB-C HRO M-13C (C2848620) | 2 202 en stock (el más bajo) | Mirar el stock el día del pedido; JLCPCB lo da como SMD (las cuatro patas de la carcasa son ranuras metalizadas del Gerber). Si el formulario lo marca como pasante y Economic no lo admite, pasar a Standard o soldarlo a mano |
@@ -149,7 +150,7 @@ Ninguna pieza sin stock ni con el código cambiado. Clase: **B** basic, **P** pr
 | C22807 | 150 kΩ | R20 | 1 | B | 955 240 | 0,0017 |
 | C23150 | 390 kΩ | R21 | 1 | P | 279 917 | 0,0020 |
 | C22965 | 270 kΩ | R23 | 1 | P | 276 774 | 0,0018 |
-| C22984 | 30 kΩ | R24 | 1 | B | 2 227 979 | 0,0047 |
+| C25779 | 33 kΩ 0402 (0402WGF3302TCE; A2, antes C25776 de 30 kΩ en 0402 y C22984 en 0603) | R24 | 1 | B | 2 540 677 (2026-10-27, API de JLCPCB) | 0,0019 |
 | C23162 | 4,7 kΩ | R26, R36, R37 | 3 | B | 17 137 163 | 0,0028 |
 | C23140 | 33 Ω | R31, R32 | 2 | B | 4 588 092 | 0,0024 |
 | C25105 | 33 Ω 0402 (0402WGF330JTCE) | R59, R60 | 2 | B | 2 162 519 (2026-10-27) | 0,0011 |

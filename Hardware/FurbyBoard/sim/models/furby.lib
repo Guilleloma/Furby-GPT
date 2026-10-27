@@ -114,7 +114,8 @@ Bi vin gnd I = V(vout,gnd)*V(nc)/({ETA}*max(V(vin,gnd),0.5))
 *  - VREF 1,212 V (1,188-1,236); GEA 190 uS; Rsense equivalente 0,08 ohm (sección 9.2.2.8);
 *  - ILIM de pico = 1 030 000 / RILIM = 3,8 A con 270 k (ecuación 2); fSW con 150 k ~ 0,96 MHz;
 *  - UVLO de VIN 2,4-2,5 V bajando.
-* Compensación real de la placa: R24 30 k, C14 4,7 nF, C15 10 pF; divisor R21 390 k / R22 100 k.
+* Compensación real de la placa: R24 33 k (0402 básica C25779 desde el 2026-10-27, A2 de la revisión
+* independiente de M3; antes 30 k), C14 4,7 nF, C15 10 pF; divisor R21 390 k / R22 100 k.
 * Supuestos: REA (resistencia de salida del amplificador) 10 Mohm; VOFF (COMP a corriente nula)
 * 1,4 V; lazo de corriente interno de 160 kHz (KP); pérdidas en RL (DCR + RDS(on), 50 mohm).
 * El límite de pico se pasa a media restando medio rizado: IL,med <= ILIM - Vin*D/(2*L*fSW).
@@ -136,7 +137,7 @@ R22 fb gnd 100k
 Bea gnd comp I = {GEA}*(1.212-V(fb,gnd))
 Rea comp gnd {REA}
 Bclp comp gnd I = 0.01*(max(V(comp,gnd)-2.3,0) - max({VOFF}-0.2-V(comp,gnd),0))
-R24 comp rc 30k
+R24 comp rc 33k
 C14 rc gnd 4.7n
 C15 comp gnd 10p
 .ends

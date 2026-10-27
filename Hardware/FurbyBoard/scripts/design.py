@@ -38,9 +38,13 @@ RES = {
     "390k": ("C23150", "pref"), "470k": ("C23178", "base"), "510k": ("C23192", "base"),
 }
 # Resistencias 0402 UNI-ROYAL 1 % (solo donde un 0603 no cabe: las series de los relojes del bus
-# DVP, M7 de la revisión E independiente). Código comprobado en la API de piezas de JLCPCB el
-# 2026-10-27: C25105 (0402WGF330JTCE), básica, 2 162 519 en stock.
-RES0402 = {"33": ("C25105", "base")}
+# DVP, M7 de la revisión E independiente, y R24, M3). Códigos comprobados el 2026-10-27 en la API
+# de piezas de JLCPCB: C25105 (0402WGF330JTCE) básica, 2 162 519 en stock; C25779 (0402WGF3302TCE,
+# 33 kΩ) básica, 2 540 677 en stock, 0,0019 USD. El 30 kΩ 0402 (C25776, 0402WGF3002TCE) es
+# **extended** (3,07 USD de carga en Economic): por eso R24 pasa a 33 kΩ (A2 de la revisión
+# independiente de M3): fC del lazo del TPS61089 +10 %, margen de fase ≥ 78,8° en todas las
+# esquinas (cálculo con las ecuaciones 11-19 de SLVSD38C en revisiones/2026-10-27-M3-independiente.md).
+RES0402 = {"33": ("C25105", "base"), "33k": ("C25779", "base")}
 # Condensadores: valor -> (LCSC, clase, huella, descripción)
 CAP = {
     "10p": ("C1634", "base", FP_C0603, "10 pF 50 V C0G"),
@@ -227,7 +231,13 @@ def build():
     R("R21", s, "390k", "V6", "BST_FB", "VOUT = 1,212 × (1 + 390/100) = 5,94 V")
     R("R22", s, "100k", "BST_FB", "GND", "Realimentación")
     R("R23", s, "270k", "BST_ILIM", "GND", "ILIM = 1 030 000/270k = 3,8 A")
-    R("R24", s, "30k", "BST_COMP", "BST_RC", "Compensación (fc ≈ 20–30 kHz)")
+    # R24 en 0402 (M3, 2026-10-27): bajo C15, en la columna de x −53,8, un 0603 dejaba su patio a
+    # 0,09 mm y sus pads a 0,34 mm del borde fresado (tolerancia del contorno ±0,2) y no hay otro
+    # hueco de 0603 en la esquina (C15/R22/C12 a 1,6 mm de paso bajo L2, notch del contorno y
+    # keepout de H4 al oeste). Con el 0402 los pads quedan a ≥ 0,7 mm sin mover nada más.
+    # 33 kΩ (A2, 2026-10-27) en vez de los 30 kΩ del 0603: el único 0402 básico cercano; fC pasa
+    # de 18–30 a 20–33 kHz según VIN y carga, siempre por debajo de fRHPZ/5 y de fSW/10.
+    R0402("R24", s, "33k", "BST_COMP", "BST_RC", "Compensación (fc ≈ 20–33 kHz)")
     C("C14", s, "4.7n", "BST_RC", "GND", "Compensación")
     C("C15", s, "10p", "BST_COMP", "GND", "Compensación, polo alto")
     R("R25", s, "100k", "EN_6V", "GND", "Elevador apagado al arrancar")
